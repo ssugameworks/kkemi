@@ -209,6 +209,12 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 func (ch *CommandHandler) handleScoreboard(s *discordgo.Session, m *discordgo.MessageCreate) {
 	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
 
+	// 관리자 권한 확인
+	if !ch.isAdmin(s, m) {
+		errorHandlers.Validation().HandleInsufficientPermissions()
+		return
+	}
+
 	isAdmin := ch.isAdmin(s, m)
 	embed, err := ch.scoreboardManager.GenerateScoreboard(isAdmin)
 	if err != nil {
@@ -222,6 +228,14 @@ func (ch *CommandHandler) handleScoreboard(s *discordgo.Session, m *discordgo.Me
 }
 
 func (ch *CommandHandler) handleParticipants(s *discordgo.Session, m *discordgo.MessageCreate) {
+	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
+
+	// 관리자 권한 확인
+	if !ch.isAdmin(s, m) {
+		errorHandlers.Validation().HandleInsufficientPermissions()
+		return
+	}
+
 	participants := ch.storage.GetParticipants()
 	if len(participants) == 0 {
 		errors.SendDiscordInfo(s, m.ChannelID, constants.MsgParticipantsEmpty)
