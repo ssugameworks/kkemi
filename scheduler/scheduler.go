@@ -108,7 +108,6 @@ func (s *Scheduler) sendDailyScoreboard() {
 	}
 
 	// 블랙아웃 기간 확인 (마지막 날은 예외)
-	storage := s.scoreboardManager.GetStorage()
 	isLastDay := now.Year() == competition.EndDate.Year() && 
 		now.Month() == competition.EndDate.Month() && 
 		now.Day() == competition.EndDate.Day()
