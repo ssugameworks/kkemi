@@ -29,10 +29,6 @@ const (
 	// 권한 관련
 	MsgInsufficientPermissions = "❌ 관리자 권한이 필요합니다."
 
-	// Test 명령어 관련
-	MsgTestUsage    = "사용법: `!test <백준ID>`"
-	MsgTestUserInfo = "🔍 **사용자 정보**\n📝 백준ID: `%s`\n🏷️ 본명: `%s`"
-	MsgTestNoName   = "🔍 **사용자 정보**\n📝 백준ID: `%s`\n🏷️ 본명: `등록되지 않음`"
 
 	// 기본 응답
 	MsgPong = "Pong! 🏓"
@@ -66,7 +62,6 @@ const HelpMessage = `🤖 **알고리즘 경진대회 봇 명령어**
 • ` + "`!삭제 <백준ID>`" + ` - 참가자 삭제
 
 **기타:**
-• ` + "`!test <백준ID>`" + ` - 사용자 본명 확인
 • ` + "`!ping`" + ` - 봇 응답 확인
 • ` + "`!도움말`" + ` - 도움말 표시`
 
@@ -78,7 +73,6 @@ var ErrorMessages = map[string]string{
 	"NAME_MISMATCH":                     "입력한 이름이 solved.ac 이름과 일치하지 않습니다.",
 	"REMOVE_INVALID_PARAMS":             MsgRemoveUsage,
 	"REMOVE_INVALID_BAEKJOON_ID":        MsgRemoveInvalidBaekjoonID,
-	"TEST_INVALID_PARAMS":               MsgTestUsage,
 	"COMPETITION_CREATE_INVALID_PARAMS": MsgCompetitionCreateUsage,
 	"INSUFFICIENT_PERMISSIONS":          MsgInsufficientPermissions,
 }

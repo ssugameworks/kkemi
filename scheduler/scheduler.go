@@ -100,13 +100,21 @@ func (s *Scheduler) sendDailyScoreboard() {
 		return
 	}
 
-	// 대회 마지막 날인지 확인 (EndDate 당일만 스코어보드 전송)
+	// 대회 기간 내인지 확인
 	now := time.Now()
-	endDate := competition.EndDate
-	
-	// 같은 날인지 확인 (년, 월, 일만 비교)
-	if now.Year() != endDate.Year() || now.Month() != endDate.Month() || now.Day() != endDate.Day() {
-		utils.Debug("Not competition end date - skipping daily scoreboard")
+	if now.Before(competition.StartDate) || now.After(competition.EndDate) {
+		utils.Debug("Not within competition period - skipping daily scoreboard")
+		return
+	}
+
+	// 블랙아웃 기간 확인 (마지막 날은 예외)
+	storage := s.scoreboardManager.GetStorage()
+	isLastDay := now.Year() == competition.EndDate.Year() && 
+		now.Month() == competition.EndDate.Month() && 
+		now.Day() == competition.EndDate.Day()
+		
+	if storage.IsBlackoutPeriod() && !isLastDay {
+		utils.Debug("Blackout period and not last day - skipping daily scoreboard")
 		return
 	}
 

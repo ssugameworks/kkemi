@@ -93,8 +93,6 @@ func (ch *CommandHandler) routeCommand(s *discordgo.Session, m *discordgo.Messag
 		ch.handleParticipants(s, m)
 	case "remove", "삭제":
 		ch.handleRemoveParticipant(s, m, params)
-	case "test":
-		ch.handleTest(s, m, params)
 	case "ping":
 		ch.handlePing(s, m)
 	}
@@ -341,42 +339,6 @@ func (ch *CommandHandler) isAdmin(s *discordgo.Session, m *discordgo.MessageCrea
 	return false
 }
 
-func (ch *CommandHandler) handleTest(s *discordgo.Session, m *discordgo.MessageCreate, params []string) {
-	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
-
-	if len(params) < 1 {
-		errorHandlers.Validation().HandleInvalidParams("TEST_INVALID_PARAMS",
-			"Invalid test parameters",
-			constants.MsgTestUsage)
-		return
-	}
-
-	baekjoonID := params[0]
-
-	additionalInfo, err := ch.client.GetUserAdditionalInfo(baekjoonID)
-	if err != nil {
-		errorHandlers.API().HandleBaekjoonUserNotFound(baekjoonID, err)
-		return
-	}
-
-	// 디버깅 로그 추가
-	var nameNativeStr string
-	if additionalInfo.NameNative != nil {
-		nameNativeStr = *additionalInfo.NameNative
-	}
-	utils.Debug("Additional info result - NameNative: '%s'", nameNativeStr)
-
-	var response string
-	if additionalInfo.NameNative != nil && *additionalInfo.NameNative != "" {
-		response = fmt.Sprintf(constants.MsgTestUserInfo, baekjoonID, *additionalInfo.NameNative)
-	} else {
-		response = fmt.Sprintf(constants.MsgTestNoName, baekjoonID)
-	}
-
-	if _, err := s.ChannelMessageSend(m.ChannelID, response); err != nil {
-		utils.Error("Failed to send test response: %v", err)
-	}
-}
 
 
 func getTierName(tier int) string {
