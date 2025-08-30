@@ -65,8 +65,8 @@ func (sm *ScoreboardManager) checkBlackoutPeriod(competition *models.Competition
 	if sm.storage.IsBlackoutPeriod() && competition.ShowScoreboard && !isAdmin {
 		tm := models.NewTierManager()
 		return &discordgo.MessageEmbed{
-			Title:       "🔒 스코어보드 비공개",
-			Description: "마지막 3일간 스코어보드가 비공개됩니다",
+			Title:       constants.MsgScoreboardBlackout,
+			Description: constants.MsgScoreboardBlackoutDesc,
 			Color:       tm.GetTierColor(0), // Unranked color
 		}
 	}
@@ -78,8 +78,8 @@ func (sm *ScoreboardManager) checkEmptyParticipants(competition *models.Competit
 	if len(participants) == 0 {
 		tm := models.NewTierManager()
 		return &discordgo.MessageEmbed{
-			Title:       fmt.Sprintf("🏆 %s 스코어보드", competition.Name),
-			Description: "참가자가 없습니다.",
+			Title:       fmt.Sprintf(constants.MsgScoreboardTitle, competition.Name),
+			Description: constants.MsgScoreboardNoParticipants,
 			Color:       tm.GetTierColor(0), // Unranked color
 		}
 	}
@@ -176,7 +176,7 @@ func (sm *ScoreboardManager) sortScores(scores []models.ScoreData) {
 
 func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, scores []models.ScoreData, isAdmin bool) *discordgo.MessageEmbed {
 	embed := &discordgo.MessageEmbed{
-		Title: fmt.Sprintf("🏆 %s 스코어보드", competition.Name),
+		Title: fmt.Sprintf(constants.MsgScoreboardTitle, competition.Name),
 		Description: fmt.Sprintf("%s ~ %s",
 			competition.StartDate.Format(constants.DateFormat),
 			competition.EndDate.Format(constants.DateFormat)),
@@ -184,7 +184,7 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 	}
 
 	if len(scores) == 0 {
-		embed.Description += "\n\n아직 점수가 계산된 참가자가 없습니다."
+		embed.Description += "\n\n" + constants.MsgScoreboardNoScores
 		return embed
 	}
 
@@ -213,7 +213,7 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 	if now.Before(competition.BlackoutStartDate) {
 		daysLeft := int(competition.BlackoutStartDate.Sub(now).Hours() / 24)
 		embed.Footer = &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("⚠️ %d일 후 스코어보드가 비공개됩니다", daysLeft),
+			Text: fmt.Sprintf(constants.MsgScoreboardBlackoutWarning, daysLeft),
 		}
 	}
 

@@ -103,7 +103,7 @@ func (ch *CommandHandler) routeCommand(s *discordgo.Session, m *discordgo.Messag
 // handleScoreboardCommand 스코어보드 명령어를 처리합니다 (DM 체크 포함)
 func (ch *CommandHandler) handleScoreboardCommand(s *discordgo.Session, m *discordgo.MessageCreate, isDM bool) {
 	if isDM {
-		if _, err := s.ChannelMessageSend(m.ChannelID, "❌ 스코어보드는 서버에서만 확인할 수 있습니다."); err != nil {
+		if _, err := s.ChannelMessageSend(m.ChannelID, constants.MsgScoreboardDMOnly); err != nil {
 			utils.Error("Failed to send DM response: %v", err)
 		}
 		return
@@ -113,32 +113,13 @@ func (ch *CommandHandler) handleScoreboardCommand(s *discordgo.Session, m *disco
 
 // handlePing ping 명령어를 처리합니다
 func (ch *CommandHandler) handlePing(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if _, err := s.ChannelMessageSend(m.ChannelID, "Pong! 🏓"); err != nil {
+	if _, err := s.ChannelMessageSend(m.ChannelID, constants.MsgPong); err != nil {
 		utils.Error("Failed to send ping response: %v", err)
 	}
 }
 
 func (ch *CommandHandler) handleHelp(s *discordgo.Session, m *discordgo.MessageCreate) {
-	helpText := `🤖 **알고리즘 경진대회 봇 명령어**
-
-**참가자 명령어:**
-• ` + "`!등록 <이름> <백준ID>`" + ` - 대회 등록 신청 (대회 시작 후, solved.ac 등록 이름과 일치해야 함)
-• ` + "`!스코어보드`" + ` - 현재 스코어보드 확인
-• ` + "`!참가자`" + ` - 참가자 목록 확인
-
-**관리자 명령어:**
-• ` + "`!대회 create <대회명> <시작일> <종료일>`" + ` - 대회 생성 (YYYY-MM-DD 형식)
-• ` + "`!대회 status`" + ` - 대회 상태 확인
-• ` + "`!대회 blackout <on/off>`" + ` - 스코어보드 공개/비공개 설정
-• ` + "`!대회 update <필드> <값>`" + ` - 대회 정보 수정 (name, start, end)
-• ` + "`!삭제 <백준ID>`" + ` - 참가자 삭제
-
-**기타:**
-• ` + "`!test <백준ID>`" + ` - 사용자 본명 확인
-• ` + "`!ping`" + ` - 봇 응답 확인
-• ` + "`!도움말`" + ` - 도움말 표시`
-
-	if _, err := s.ChannelMessageSend(m.ChannelID, helpText); err != nil {
+	if _, err := s.ChannelMessageSend(m.ChannelID, constants.HelpMessage); err != nil {
 		utils.Error("Failed to send help message: %v", err)
 	}
 }
@@ -149,7 +130,7 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 	if len(params) < 2 {
 		errorHandlers.Validation().HandleInvalidParams("REGISTER_INVALID_PARAMS",
 			"Invalid register parameters",
-			"사용법: `!등록 <이름> <백준ID>`")
+			constants.MsgRegisterUsage)
 		return
 	}
 
@@ -167,7 +148,7 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 	if now.Before(competition.StartDate) {
 		errorHandlers.Validation().HandleInvalidParams("REGISTRATION_NOT_STARTED",
 			"Registration not available before competition starts",
-			fmt.Sprintf("대회가 아직 시작되지 않았습니다. 등록은 %s부터 가능합니다.", 
+			fmt.Sprintf(constants.MsgRegisterNotStarted, 
 				utils.FormatDateTime(competition.StartDate)))
 		return
 	}
@@ -195,7 +176,7 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 	} else {
 		errorHandlers.Validation().HandleInvalidParams("NO_SOLVEDAC_NAME",
 			"No name registered in solved.ac",
-			"solved.ac에 이름이 등록되지 않았습니다. solved.ac 프로필에서 본명 또는 영문 이름을 등록한 후 다시 시도해주세요.")
+			constants.MsgRegisterNoSolvedacName)
 		return
 	}
 
@@ -203,8 +184,7 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 	if name != solvedacName {
 		errorHandlers.Validation().HandleInvalidParams("NAME_MISMATCH",
 			"Name does not match solved.ac profile",
-			fmt.Sprintf("입력한 이름 '%s'이 solved.ac에 등록된 이름 '%s'과 일치하지 않습니다.", 
-				name, solvedacName))
+			fmt.Sprintf(constants.MsgRegisterNameMismatch, name, solvedacName))
 		return
 	}
 
@@ -218,7 +198,7 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 	tm := models.NewTierManager()
 	colorCode := tm.GetTierANSIColor(userInfo.Tier)
 
-	response := fmt.Sprintf("```ansi\n%s%s(%s)%s님 성공적으로 등록되었습니다!\n```",
+	response := fmt.Sprintf("```ansi\n"+constants.MsgRegisterSuccess+"\n```",
 		colorCode, name, tierName, tm.GetANSIReset())
 
 	if _, err := s.ChannelMessageSend(m.ChannelID, response); err != nil {
@@ -244,7 +224,7 @@ func (ch *CommandHandler) handleScoreboard(s *discordgo.Session, m *discordgo.Me
 func (ch *CommandHandler) handleParticipants(s *discordgo.Session, m *discordgo.MessageCreate) {
 	participants := ch.storage.GetParticipants()
 	if len(participants) == 0 {
-		errors.SendDiscordInfo(s, m.ChannelID, "참가자가 없습니다.")
+		errors.SendDiscordInfo(s, m.ChannelID, constants.MsgParticipantsEmpty)
 		return
 	}
 
@@ -278,7 +258,7 @@ func (ch *CommandHandler) handleRemoveParticipant(s *discordgo.Session, m *disco
 	if len(params) < 1 {
 		errorHandlers.Validation().HandleInvalidParams("REMOVE_INVALID_PARAMS",
 			"Invalid remove parameters",
-			"사용법: `!삭제 <백준ID>`")
+			constants.MsgRemoveUsage)
 		return
 	}
 
@@ -288,7 +268,7 @@ func (ch *CommandHandler) handleRemoveParticipant(s *discordgo.Session, m *disco
 	if !utils.IsValidBaekjoonID(baekjoonID) {
 		errorHandlers.Validation().HandleInvalidParams("REMOVE_INVALID_BAEKJOON_ID",
 			"Invalid Baekjoon ID format",
-			"유효하지 않은 백준 ID 형식입니다.")
+			constants.MsgRemoveInvalidBaekjoonID)
 		return
 	}
 
@@ -299,7 +279,7 @@ func (ch *CommandHandler) handleRemoveParticipant(s *discordgo.Session, m *disco
 		return
 	}
 
-	response := fmt.Sprintf("✅ **참가자 삭제 완료**\n🎯 백준ID: %s", baekjoonID)
+	response := fmt.Sprintf(constants.MsgRemoveSuccess, baekjoonID)
 	if _, err := s.ChannelMessageSend(m.ChannelID, response); err != nil {
 		utils.Error("Failed to send participant removal response: %v", err)
 	}
@@ -353,7 +333,7 @@ func (ch *CommandHandler) handleTest(s *discordgo.Session, m *discordgo.MessageC
 	if len(params) < 1 {
 		errorHandlers.Validation().HandleInvalidParams("TEST_INVALID_PARAMS",
 			"Invalid test parameters",
-			"사용법: `!test <백준ID>`")
+			constants.MsgTestUsage)
 		return
 	}
 
@@ -374,15 +354,9 @@ func (ch *CommandHandler) handleTest(s *discordgo.Session, m *discordgo.MessageC
 
 	var response string
 	if additionalInfo.NameNative != nil && *additionalInfo.NameNative != "" {
-		response = fmt.Sprintf("🔍 **사용자 정보**\n"+
-			"📝 백준ID: `%s`\n"+
-			"🏷️ 본명: `%s`",
-			baekjoonID, *additionalInfo.NameNative)
+		response = fmt.Sprintf(constants.MsgTestUserInfo, baekjoonID, *additionalInfo.NameNative)
 	} else {
-		response = fmt.Sprintf("🔍 **사용자 정보**\n"+
-			"📝 백준ID: `%s`\n"+
-			"🏷️ 본명: `등록되지 않음`",
-			baekjoonID)
+		response = fmt.Sprintf(constants.MsgTestNoName, baekjoonID)
 	}
 
 	if _, err := s.ChannelMessageSend(m.ChannelID, response); err != nil {
