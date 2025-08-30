@@ -247,8 +247,8 @@ func (ch *CommandHandler) handleParticipants(s *discordgo.Session, m *discordgo.
 	for i, p := range participants {
 		tierName := getTierName(p.StartTier)
 		colorCode := tm.GetTierANSIColor(p.StartTier)
-		sb.WriteString(fmt.Sprintf("%s%d. %s (%s) - %s%s\n",
-			colorCode, i+1, p.Name, p.BaekjoonID, tierName, tm.GetANSIReset()))
+		sb.WriteString(fmt.Sprintf("%s%d. %s - %s%s\n",
+			colorCode, i+1, p.BaekjoonID, tierName, tm.GetANSIReset()))
 	}
 
 	sb.WriteString("```")

@@ -8,6 +8,7 @@ import (
 	"discord-bot/scheduler"
 	"discord-bot/scoring"
 	"discord-bot/storage"
+	"discord-bot/utils"
 	"fmt"
 	"log"
 	"os"
@@ -59,10 +60,10 @@ func (app *Application) loadConfig() error {
 func (app *Application) initializeDependencies() error {
 	// 단일 API 클라이언트 인스턴스 생성
 	app.apiClient = api.NewSolvedACClient()
-	
+
 	// API 클라이언트를 주입하여 Storage 생성
 	app.storage = storage.NewStorage(app.apiClient)
-	
+
 	return nil
 }
 
@@ -101,7 +102,7 @@ func (app *Application) Start() error {
 			app.config.Schedule.ScoreboardHour,
 			app.config.Schedule.ScoreboardMinute,
 		)
-		log.Printf("매일 %02d:%02d에 자동으로 스코어보드가 띄워집니다.",
+		utils.Info("매일 %02d:%02d에 자동으로 스코어보드가 띄워집니다.",
 			app.config.Schedule.ScoreboardHour, app.config.Schedule.ScoreboardMinute)
 	} else {
 		log.Println("DISCORD_CHANNEL_ID가 설정되지 않았습니다. 스코어보드가 비활성화되었습니다.")
@@ -112,7 +113,7 @@ func (app *Application) Start() error {
 }
 
 func (app *Application) printStartupMessage() {
-	fmt.Println("디스코드 봇이 실행되었습니다!")
+	utils.Info("Discord Bot v0.1.0")
 	fmt.Println("📋 사용 가능한 명령어: !help")
 	if app.config.Schedule.Enabled {
 		fmt.Printf("⏰ 매일 %02d:%02d에 자동으로 스코어보드가 전송됩니다.\n",

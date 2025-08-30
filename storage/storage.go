@@ -173,7 +173,7 @@ func (s *Storage) AddParticipant(name, baekjoonID string, startTier, startRating
 	}
 
 	// 중복 확인
-	if err := s.checkDuplicateParticipant(baekjoonID); err != nil {
+	if err := s.checkDuplicateParticipant(name, baekjoonID); err != nil {
 		return err
 	}
 
@@ -197,11 +197,15 @@ func (s *Storage) validateParticipantInput(name, baekjoonID string) error {
 }
 
 // checkDuplicateParticipant 중복 참가자를 확인합니다
-func (s *Storage) checkDuplicateParticipant(baekjoonID string) error {
+func (s *Storage) checkDuplicateParticipant(name, baekjoonID string) error {
 	for _, p := range s.participants {
 		if p.BaekjoonID == baekjoonID {
-			utils.Warn("Attempt to add duplicate participant: %s", baekjoonID)
+			utils.Warn("Attempt to add duplicate Baekjoon ID: %s", baekjoonID)
 			return fmt.Errorf("participant with Baekjoon ID %s already exists", baekjoonID)
+		}
+		if p.Name == name {
+			utils.Warn("Attempt to add duplicate name: %s", name)
+			return fmt.Errorf("participant with name %s already exists", name)
 		}
 	}
 	return nil

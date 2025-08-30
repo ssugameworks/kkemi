@@ -192,15 +192,15 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 	sb.WriteString("```\n")
 	sb.WriteString(fmt.Sprintf("%-*s %-*s %*s\n",
 		constants.ScoreboardRankWidth, "순위", 
-		constants.ScoreboardNameWidth, "이름", 
+		constants.ScoreboardNameWidth, "아이디", 
 		constants.ScoreboardScoreWidth, "점수"))
 	sb.WriteString(constants.ScoreboardSeparator + "\n")
 
 	for i, score := range scores {
 		rank := i + 1
-		sb.WriteString(fmt.Sprintf("%-*d %-*s %*.0f\n",
+		sb.WriteString(fmt.Sprintf("%-*d  %-*s %*.0f\n",
 			constants.ScoreboardRankWidth, rank,
-			constants.ScoreboardNameWidth, utils.TruncateString(score.Name, constants.ScoreboardNameWidth),
+			constants.ScoreboardNameWidth, utils.TruncateString(score.BaekjoonID, constants.ScoreboardNameWidth),
 			constants.ScoreboardScoreWidth, score.Score))
 	}
 
