@@ -249,7 +249,6 @@ func (ch *CompetitionHandler) handleUpdateStartDate(s *discordgo.Session, m *dis
 		return
 	}
 
-	oldDate := competition.StartDate
 	err = ch.commandHandler.storage.UpdateCompetitionStartDate(startDate)
 	if err != nil {
 		botErr := errors.NewSystemError("COMPETITION_UPDATE_FAILED",
@@ -277,7 +276,6 @@ func (ch *CompetitionHandler) handleUpdateEndDate(s *discordgo.Session, m *disco
 		return
 	}
 
-	oldDate := competition.EndDate
 	err = ch.commandHandler.storage.UpdateCompetitionEndDate(endDate)
 	if err != nil {
 		botErr := errors.NewSystemError("COMPETITION_UPDATE_FAILED",
