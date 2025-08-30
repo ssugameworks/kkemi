@@ -2,16 +2,18 @@
 
 백준(Baekjoon) 알고리즘 문제 풀이 점수를 집계하여 스코어보드를 제공하는 디스코드 봇입니다.
 
-## 주요 기능
+## ✨ 주요 기능
 
-- 🎯 백준 사용자 자동 등록 및 티어 확인
-- 📊 solved.ac API를 활용한 실시간 점수 계산  
-- 🎨 티어별 ANSI 색상 지원 (참가자 목록)
-- 🔒 블랙아웃 모드 지원 (스코어보드 비공개)
-- ⚡ 도전/기본/연습 문제에 따른 차등 점수 (1.4배/1.0배/0.5배)
-- 🛠️ 대회 생성 및 관리 기능
-- ⏰ 자동 스코어보드 전송 (시간 설정 가능)
-- 💬 DM 및 서버 채널 모두 지원
+- 🎯 **참가자 관리**: 백준 사용자 자동 등록 및 티어 확인
+- 📊 **실시간 집계**: solved.ac API를 활용한 병렬 점수 계산  
+- 🎨 **시각적 표현**: 티어별 ANSI 색상과 Discord Embed 지원
+- 🔒 **블랙아웃 모드**: 대회 종료 전 3일간 스코어보드 비공개
+- ⚡ **차등 점수**: 도전/기본/연습 문제에 따른 차등 점수 (1.4배/1.0배/0.5배)
+- 🛠️ **대회 관리**: 완전한 대회 생성, 수정, 상태 관리 기능
+- ⏰ **자동화**: 설정 가능한 시간에 자동 스코어보드 전송
+- 💬 **다중 채널**: DM 및 서버 채널 모두 지원
+- 🚀 **고성능**: 병렬 API 호출로 빠른 응답 시간
+- 🛡️ **안정성**: 포괄적인 에러 처리 및 복구 시스템
 
 ## 점수 계산 방식
 
@@ -96,57 +98,72 @@ Discord Developer Portal에서 봇 생성 시 다음 권한이 필요합니다:
   - 예시: `!대회 update name 대회명`
 - `!삭제 <백준ID>` - 참가자 삭제
 
-## 자동 스코어보드
+## ⏰ 자동 스코어보드
 
 - **전송 시간**: 기본 오전 9시 (`SCOREBOARD_HOUR`, `SCOREBOARD_MINUTE`로 설정 가능)
 - **블랙아웃**: 대회 종료 3일 전부터 자동 비공개 또는 수동 설정
 - **채널 설정**: `DISCORD_CHANNEL_ID` 환경변수로 지정
 - **활성화 조건**: `DISCORD_CHANNEL_ID`가 설정된 경우에만 활성화
 
-## 데이터 저장
+## 💾 데이터 저장
 
 봇은 JSON 파일을 사용하여 데이터를 저장합니다:
-- `participants.json` - 참가자 정보
-- `competition.json` - 대회 설정
+- `participants.json` - 참가자 정보 및 시작 시점 문제 기록
+- `competition.json` - 대회 설정 및 블랙아웃 정보
+- 파일 손상 시 자동으로 `.corrupted` 백업본을 생성합니다.
 
-## API 사용
+## 🔗 API 사용
 
 ### solved.ac API
 - **사용자 정보**: `https://solved.ac/api/v3/user/show?handle={백준ID}`
 - **TOP 100**: `https://solved.ac/api/v3/user/top_100?handle={백준ID}`
+- **재시도 로직**: 네트워크 오류 시 자동 재시도 (최대 3회)
+- **레이트 리미팅**: API 과부하 방지를 위한 요청 제한
+- **병렬 처리**: 다중 사용자 점수 계산 시 동시 요청 (최대 5개)
 
-## 프로젝트 구조
+## 🏗️ 아키텍처
+
+### 프로젝트 구조
 
 ```
 discord-bot/
-├── main.go              # 애플리케이션 진입점
+├── main.go                    # 애플리케이션 진입점
 ├── app/
-│   └── app.go           # 애플리케이션 생명주기 관리
+│   └── app.go                 # 애플리케이션 생명주기 및 의존성 관리
+├── interfaces/                # 의존성 역전을 위한 인터페이스 정의
+│   ├── api.go                 # API 클라이언트 인터페이스
+│   ├── storage.go             # 스토리지 리포지토리 인터페이스
+│   └── scoring.go             # 점수 계산 인터페이스
 ├── config/
-│   └── config.go        # 구조화된 환경 설정 관리
+│   └── config.go              # 구조화된 환경 설정 관리
 ├── constants/
-│   └── constants.go     # 전역 상수 정의
+│   └── constants.go           # 중앙화된 상수 정의 (성능, 포맷팅 등)
 ├── utils/
-│   ├── logger.go        # 로깅 시스템
-│   └── validation.go    # 유효성 검사 유틸리티
+│   ├── logger.go              # 구조화된 로깅 시스템
+│   ├── validation.go          # 통합된 유효성 검사 및 날짜 처리
+│   ├── error_helpers.go       # 타입별 에러 헬퍼 팩토리
+│   ├── command_context.go     # 명령어 컨텍스트 헬퍼
+│   └── date_formatter.go      # 날짜 포맷팅 유틸리티
 ├── models/
-│   └── participant.go   # 데이터 모델 정의
+│   ├── participant.go         # 참가자 데이터 모델
+│   ├── competition.go         # 대회 데이터 모델  
+│   └── tier.go                # 통합된 티어 관리 시스템
 ├── api/
-│   └── solvedac.go      # solved.ac API 클라이언트
+│   └── solvedac.go            # 한글 에러 메시지 및 재시도 로직
 ├── scoring/
-│   └── calculator.go    # 점수 계산 로직
+│   └── calculator.go          # 인터페이스 기반 점수 계산
 ├── storage/
-│   └── storage.go       # 데이터 저장소 관리
+│   └── storage.go             # 인터페이스 기반 데이터 저장소
 ├── bot/
-│   ├── commands.go      # Discord 명령어 처리
-│   ├── competition_handler.go  # 대회 관리 명령어
-│   └── scoreboard.go    # 스코어보드 생성
+│   ├── commands.go            # 에러 처리 강화된 명령어 처리
+│   ├── competition_handler.go # 날짜 포맷팅 개선된 대회 관리
+│   └── scoreboard.go          # 병렬 처리 최적화된 스코어보드
 ├── errors/
-│   └── errors.go        # 중앙화된 오류 관리
+│   └── errors.go              # 포괄적인 타입별 에러 시스템
 ├── scheduler/
-│   └── scheduler.go     # 자동 스코어보드 스케줄러
-├── participants.json    # 참가자 데이터 (실행 시 생성)
-└── competition.json     # 대회 데이터 (실행 시 생성)
+│   └── scheduler.go           # 고루틴 리크 수정된 스케줄러
+├── participants.json          # 참가자 데이터 (실행 시 생성)
+└── competition.json           # 대회 데이터 (실행 시 생성)
 ```
 
 ## 라이선스
