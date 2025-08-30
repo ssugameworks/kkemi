@@ -12,22 +12,22 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// CompetitionHandler는 대회 관련 명령어를 처리합니다
+// CompetitionHandler 대회 관련 명령어를 처리합니다
 type CompetitionHandler struct {
 	commandHandler *CommandHandler
 }
 
-// NewCompetitionHandler는 새로운 CompetitionHandler 인스턴스를 생성합니다
+// NewCompetitionHandler 새로운 CompetitionHandler 인스턴스를 생성합니다
 func NewCompetitionHandler(ch *CommandHandler) *CompetitionHandler {
 	return &CompetitionHandler{
 		commandHandler: ch,
 	}
 }
 
-// HandleCompetition은 대회 관련 명령어를 처리합니다
+// HandleCompetition 대회 관련 명령어를 처리합니다
 func (ch *CompetitionHandler) HandleCompetition(s *discordgo.Session, m *discordgo.MessageCreate, params []string) {
 	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
-	
+
 	// DM이 아닌 경우에만 관리자 권한 확인
 	if m.GuildID != "" && !ch.commandHandler.isAdmin(s, m) {
 		errorHandlers.Validation().HandleInsufficientPermissions()
@@ -61,7 +61,7 @@ func (ch *CompetitionHandler) HandleCompetition(s *discordgo.Session, m *discord
 
 func (ch *CompetitionHandler) handleCompetitionCreate(s *discordgo.Session, m *discordgo.MessageCreate, params []string) {
 	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
-	
+
 	if len(params) < 3 {
 		err := errors.NewValidationError("COMPETITION_CREATE_INVALID_PARAMS",
 			"Invalid competition create parameters",
@@ -138,7 +138,7 @@ func (ch *CompetitionHandler) handleCompetitionStatus(s *discordgo.Session, m *d
 		len(ch.commandHandler.storage.GetParticipants()))
 
 	if _, err := s.ChannelMessageSend(m.ChannelID, response); err != nil {
-		utils.Error("대회 상태 메시지 전송 실패: %v", err)
+		utils.Error("Failed to send competition status message: %v", err)
 	}
 }
 
@@ -245,7 +245,7 @@ func (ch *CompetitionHandler) handleUpdateName(s *discordgo.Session, m *discordg
 
 func (ch *CompetitionHandler) handleUpdateStartDate(s *discordgo.Session, m *discordgo.MessageCreate, dateStr string, competition *models.Competition) {
 	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
-	
+
 	startDate, err := utils.ParseDateWithValidation(dateStr, "start")
 	if err != nil {
 		errorHandlers.Validation().HandleInvalidDateFormat("START")
@@ -274,7 +274,7 @@ func (ch *CompetitionHandler) handleUpdateStartDate(s *discordgo.Session, m *dis
 
 func (ch *CompetitionHandler) handleUpdateEndDate(s *discordgo.Session, m *discordgo.MessageCreate, dateStr string, competition *models.Competition) {
 	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
-	
+
 	endDate, err := utils.ParseDateWithValidation(dateStr, "end")
 	if err != nil {
 		errorHandlers.Validation().HandleInvalidDateFormat("END")

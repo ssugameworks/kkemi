@@ -28,6 +28,10 @@ func NewScoreboardManager(storage interfaces.StorageRepository, calculator inter
 	}
 }
 
+func (sm *ScoreboardManager) GetStorage() interfaces.StorageRepository {
+	return sm.storage
+}
+
 func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.MessageEmbed, error) {
 	competition := sm.storage.GetCompetition()
 	if competition == nil || !competition.IsActive {
@@ -106,7 +110,7 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 
 			scoreData, err := sm.calculateParticipantScore(p)
 			if err != nil {
-				utils.Warn("참가자 %s 점수 계산 실패: %v", p.Name, err)
+				utils.Warn("Failed to calculate score for participant %s: %v", p.Name, err)
 				errorChan <- err
 				return
 			}
@@ -125,7 +129,7 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 		scores = append(scores, score)
 	}
 
-	utils.Info("참가자 %d명 중 %d명의 점수를 성공적으로 계산했습니다", len(participants), len(scores))
+	utils.Info("Successfully calculated scores for %d out of %d participants", len(scores), len(participants))
 	return scores, nil
 }
 

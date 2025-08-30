@@ -188,10 +188,10 @@ func (s *Storage) AddParticipant(name, baekjoonID string, startTier, startRating
 // validateParticipantInput 참가자 입력값을 검증합니다
 func (s *Storage) validateParticipantInput(name, baekjoonID string) error {
 	if !utils.IsValidUsername(name) {
-		return fmt.Errorf("잘못된 사용자명: %s", name)
+		return fmt.Errorf("invalid username: %s", name)
 	}
 	if !utils.IsValidBaekjoonID(baekjoonID) {
-		return fmt.Errorf("잘못된 백준 ID: %s", baekjoonID)
+		return fmt.Errorf("invalid Baekjoon ID: %s", baekjoonID)
 	}
 	return nil
 }
@@ -201,7 +201,7 @@ func (s *Storage) checkDuplicateParticipant(baekjoonID string) error {
 	for _, p := range s.participants {
 		if p.BaekjoonID == baekjoonID {
 			utils.Warn("Attempt to add duplicate participant: %s", baekjoonID)
-			return fmt.Errorf("백준 ID %s로 이미 등록된 참가자가 있습니다", baekjoonID)
+			return fmt.Errorf("participant with Baekjoon ID %s already exists", baekjoonID)
 		}
 	}
 	return nil
@@ -274,7 +274,7 @@ func (s *Storage) GetCompetition() *models.Competition {
 
 func (s *Storage) SetScoreboardVisibility(visible bool) error {
 	if s.competition == nil {
-		return fmt.Errorf("활성화된 대회가 없습니다")
+		return fmt.Errorf("no active competition")
 	}
 
 	s.competition.ShowScoreboard = visible
@@ -293,7 +293,7 @@ func (s *Storage) IsBlackoutPeriod() bool {
 // UpdateCompetitionName은 대회명을 업데이트합니다
 func (s *Storage) UpdateCompetitionName(name string) error {
 	if s.competition == nil {
-		return fmt.Errorf("활성화된 대회가 없습니다")
+		return fmt.Errorf("no active competition")
 	}
 
 	s.competition.Name = name
@@ -303,7 +303,7 @@ func (s *Storage) UpdateCompetitionName(name string) error {
 // UpdateCompetitionStartDate는 대회 시작일을 업데이트합니다
 func (s *Storage) UpdateCompetitionStartDate(startDate time.Time) error {
 	if s.competition == nil {
-		return fmt.Errorf("활성화된 대회가 없습니다")
+		return fmt.Errorf("no active competition")
 	}
 
 	s.competition.StartDate = startDate
@@ -313,7 +313,7 @@ func (s *Storage) UpdateCompetitionStartDate(startDate time.Time) error {
 // UpdateCompetitionEndDate는 대회 종료일을 업데이트하고 블랙아웃 기간도 자동으로 재설정합니다
 func (s *Storage) UpdateCompetitionEndDate(endDate time.Time) error {
 	if s.competition == nil {
-		return fmt.Errorf("활성화된 대회가 없습니다")
+		return fmt.Errorf("no active competition")
 	}
 
 	s.competition.EndDate = endDate
@@ -332,5 +332,5 @@ func (s *Storage) RemoveParticipant(baekjoonID string) error {
 			return s.SaveParticipants()
 		}
 	}
-	return fmt.Errorf("백준 ID %s로 등록된 참가자를 찾을 수 없습니다", baekjoonID)
+	return fmt.Errorf("participant with Baekjoon ID %s not found", baekjoonID)
 }

@@ -44,7 +44,7 @@ func (s *Scheduler) StartDailyScoreboard() {
 		}
 	}()
 
-	utils.Info("일일 스코어보드 스케줄러가 시작되었습니다")
+	utils.Info("Daily scoreboard scheduler started")
 }
 
 func (s *Scheduler) StartCustomSchedule(hour, minute int) {
@@ -83,22 +83,40 @@ func (s *Scheduler) StartCustomSchedule(hour, minute int) {
 		}
 	}()
 
-	utils.Info("일일 스코어보드 스케줄러가 매일 %02d:%02d에 실행되도록 설정되었습니다", hour, minute)
+	utils.Info("Daily scoreboard scheduler set to run daily at %02d:%02d", hour, minute)
 }
 
 func (s *Scheduler) sendDailyScoreboard() {
 	if s.config.Discord.ChannelID == "" {
-		utils.Error("채널 ID가 설정되지 않아 스코어보드를 전송할 수 없습니다")
+		utils.Error("Cannot send scoreboard: channel ID not configured")
+		return
+	}
+
+	// 활성화된 대회가 있는지 확인
+	storage := s.scoreboardManager.GetStorage()
+	competition := storage.GetCompetition()
+	if competition == nil || !competition.IsActive {
+		utils.Debug("No active competition - skipping daily scoreboard")
+		return
+	}
+
+	// 대회 마지막 날인지 확인 (EndDate 당일만 스코어보드 전송)
+	now := time.Now()
+	endDate := competition.EndDate
+	
+	// 같은 날인지 확인 (년, 월, 일만 비교)
+	if now.Year() != endDate.Year() || now.Month() != endDate.Month() || now.Day() != endDate.Day() {
+		utils.Debug("Not competition end date - skipping daily scoreboard")
 		return
 	}
 
 	err := s.scoreboardManager.SendDailyScoreboard(s.session, s.config.Discord.ChannelID)
 	if err != nil {
-		utils.Error("일일 스코어보드 전송 실패: %v", err)
+		utils.Error("Failed to send daily scoreboard: %v", err)
 		return
 	}
 
-	utils.Info("일일 스코어보드를 성공적으로 전송했습니다")
+	utils.Info("Daily scoreboard sent successfully")
 }
 
 func (s *Scheduler) Stop() {
@@ -114,7 +132,7 @@ func (s *Scheduler) Stop() {
 		// channel is full or no receiver, skip
 	}
 
-	utils.Info("스케줄러가 중지되었습니다")
+	utils.Info("Scheduler stopped")
 }
 
 func (s *Scheduler) stopCustomScheduler() {
