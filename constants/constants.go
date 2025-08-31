@@ -34,7 +34,6 @@ const (
 	DailyScoreboardHour   = 9
 	DailyScoreboardMinute = 0
 	SchedulerInterval     = 24 * time.Hour
-	SchedulerTimeout      = 30 * time.Second
 )
 
 // Discord 관련 상수
@@ -76,7 +75,6 @@ const (
 
 // 문자열 크기 제한
 const (
-	MaxUsernameLength    = 15
 	TruncateIndicator    = "..."
 	ScoreboardRankWidth  = 4
 	ScoreboardNameWidth  = 15
