@@ -38,26 +38,27 @@ func (s *Storage) loadData() {
 // loadParticipants 참가자 데이터를 파일에서 로드합니다
 func (s *Storage) loadParticipants() {
 	utils.Debug("Loading participants from file: %s", constants.ParticipantsFileName)
-	file, err := os.Open(constants.ParticipantsFileName)
-	if err != nil {
-		if os.IsNotExist(err) {
-			utils.Warn("Participants file not found, starting with empty list")
-			s.participants = []models.Participant{}
-			return
-		}
-		utils.Error("Failed to open participants file: %v", err)
-		// 파일이 존재하지만 열 수 없는 경우 빈 슬라이스로 초기화하지 않음
+	
+	// 파일 존재 여부 확인
+	if _, err := os.Stat(constants.ParticipantsFileName); os.IsNotExist(err) {
+		utils.Warn("Participants file not found, starting with empty list")
 		s.participants = []models.Participant{}
 		return
+	}
+
+	file, err := os.Open(constants.ParticipantsFileName)
+	if err != nil {
+		utils.Error("CRITICAL: Failed to open participants file: %v", err)
+		utils.Error("CRITICAL: Bot will exit to prevent data loss. Please check file permissions.")
+		os.Exit(1) // 데이터 유실 방지를 위해 봇 종료
 	}
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		utils.Error("Failed to read participants file: %v", err)
-		// 읽기 실패 시에도 기존 데이터 보존을 위해 빈 슬라이스로 초기화하지 않음
-		s.participants = []models.Participant{}
-		return
+		utils.Error("CRITICAL: Failed to read participants file: %v", err)
+		utils.Error("CRITICAL: Bot will exit to prevent data loss. Please check file system.")
+		os.Exit(1) // 데이터 유실 방지를 위해 봇 종료
 	}
 
 	// 빈 파일 처리
@@ -73,8 +74,9 @@ func (s *Storage) loadParticipants() {
 		backupFile := constants.ParticipantsFileName + constants.BackupFileSuffix
 		os.WriteFile(backupFile, data, constants.FilePermission)
 		utils.Warn("Corrupted participants file backed up as %s", backupFile)
-		s.participants = []models.Participant{}
-		return
+		utils.Error("CRITICAL: Participants file is corrupted. Bot will exit to prevent data loss.")
+		utils.Error("CRITICAL: Please restore from backup or fix the JSON file manually.")
+		os.Exit(1) // 데이터 유실 방지를 위해 봇 종료
 	}
 
 	utils.Info("Loaded %d participants", len(s.participants))
@@ -83,23 +85,27 @@ func (s *Storage) loadParticipants() {
 // loadCompetition 대회 데이터를 파일에서 로드합니다
 func (s *Storage) loadCompetition() {
 	utils.Debug("Loading competition from file: %s", constants.CompetitionFileName)
-	file, err := os.Open(constants.CompetitionFileName)
-	if err != nil {
-		if os.IsNotExist(err) {
-			utils.Warn("Competition file not found")
-		} else {
-			utils.Error("Failed to open competition file: %v", err)
-		}
+	
+	// 파일 존재 여부 확인
+	if _, err := os.Stat(constants.CompetitionFileName); os.IsNotExist(err) {
+		utils.Warn("Competition file not found")
 		s.competition = nil
 		return
+	}
+
+	file, err := os.Open(constants.CompetitionFileName)
+	if err != nil {
+		utils.Error("CRITICAL: Failed to open competition file: %v", err)
+		utils.Error("CRITICAL: Bot will exit to prevent data loss. Please check file permissions.")
+		os.Exit(1) // 데이터 유실 방지를 위해 봇 종료
 	}
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		utils.Error("Failed to read competition file: %v", err)
-		s.competition = nil
-		return
+		utils.Error("CRITICAL: Failed to read competition file: %v", err)
+		utils.Error("CRITICAL: Bot will exit to prevent data loss. Please check file system.")
+		os.Exit(1) // 데이터 유실 방지를 위해 봇 종료
 	}
 
 	// 빈 파일 처리
@@ -115,8 +121,9 @@ func (s *Storage) loadCompetition() {
 		backupFile := constants.CompetitionFileName + constants.BackupFileSuffix
 		os.WriteFile(backupFile, data, constants.FilePermission)
 		utils.Warn("Corrupted competition file backed up as %s", backupFile)
-		s.competition = nil
-		return
+		utils.Error("CRITICAL: Competition file is corrupted. Bot will exit to prevent data loss.")
+		utils.Error("CRITICAL: Please restore from backup or fix the JSON file manually.")
+		os.Exit(1) // 데이터 유실 방지를 위해 봇 종료
 	}
 
 	utils.Info("Loaded competition: %s", s.competition.Name)
