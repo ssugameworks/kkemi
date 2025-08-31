@@ -1,6 +1,7 @@
 package scoring
 
 import (
+	"discord-bot/api"
 	"discord-bot/constants"
 	"discord-bot/interfaces"
 	"discord-bot/models"
@@ -12,10 +13,10 @@ type ScoreCalculator struct {
 	tierManager *models.TierManager
 }
 
-func NewScoreCalculator(apiClient interfaces.APIClient) interfaces.ScoreCalculator {
+func NewScoreCalculator(apiClient interfaces.APIClient, tierManager *models.TierManager) interfaces.ScoreCalculator {
 	return &ScoreCalculator{
 		client:      apiClient,
-		tierManager: models.NewTierManager(),
+		tierManager: tierManager,
 	}
 }
 
@@ -25,6 +26,10 @@ func (sc *ScoreCalculator) CalculateScore(handle string, startTier int, startPro
 		return 0, err
 	}
 
+	return sc.CalculateScoreWithTop100(top100, startTier, startProblemIDs), nil
+}
+
+func (sc *ScoreCalculator) CalculateScoreWithTop100(top100 *api.Top100Response, startTier int, startProblemIDs []int) float64 {
 	// 시작 시점 문제 ID들을 맵으로 변환
 	startProblemsMap := make(map[int]bool)
 	for _, id := range startProblemIDs {
@@ -50,7 +55,7 @@ func (sc *ScoreCalculator) CalculateScore(handle string, startTier int, startPro
 		totalScore += score
 	}
 
-	return math.Round(totalScore), nil
+	return math.Round(totalScore)
 }
 
 func (sc *ScoreCalculator) getWeight(problemTier, startTier int) float64 {
@@ -63,8 +68,3 @@ func (sc *ScoreCalculator) getWeight(problemTier, startTier int) float64 {
 	}
 }
 
-// GetTierName 티어 번호에 해당하는 티어 이름을 반환합니다
-func GetTierName(tier int) string {
-	tm := models.NewTierManager()
-	return tm.GetTierName(tier)
-}

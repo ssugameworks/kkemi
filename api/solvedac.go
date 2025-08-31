@@ -78,36 +78,36 @@ func (c *SolvedACClient) GetUserInfo(handle string) (*UserInfo, error) {
 	return c.getUserInfoWithRetry(url, handle)
 }
 
-// 재시도 로직을 포함한 사용자 정보 조회
-func (c *SolvedACClient) getUserInfoWithRetry(url, handle string) (*UserInfo, error) {
+// doRequest 공통 HTTP 요청 및 재시도 로직
+func (c *SolvedACClient) doRequest(url, requestType, handle string) ([]byte, error) {
 	var lastErr error
 
 	for attempt := 0; attempt < constants.MaxRetries; attempt++ {
 		if attempt > 0 {
-			utils.Debug("Retrying user info fetch for %s (attempt %d/%d)", handle, attempt+1, constants.MaxRetries)
+			utils.Debug("Retrying %s fetch for %s (attempt %d/%d)", requestType, handle, attempt+1, constants.MaxRetries)
 			time.Sleep(constants.RetryDelay * time.Duration(attempt))
 		}
 
-		utils.Debug("Fetching user info from: %s", url)
+		utils.Debug("Fetching %s from: %s", requestType, url)
 
 		resp, err := c.client.Get(url)
 		if err != nil {
-			lastErr = fmt.Errorf("사용자 정보 조회 실패: %w", err)
-			utils.Warn("Attempt %d failed for user %s: %v", attempt+1, handle, err)
+			lastErr = fmt.Errorf("%s 조회 실패: %w", requestType, err)
+			utils.Warn("Attempt %d failed for %s %s: %v", attempt+1, requestType, handle, err)
 			continue
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode == http.StatusTooManyRequests {
 			lastErr = fmt.Errorf("요청 한도 초과")
-			utils.Warn("Rate limited for user %s, attempt %d", handle, attempt+1)
+			utils.Warn("Rate limited for %s %s, attempt %d", requestType, handle, attempt+1)
 			time.Sleep(constants.RetryDelay * constants.APIRetryMultiplier)
 			continue
 		}
 
 		if resp.StatusCode != http.StatusOK {
 			lastErr = fmt.Errorf("API가 상태 코드 %d를 반환했습니다", resp.StatusCode)
-			utils.Warn("API returned non-200 status for user %s: %d", handle, resp.StatusCode)
+			utils.Warn("API returned non-200 status for %s %s: %d", requestType, handle, resp.StatusCode)
 			if resp.StatusCode >= 500 {
 				continue // 서버 에러는 재시도
 			}
@@ -117,24 +117,33 @@ func (c *SolvedACClient) getUserInfoWithRetry(url, handle string) (*UserInfo, er
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			lastErr = fmt.Errorf("응답 읽기 실패: %w", err)
-			utils.Error("Failed to read response body for user %s: %v", handle, err)
+			utils.Error("Failed to read %s response body for %s: %v", requestType, handle, err)
 			continue
 		}
 
-		var userInfo UserInfo
-		if err := json.Unmarshal(body, &userInfo); err != nil {
-			lastErr = fmt.Errorf("사용자 정보 파싱 실패: %w", err)
-			utils.Error("Failed to parse user info for %s: %v", handle, err)
-			continue
-		}
-
-		utils.Debug("Successfully fetched user info for %s (tier: %d, rating: %d)",
-			handle, userInfo.Tier, userInfo.Rating)
-		return &userInfo, nil
+		return body, nil
 	}
 
-	utils.Error("Failed to fetch user info for %s after %d attempts: %v", handle, constants.MaxRetries, lastErr)
+	utils.Error("Failed to fetch %s for %s after %d attempts: %v", requestType, handle, constants.MaxRetries, lastErr)
 	return nil, lastErr
+}
+
+// 재시도 로직을 포함한 사용자 정보 조회
+func (c *SolvedACClient) getUserInfoWithRetry(url, handle string) (*UserInfo, error) {
+	body, err := c.doRequest(url, "user info", handle)
+	if err != nil {
+		return nil, err
+	}
+
+	var userInfo UserInfo
+	if err := json.Unmarshal(body, &userInfo); err != nil {
+		utils.Error("Failed to parse user info for %s: %v", handle, err)
+		return nil, fmt.Errorf("사용자 정보 파싱 실패: %w", err)
+	}
+
+	utils.Debug("Successfully fetched user info for %s (tier: %d, rating: %d)",
+		handle, userInfo.Tier, userInfo.Rating)
+	return &userInfo, nil
 }
 
 // GetUserTop100 지정된 사용자의 TOP 100 문제를 가져옵니다
@@ -149,60 +158,19 @@ func (c *SolvedACClient) GetUserTop100(handle string) (*Top100Response, error) {
 
 // 재시도 로직을 포함한 TOP 100 조회
 func (c *SolvedACClient) getUserTop100WithRetry(url, handle string) (*Top100Response, error) {
-	var lastErr error
-
-	for attempt := 0; attempt < constants.MaxRetries; attempt++ {
-		if attempt > 0 {
-			utils.Debug("Retrying top 100 fetch for %s (attempt %d/%d)", handle, attempt+1, constants.MaxRetries)
-			time.Sleep(constants.RetryDelay * time.Duration(attempt))
-		}
-
-		utils.Debug("Fetching top 100 problems from: %s", url)
-
-		resp, err := c.client.Get(url)
-		if err != nil {
-			lastErr = fmt.Errorf("TOP 100 조회 실패: %w", err)
-			utils.Warn("Attempt %d failed for top 100 %s: %v", attempt+1, handle, err)
-			continue
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode == http.StatusTooManyRequests {
-			lastErr = fmt.Errorf("요청 한도 초과")
-			utils.Warn("Rate limited for top 100 %s, attempt %d", handle, attempt+1)
-			time.Sleep(constants.RetryDelay * constants.APIRetryMultiplier)
-			continue
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			lastErr = fmt.Errorf("API가 상태 코드 %d를 반환했습니다", resp.StatusCode)
-			utils.Warn("API returned non-200 status for top 100 %s: %d", handle, resp.StatusCode)
-			if resp.StatusCode >= 500 {
-				continue // 서버 에러는 재시도
-			}
-			break // 클라이언트 에러는 즉시 반환
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			lastErr = fmt.Errorf("응답 읽기 실패: %w", err)
-			utils.Error("Failed to read top 100 response body for %s: %v", handle, err)
-			continue
-		}
-
-		var top100 Top100Response
-		if err := json.Unmarshal(body, &top100); err != nil {
-			lastErr = fmt.Errorf("TOP 100 파싱 실패: %w", err)
-			utils.Error("Failed to parse top 100 for %s: %v", handle, err)
-			continue
-		}
-
-		utils.Debug("Successfully fetched %d top problems for %s", top100.Count, handle)
-		return &top100, nil
+	body, err := c.doRequest(url, "top 100", handle)
+	if err != nil {
+		return nil, err
 	}
 
-	utils.Error("Failed to fetch top 100 for %s after %d attempts: %v", handle, constants.MaxRetries, lastErr)
-	return nil, lastErr
+	var top100 Top100Response
+	if err := json.Unmarshal(body, &top100); err != nil {
+		utils.Error("Failed to parse top 100 for %s: %v", handle, err)
+		return nil, fmt.Errorf("TOP 100 파싱 실패: %w", err)
+	}
+
+	utils.Debug("Successfully fetched %d top problems for %s", top100.Count, handle)
+	return &top100, nil
 }
 
 // GetUserAdditionalInfo 지정된 사용자의 추가 정보를 가져옵니다
@@ -217,66 +185,25 @@ func (c *SolvedACClient) GetUserAdditionalInfo(handle string) (*UserAdditionalIn
 
 // 재시도 로직을 포함한 사용자 추가 정보 조회
 func (c *SolvedACClient) getUserAdditionalInfoWithRetry(url, handle string) (*UserAdditionalInfo, error) {
-	var lastErr error
-
-	for attempt := 0; attempt < constants.MaxRetries; attempt++ {
-		if attempt > 0 {
-			utils.Debug("Retrying additional info fetch for %s (attempt %d/%d)", handle, attempt+1, constants.MaxRetries)
-			time.Sleep(constants.RetryDelay * time.Duration(attempt))
-		}
-
-		utils.Debug("Fetching additional info from: %s", url)
-
-		resp, err := c.client.Get(url)
-		if err != nil {
-			lastErr = fmt.Errorf("추가 정보 조회 실패: %w", err)
-			utils.Warn("Attempt %d failed for additional info %s: %v", attempt+1, handle, err)
-			continue
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode == http.StatusTooManyRequests {
-			lastErr = fmt.Errorf("요청 한도 초과")
-			utils.Warn("Rate limited for additional info %s, attempt %d", handle, attempt+1)
-			time.Sleep(constants.RetryDelay * constants.APIRetryMultiplier)
-			continue
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			lastErr = fmt.Errorf("API가 상태 코드 %d를 반환했습니다", resp.StatusCode)
-			utils.Warn("API returned non-200 status for additional info %s: %d", handle, resp.StatusCode)
-			if resp.StatusCode >= 500 {
-				continue // 서버 에러는 재시도
-			}
-			break // 클라이언트 에러는 즉시 반환
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			lastErr = fmt.Errorf("응답 읽기 실패: %w", err)
-			utils.Error("Failed to read additional info response body for %s: %v", handle, err)
-			continue
-		}
-
-		// API 응답 디버깅
-		utils.Debug("Raw API response for additional info %s: %s", handle, string(body))
-
-		var additionalInfo UserAdditionalInfo
-		if err := json.Unmarshal(body, &additionalInfo); err != nil {
-			lastErr = fmt.Errorf("추가 정보 파싱 실패: %w", err)
-			utils.Error("Failed to parse additional info for %s: %v", handle, err)
-			continue
-		}
-
-		var nameNativeStr string
-		if additionalInfo.NameNative != nil {
-			nameNativeStr = *additionalInfo.NameNative
-		}
-		utils.Debug("Successfully fetched additional info for %s (nameNative: %s)", 
-			handle, nameNativeStr)
-		return &additionalInfo, nil
+	body, err := c.doRequest(url, "additional info", handle)
+	if err != nil {
+		return nil, err
 	}
 
-	utils.Error("Failed to fetch additional info for %s after %d attempts: %v", handle, constants.MaxRetries, lastErr)
-	return nil, lastErr
+	// API 응답 디버깅
+	utils.Debug("Raw API response for additional info %s: %s", handle, string(body))
+
+	var additionalInfo UserAdditionalInfo
+	if err := json.Unmarshal(body, &additionalInfo); err != nil {
+		utils.Error("Failed to parse additional info for %s: %v", handle, err)
+		return nil, fmt.Errorf("추가 정보 파싱 실패: %w", err)
+	}
+
+	var nameNativeStr string
+	if additionalInfo.NameNative != nil {
+		nameNativeStr = *additionalInfo.NameNative
+	}
+	utils.Debug("Successfully fetched additional info for %s (nameNative: %s)", 
+		handle, nameNativeStr)
+	return &additionalInfo, nil
 }
