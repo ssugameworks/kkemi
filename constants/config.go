@@ -25,5 +25,4 @@ const (
 	MaxBaekjoonIDLength = 20             // 백준 ID 최대 길이
 	MinNameLength       = 1              // 이름 최소 길이
 	MaxNameLength       = 50             // 이름 최대 길이
-	MaxParticipants     = 1000           // 최대 참가자 수
 )

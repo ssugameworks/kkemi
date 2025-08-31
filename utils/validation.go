@@ -11,7 +11,7 @@ import (
 // 문자열 유효성 검사
 func IsValidUsername(username string) bool {
 	// 길이 검증 (최소 2자 이상)
-	if len(username) < 2 || len(username) > 50 {
+	if len(username) < constants.MinNameLength || len(username) > constants.MaxNameLength {
 		return false
 	}
 	
@@ -47,7 +47,7 @@ func IsValidUsername(username string) bool {
 
 func IsValidBaekjoonID(id string) bool {
 	// 길이 검증
-	if len(id) == 0 || len(id) > 20 || len(id) < 3 {
+	if len(id) == 0 || len(id) > constants.MaxBaekjoonIDLength || len(id) < constants.MinBaekjoonIDLength {
 		return false
 	}
 	
