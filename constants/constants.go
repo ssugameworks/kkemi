@@ -6,7 +6,7 @@ import "time"
 const (
 	ParticipantsFileName = "participants.json"
 	CompetitionFileName  = "competition.json"
-	FilePermission       = 0644
+	FilePermission       = 0600
 	BackupFileSuffix     = ".corrupted"
 	JSONIndentSpaces     = "  "
 )
