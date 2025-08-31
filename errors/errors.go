@@ -123,23 +123,18 @@ func NewSystemError(code, message string, err error) *AppError {
 
 // HandleDiscordError 오류를 처리하고 Discord 채널에 메시지를 전송합니다
 func HandleDiscordError(s *discordgo.Session, channelID string, err error) {
+	// 이 함수를 호출하기 전에 상세 오류는 이미 로깅되었다고 가정함.
+	// 이 함수의 주 목적은 사용자에게 피드백을 주는 것.
+	var userMessage string
 	if appErr, ok := err.(*AppError); ok {
-		// 로그에 상세 정보 기록
-		if appErr.Internal != nil {
-			fmt.Printf("ERROR: %s - %s: %v\n", appErr.Code, appErr.Message, appErr.Internal)
-		} else {
-			fmt.Printf("ERROR: %s - %s\n", appErr.Code, appErr.Message)
-		}
-
-		if discordErr := SendDiscordMessageWithRetry(s, channelID, constants.EmojiError+" "+appErr.GetUserMessage()); discordErr != nil {
-			utils.Error("DISCORD API ERROR: Failed to send error message after retries: %v", discordErr)
-		}
+		userMessage = appErr.GetUserMessage()
 	} else {
-		// 예상치 못한 오류 로깅
-		fmt.Printf("UNEXPECTED ERROR: %v\n", err)
-		if discordErr := SendDiscordMessageWithRetry(s, channelID, constants.EmojiError+" 예상치 못한 오류가 발생했습니다."); discordErr != nil {
-			utils.Error("DISCORD API ERROR: Failed to send error message after retries: %v", discordErr)
-		}
+		userMessage = "예상치 못한 오류가 발생했습니다."
+	}
+
+	if discordErr := SendDiscordMessageWithRetry(s, channelID, constants.EmojiError+" "+userMessage); discordErr != nil {
+		// 디스코드 메시지 전송 실패는 콘솔에 기록 (최후의 보루)
+		fmt.Printf("FATAL: Failed to send error message to Discord. ChannelID: %s, OriginalError: %v, DiscordError: %v\n", channelID, err, discordErr)
 	}
 }
 
@@ -167,21 +162,15 @@ func SendDiscordMessageWithRetry(s *discordgo.Session, channelID, message string
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		_, err := s.ChannelMessageSend(channelID, message)
 		if err == nil {
-			if attempt > 0 {
-				fmt.Printf("Discord message sent successfully after %d retries\n", attempt)
-			}
 			return nil
 		}
 		
 		lastErr = err
 		if attempt < maxRetries-1 {
 			delay := time.Duration(1<<attempt) * baseDelay // Exponential backoff: 1s, 2s, 4s
-			fmt.Printf("Discord API call failed (attempt %d/%d): %v. Retrying in %v...\n", 
-				attempt+1, maxRetries, err, delay)
 			time.Sleep(delay)
 		}
 	}
 	
-	utils.Error("DISCORD API ERROR: All retry attempts failed: %v", lastErr)
 	return lastErr
 }
