@@ -9,22 +9,25 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 type ScoreboardManager struct {
-	storage    interfaces.StorageRepository
-	calculator interfaces.ScoreCalculator
-	client     interfaces.APIClient
+	storage     interfaces.StorageRepository
+	calculator  interfaces.ScoreCalculator
+	client      interfaces.APIClient
+	tierManager *models.TierManager
 }
 
-func NewScoreboardManager(storage interfaces.StorageRepository, calculator interfaces.ScoreCalculator, client interfaces.APIClient) *ScoreboardManager {
+func NewScoreboardManager(storage interfaces.StorageRepository, calculator interfaces.ScoreCalculator, client interfaces.APIClient, tierManager *models.TierManager) *ScoreboardManager {
 	return &ScoreboardManager{
-		storage:    storage,
-		calculator: calculator,
-		client:     client,
+		storage:     storage,
+		calculator:  calculator,
+		client:      client,
+		tierManager: tierManager,
 	}
 }
 
@@ -63,11 +66,10 @@ func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.Messag
 // checkBlackoutPeriod 블랙아웃 기간인지 확인하고 해당 embed 반환
 func (sm *ScoreboardManager) checkBlackoutPeriod(competition *models.Competition, isAdmin bool) *discordgo.MessageEmbed {
 	if sm.storage.IsBlackoutPeriod() && competition.ShowScoreboard && !isAdmin {
-		tm := models.NewTierManager()
 		return &discordgo.MessageEmbed{
 			Title:       constants.MsgScoreboardBlackout,
 			Description: constants.MsgScoreboardBlackoutDesc,
-			Color:       tm.GetTierColor(0), // Unranked color
+			Color:       sm.tierManager.GetTierColor(0), // Unranked color
 		}
 	}
 	return nil
@@ -76,11 +78,10 @@ func (sm *ScoreboardManager) checkBlackoutPeriod(competition *models.Competition
 // checkEmptyParticipants 참가자가 없는지 확인하고 해당 embed 반환
 func (sm *ScoreboardManager) checkEmptyParticipants(competition *models.Competition, participants []models.Participant) *discordgo.MessageEmbed {
 	if len(participants) == 0 {
-		tm := models.NewTierManager()
 		return &discordgo.MessageEmbed{
 			Title:       fmt.Sprintf(constants.MsgScoreboardTitle, competition.Name),
 			Description: constants.MsgScoreboardNoParticipants,
-			Color:       tm.GetTierColor(0), // Unranked color
+			Color:       sm.tierManager.GetTierColor(0), // Unranked color
 		}
 	}
 	return nil
@@ -94,9 +95,9 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 
 	// 병렬 처리를 위한 채널과 대기 그룹
 	scoreChan := make(chan models.ScoreData, len(participants))
-	errorChan := make(chan error, len(participants))
 	semaphore := make(chan struct{}, constants.MaxConcurrentRequests)
 	var wg sync.WaitGroup
+	var errorCount int64
 
 	// 각 참가자에 대해 병렬로 점수 계산
 	for _, participant := range participants {
@@ -111,7 +112,7 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 			scoreData, err := sm.calculateParticipantScore(p)
 			if err != nil {
 				utils.Warn("Failed to calculate score for participant %s: %v", p.Name, err)
-				errorChan <- err
+				atomic.AddInt64(&errorCount, 1)
 				return
 			}
 			scoreChan <- scoreData
@@ -121,12 +122,15 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 	// 고루틴들이 완료될 때까지 대기
 	wg.Wait()
 	close(scoreChan)
-	close(errorChan)
 
 	// 결과 수집
 	var scores []models.ScoreData
 	for score := range scoreChan {
 		scores = append(scores, score)
+	}
+
+	if errorCount > 0 {
+		utils.Warn("Failed to calculate scores for %d participants", errorCount)
 	}
 
 	utils.Info("Successfully calculated scores for %d out of %d participants", len(scores), len(participants))
@@ -140,15 +144,12 @@ func (sm *ScoreboardManager) calculateParticipantScore(participant models.Partic
 		return models.ScoreData{}, err
 	}
 
-	score, err := sm.calculator.CalculateScore(participant.BaekjoonID, participant.StartTier, participant.StartProblemIDs)
-	if err != nil {
-		return models.ScoreData{}, err
-	}
-
 	top100, err := sm.client.GetUserTop100(participant.BaekjoonID)
 	if err != nil {
 		return models.ScoreData{}, err
 	}
+
+	score := sm.calculator.CalculateScoreWithTop100(top100, participant.StartTier, participant.StartProblemIDs)
 
 	// 새로 푼 문제 수 계산 (현재 - 시작시점)
 	newProblemCount := top100.Count - participant.StartProblemCount

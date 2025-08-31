@@ -5,6 +5,7 @@ import (
 	"discord-bot/config"
 	"discord-bot/constants"
 	"discord-bot/utils"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -18,6 +19,8 @@ type Scheduler struct {
 	customTicker      *time.Ticker
 	stopChan          chan bool
 	customStopChan    chan bool
+	mu                sync.Mutex
+	stopped           bool
 }
 
 func NewScheduler(session *discordgo.Session, config *config.Config, scoreboardManager *bot.ScoreboardManager) *Scheduler {
@@ -108,10 +111,10 @@ func (s *Scheduler) sendDailyScoreboard() {
 	}
 
 	// 블랙아웃 기간 확인 (마지막 날은 예외)
-	isLastDay := now.Year() == competition.EndDate.Year() && 
-		now.Month() == competition.EndDate.Month() && 
+	isLastDay := now.Year() == competition.EndDate.Year() &&
+		now.Month() == competition.EndDate.Month() &&
 		now.Day() == competition.EndDate.Day()
-		
+
 	if storage.IsBlackoutPeriod() && !isLastDay {
 		utils.Debug("Blackout period and not last day - skipping daily scoreboard")
 		return
@@ -127,30 +130,45 @@ func (s *Scheduler) sendDailyScoreboard() {
 }
 
 func (s *Scheduler) Stop() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.stopped {
+		return
+	}
+	s.stopped = true
+
 	if s.ticker != nil {
 		s.ticker.Stop()
+		s.ticker = nil
 	}
 
-	s.stopCustomScheduler()
+	s.stopCustomSchedulerUnsafe()
 
+	// 채널 정리 - 논블로킹으로 신호 전송
 	select {
 	case s.stopChan <- true:
 	default:
-		// channel is full or no receiver, skip
 	}
 
 	utils.Info("Scheduler stopped")
 }
 
 func (s *Scheduler) stopCustomScheduler() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.stopCustomSchedulerUnsafe()
+}
+
+func (s *Scheduler) stopCustomSchedulerUnsafe() {
 	if s.customTicker != nil {
 		s.customTicker.Stop()
 		s.customTicker = nil
 	}
 
+	// 채널 정리 - 논블로킹으로 신호 전송
 	select {
 	case s.customStopChan <- true:
 	default:
-		// channel is full or no receiver, skip
 	}
 }
