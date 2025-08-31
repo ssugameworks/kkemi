@@ -5,7 +5,6 @@ import (
 	"discord-bot/errors"
 	"discord-bot/interfaces"
 	"discord-bot/models"
-	"discord-bot/scoring"
 	"discord-bot/utils"
 	"fmt"
 	"strings"
@@ -19,13 +18,15 @@ type CommandHandler struct {
 	scoreboardManager  *ScoreboardManager
 	client             interfaces.APIClient
 	competitionHandler *CompetitionHandler
+	tierManager        *models.TierManager
 }
 
-func NewCommandHandler(storage interfaces.StorageRepository, apiClient interfaces.APIClient, scoreboardManager *ScoreboardManager) *CommandHandler {
+func NewCommandHandler(storage interfaces.StorageRepository, apiClient interfaces.APIClient, scoreboardManager *ScoreboardManager, tierManager *models.TierManager) *CommandHandler {
 	ch := &CommandHandler{
 		storage:           storage,
 		scoreboardManager: scoreboardManager,
 		client:            apiClient,
+		tierManager:       tierManager,
 	}
 	ch.competitionHandler = NewCompetitionHandler(ch)
 	return ch
@@ -192,12 +193,11 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 		return
 	}
 
-	tierName := getTierName(userInfo.Tier)
-	tm := models.NewTierManager()
-	colorCode := tm.GetTierANSIColor(userInfo.Tier)
+	tierName := ch.tierManager.GetTierName(userInfo.Tier)
+	colorCode := ch.tierManager.GetTierANSIColor(userInfo.Tier)
 
 	response := fmt.Sprintf("```ansi\n"+constants.MsgRegisterSuccess+"\n```",
-		colorCode, name, tierName, tm.GetANSIReset())
+		colorCode, name, tierName, ch.tierManager.GetANSIReset())
 
 	if _, err := s.ChannelMessageSend(m.ChannelID, response); err != nil {
 		utils.Error("Failed to send registration response: %v", err)
@@ -243,12 +243,11 @@ func (ch *CommandHandler) handleParticipants(s *discordgo.Session, m *discordgo.
 	var sb strings.Builder
 	sb.WriteString("```ansi\n")
 
-	tm := models.NewTierManager()
 	for i, p := range participants {
-		tierName := getTierName(p.StartTier)
-		colorCode := tm.GetTierANSIColor(p.StartTier)
+		tierName := ch.tierManager.GetTierName(p.StartTier)
+		colorCode := ch.tierManager.GetTierANSIColor(p.StartTier)
 		sb.WriteString(fmt.Sprintf("%s%d. %s - %s%s\n",
-			colorCode, i+1, p.BaekjoonID, tierName, tm.GetANSIReset()))
+			colorCode, i+1, p.BaekjoonID, tierName, ch.tierManager.GetANSIReset()))
 	}
 
 	sb.WriteString("```")
@@ -341,6 +340,3 @@ func (ch *CommandHandler) isAdmin(s *discordgo.Session, m *discordgo.MessageCrea
 
 
 
-func getTierName(tier int) string {
-	return scoring.GetTierName(tier)
-}

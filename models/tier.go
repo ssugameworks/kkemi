@@ -1,5 +1,7 @@
 package models
 
+import "sync"
+
 // TierInfo 특정 티어에 대한 모든 정보를 포함합니다
 type TierInfo struct {
 	Level     int    // 티어 레벨 (1-31+)
@@ -28,13 +30,26 @@ type TierManager struct {
 	tiers map[int]*TierInfo
 }
 
+var (
+	globalTierManager *TierManager
+	once              sync.Once
+)
+
+// GetTierManager 전역 TierManager 인스턴스를 반환합니다 (싱글톤)
+func GetTierManager() *TierManager {
+	once.Do(func() {
+		globalTierManager = &TierManager{
+			tiers: make(map[int]*TierInfo),
+		}
+		globalTierManager.initializeTiers()
+	})
+	return globalTierManager
+}
+
 // NewTierManager 새로운 TierManager 인스턴스를 생성합니다
+// Deprecated: GetTierManager() 사용을 권장합니다
 func NewTierManager() *TierManager {
-	tm := &TierManager{
-		tiers: make(map[int]*TierInfo),
-	}
-	tm.initializeTiers()
-	return tm
+	return GetTierManager()
 }
 
 // initializeTiers 티어 정보를 초기화합니다

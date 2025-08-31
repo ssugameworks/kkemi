@@ -5,6 +5,7 @@ import (
 	"discord-bot/bot"
 	"discord-bot/config"
 	"discord-bot/interfaces"
+	"discord-bot/models"
 	"discord-bot/scheduler"
 	"discord-bot/scoring"
 	"discord-bot/storage"
@@ -23,6 +24,7 @@ type Application struct {
 	session           *discordgo.Session
 	storage           interfaces.StorageRepository
 	apiClient         interfaces.APIClient
+	tierManager       *models.TierManager
 	commandHandler    *bot.CommandHandler
 	scoreboardManager *bot.ScoreboardManager
 	scheduler         *scheduler.Scheduler
@@ -79,10 +81,13 @@ func (app *Application) initializeDiscord() error {
 }
 
 func (app *Application) setupHandlers() {
+	// 글로벌 TierManager 한 번만 생성
+	app.tierManager = models.GetTierManager()
+	
 	// 의존성 주입을 통한 컴포넌트 생성
-	calculator := scoring.NewScoreCalculator(app.apiClient)
-	app.scoreboardManager = bot.NewScoreboardManager(app.storage, calculator, app.apiClient)
-	app.commandHandler = bot.NewCommandHandler(app.storage, app.apiClient, app.scoreboardManager)
+	calculator := scoring.NewScoreCalculator(app.apiClient, app.tierManager)
+	app.scoreboardManager = bot.NewScoreboardManager(app.storage, calculator, app.apiClient, app.tierManager)
+	app.commandHandler = bot.NewCommandHandler(app.storage, app.apiClient, app.scoreboardManager, app.tierManager)
 
 	app.session.AddHandler(app.commandHandler.HandleMessage)
 	app.session.AddHandler(app.handleReady)
