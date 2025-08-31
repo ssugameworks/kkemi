@@ -2,7 +2,6 @@ package utils
 
 import (
 	"discord-bot/constants"
-	"discord-bot/models"
 	"fmt"
 	"regexp"
 	"strings"
@@ -147,8 +146,3 @@ func SafeIntAdd(a, b int) int {
 	return a + b
 }
 
-// GetTierColor returns tier color using the global tier manager (deprecated - use TierManager directly)
-func GetTierColor(tier int) int {
-	tm := models.NewTierManager()
-	return tm.GetTierColor(tier)
-}
