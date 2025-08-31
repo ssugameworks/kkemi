@@ -14,9 +14,6 @@ const (
 	MaxDiscordRetries = 3                // 최대 재시도 횟수
 	BaseRetryDelay    = 1 * time.Second  // 기본 재시도 지연 시간
 
-	// 성능 및 메모리 관리
-	DefaultSliceCapacity = 100           // 기본 슬라이스 용량
-	MaxFunctionLines     = 80            // 함수 최대 권장 라인 수
 )
 
 // 검증 규칙 상수
