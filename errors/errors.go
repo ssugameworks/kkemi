@@ -160,8 +160,8 @@ func SendDiscordWarning(s *discordgo.Session, channelID, message string) error {
 
 // SendDiscordMessageWithRetry Discord 메시지 전송을 재시도 로직과 함께 수행합니다
 func SendDiscordMessageWithRetry(s *discordgo.Session, channelID, message string) error {
-	const maxRetries = 3
-	const baseDelay = 1 * time.Second
+	const maxRetries = constants.MaxDiscordRetries
+	const baseDelay = constants.BaseRetryDelay
 	
 	var lastErr error
 	for attempt := 0; attempt < maxRetries; attempt++ {

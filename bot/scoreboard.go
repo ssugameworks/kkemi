@@ -93,7 +93,8 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 		return []models.ScoreData{}, nil
 	}
 
-	// 병렬 처리를 위한 채널과 대기 그룹
+	// 메모리 사용량 최적화: 사전 할당된 슬라이스 사용
+	scores := make([]models.ScoreData, 0, len(participants))
 	scoreChan := make(chan models.ScoreData, len(participants))
 	semaphore := make(chan struct{}, constants.MaxConcurrentRequests)
 	var wg sync.WaitGroup
@@ -123,8 +124,7 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 	wg.Wait()
 	close(scoreChan)
 
-	// 결과 수집
-	var scores []models.ScoreData
+	// 결과 수집 - 메모리 효율적으로 수집
 	for score := range scoreChan {
 		scores = append(scores, score)
 	}

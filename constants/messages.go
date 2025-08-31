@@ -22,21 +22,20 @@ const (
 	MsgParticipantsEmpty = "참가자가 없습니다."
 
 	// 삭제 관련
-	MsgRemoveSuccess           = "✅ **참가자 삭제 완료**\n🎯 백준ID: %s"
+	MsgRemoveSuccess           = "**참가자 삭제 완료**\n🎯 백준ID: %s"
 	MsgRemoveUsage             = "사용법: `!삭제 <백준ID>`"
 	MsgRemoveInvalidBaekjoonID = "유효하지 않은 백준 ID 형식입니다."
 
 	// 권한 관련
 	MsgInsufficientPermissions = "❌ 관리자 권한이 필요합니다."
 
-
 	// 기본 응답
 	MsgPong = "Pong! 🏓"
 
 	// 대회 관리 관련
 	MsgCompetitionCreateUsage   = "사용법: `!대회 create <대회명> <시작일> <종료일>` (날짜 형식: YYYY-MM-DD)"
-	MsgCompetitionCreateSuccess = "✅ **대회 생성 완료**\n🏆 대회명: %s\n📅 기간: %s ~ %s\n🔒 블랙아웃: %s부터"
-	MsgCompetitionUpdateSuccess = "✅ **대회 정보 수정 완료**\n🎯 수정 항목: %s"
+	MsgCompetitionCreateSuccess = "**대회 생성 완료**\n🏆 대회명: %s\n📅 기간: %s ~ %s\n🔒 블랙아웃: %s부터"
+	MsgCompetitionUpdateSuccess = "**대회 정보 수정 완료**\n🎯 수정 항목: %s"
 	MsgCompetitionStatus        = "🏆 **대회 정보**\n📝 대회명: %s\n📅 시작일: %s\n📅 종료일: %s\n🔒 블랙아웃: %s\n📊 스코어보드: %s\n👥 참가자: %d명"
 
 	// 상태 표시

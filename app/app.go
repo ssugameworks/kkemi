@@ -60,8 +60,8 @@ func (app *Application) loadConfig() error {
 }
 
 func (app *Application) initializeDependencies() error {
-	// 단일 API 클라이언트 인스턴스 생성
-	app.apiClient = api.NewSolvedACClient()
+	// 캐시된 API 클라이언트 인스턴스 생성
+	app.apiClient = api.NewCachedSolvedACClient()
 
 	// API 클라이언트를 주입하여 Storage 생성
 	storage, err := storage.NewStorage(app.apiClient)
@@ -95,6 +95,9 @@ func (app *Application) setupHandlers() {
 
 	app.session.AddHandler(app.commandHandler.HandleMessage)
 	app.session.AddHandler(app.handleReady)
+	
+	// 캐시 워밍업 - 기존 참가자 데이터로 캐시 미리 로드
+	app.warmupCache()
 }
 
 func (app *Application) initializeScheduler() {
@@ -147,8 +150,37 @@ func (app *Application) handleReady(s *discordgo.Session, event *discordgo.Ready
 	// TODO: Welcome message
 }
 
+// warmupCache 기존 참가자 데이터로 캐시를 미리 워밍업합니다
+func (app *Application) warmupCache() {
+	participants := app.storage.GetParticipants()
+	if len(participants) == 0 {
+		utils.Info("No participants found, skipping cache warmup")
+		return
+	}
+
+	handles := make([]string, len(participants))
+	for i, participant := range participants {
+		handles[i] = participant.BaekjoonID
+	}
+
+	if cachedClient, ok := app.apiClient.(*api.CachedSolvedACClient); ok {
+		cachedClient.WarmupCache(handles)
+	}
+}
+
+// printCacheStats 캐시 통계를 출력합니다
+func (app *Application) printCacheStats() {
+	if cachedClient, ok := app.apiClient.(*api.CachedSolvedACClient); ok {
+		stats := cachedClient.GetCacheStats()
+		utils.Info("📊 %s", stats.String())
+	}
+}
+
 func (app *Application) Stop() error {
 	fmt.Println("🔄 봇을 종료하는 중...")
+
+	// 종료 전 캐시 통계 출력
+	app.printCacheStats()
 
 	if app.scheduler != nil {
 		app.scheduler.Stop()

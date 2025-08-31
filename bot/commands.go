@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"discord-bot/api"
 	"discord-bot/constants"
 	"discord-bot/errors"
 	"discord-bot/interfaces"
@@ -94,6 +95,8 @@ func (ch *CommandHandler) routeCommand(s *discordgo.Session, m *discordgo.Messag
 		ch.handleParticipants(s, m)
 	case "remove", "삭제":
 		ch.handleRemoveParticipant(s, m, params)
+	case "cache", "캐시":
+		ch.handleCacheStats(s, m)
 	case "ping":
 		ch.handlePing(s, m)
 	}
@@ -127,21 +130,49 @@ func (ch *CommandHandler) handleHelp(s *discordgo.Session, m *discordgo.MessageC
 func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.MessageCreate, params []string) {
 	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
 
+	// 1. 기본 매개변수 검증
+	name, baekjoonID, ok := ch.validateRegisterParams(params, errorHandlers)
+	if !ok {
+		return
+	}
+
+	// 2. 대회 상태 확인
+	if !ch.validateCompetitionStatus(errorHandlers) {
+		return
+	}
+
+	// 3. solved.ac 사용자 정보 조회 및 검증
+	userInfo, ok := ch.validateSolvedACUser(name, baekjoonID, errorHandlers)
+	if !ok {
+		return
+	}
+
+	// 4. 참가자 등록
+	if !ch.registerParticipant(name, baekjoonID, userInfo, errorHandlers) {
+		return
+	}
+
+	// 5. 성공 메시지 전송
+	ch.sendRegistrationSuccess(s, m.ChannelID, name, userInfo)
+}
+
+// validateRegisterParams 등록 매개변수를 검증합니다
+func (ch *CommandHandler) validateRegisterParams(params []string, errorHandlers *utils.ErrorHandlerFactory) (name, baekjoonID string, ok bool) {
 	if len(params) < 2 {
 		errorHandlers.Validation().HandleInvalidParams("REGISTER_INVALID_PARAMS",
 			"Invalid register parameters",
 			constants.MsgRegisterUsage)
-		return
+		return "", "", false
 	}
+	return params[0], params[1], true
+}
 
-	name := params[0]
-	baekjoonID := params[1]
-
-	// 대회가 존재하고 시작되었는지 확인
+// validateCompetitionStatus 대회 상태를 확인합니다
+func (ch *CommandHandler) validateCompetitionStatus(errorHandlers *utils.ErrorHandlerFactory) bool {
 	competition := ch.storage.GetCompetition()
 	if competition == nil {
 		errorHandlers.Data().HandleNoActiveCompetition()
-		return
+		return false
 	}
 
 	now := time.Now()
@@ -150,57 +181,99 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 			"Registration not available before competition starts",
 			fmt.Sprintf(constants.MsgRegisterNotStarted, 
 				utils.FormatDateTime(competition.StartDate)))
-		return
+		return false
 	}
+	return true
+}
 
+// validateSolvedACUser solved.ac 사용자 정보를 조회하고 이름을 검증합니다
+func (ch *CommandHandler) validateSolvedACUser(name, baekjoonID string, errorHandlers *utils.ErrorHandlerFactory) (userInfo interface{}, ok bool) {
 	// solved.ac 사용자 정보 조회
-	userInfo, err := ch.client.GetUserInfo(baekjoonID)
+	info, err := ch.client.GetUserInfo(baekjoonID)
 	if err != nil {
 		errorHandlers.API().HandleBaekjoonUserNotFound(baekjoonID, err)
-		return
+		return nil, false
 	}
 
 	// solved.ac 추가 정보 조회 (본명 확인용)
 	additionalInfo, err := ch.client.GetUserAdditionalInfo(baekjoonID)
 	if err != nil {
 		errorHandlers.API().HandleBaekjoonUserNotFound(baekjoonID, err)
-		return
+		return nil, false
 	}
 
-	// solved.ac에 등록된 이름과 비교
-	var solvedacName string
-	if additionalInfo.NameNative != nil && *additionalInfo.NameNative != "" {
-		solvedacName = *additionalInfo.NameNative
-	} else if additionalInfo.Name != nil && *additionalInfo.Name != "" {
-		solvedacName = *additionalInfo.Name
-	} else {
-		errorHandlers.Validation().HandleInvalidParams("NO_SOLVEDAC_NAME",
-			"No name registered in solved.ac",
-			constants.MsgRegisterNoSolvedacName)
-		return
+	// solved.ac에 등록된 이름 추출 및 검증
+	solvedacName := ch.extractSolvedACName(additionalInfo, errorHandlers)
+	if solvedacName == "" {
+		return nil, false
 	}
 
-	// 입력한 이름과 solved.ac 이름이 일치하는지 확인
+	// 입력한 이름과 solved.ac 이름 일치 확인
 	if name != solvedacName {
 		errorHandlers.Validation().HandleInvalidParams("NAME_MISMATCH",
 			"Name does not match solved.ac profile",
 			fmt.Sprintf(constants.MsgRegisterNameMismatch, name, solvedacName))
-		return
+		return nil, false
 	}
 
-	err = ch.storage.AddParticipant(name, baekjoonID, userInfo.Tier, userInfo.Rating)
+	return info, true
+}
+
+// extractSolvedACName solved.ac 추가 정보에서 이름을 추출합니다
+func (ch *CommandHandler) extractSolvedACName(additionalInfo interface{}, errorHandlers *utils.ErrorHandlerFactory) string {
+	// Type assertion to get the actual type
+	info, ok := additionalInfo.(*api.UserAdditionalInfo)
+	if !ok {
+		errorHandlers.System().HandleSystemError("TYPE_ASSERTION_FAILED", "Failed to process user additional info", "내부 처리 오류가 발생했습니다.", nil)
+		return ""
+	}
+
+	if info.NameNative != nil && *info.NameNative != "" {
+		return *info.NameNative
+	} else if info.Name != nil && *info.Name != "" {
+		return *info.Name
+	} else {
+		errorHandlers.Validation().HandleInvalidParams("NO_SOLVEDAC_NAME",
+			"No name registered in solved.ac",
+			constants.MsgRegisterNoSolvedacName)
+		return ""
+	}
+}
+
+// registerParticipant 참가자를 등록합니다
+func (ch *CommandHandler) registerParticipant(name, baekjoonID string, userInfo interface{}, errorHandlers *utils.ErrorHandlerFactory) bool {
+	// Type assertion to get the actual type
+	info, ok := userInfo.(*api.UserInfo)
+	if !ok {
+		errorHandlers.System().HandleSystemError("TYPE_ASSERTION_FAILED", "Failed to process user info", "내부 처리 오류가 발생했습니다.", nil)
+		return false
+	}
+
+	err := ch.storage.AddParticipant(name, baekjoonID, info.Tier, info.Rating)
 	if err != nil {
 		errorHandlers.Data().HandleParticipantAlreadyExists(baekjoonID)
+		return false
+	}
+	return true
+}
+
+// sendRegistrationSuccess 등록 성공 메시지를 전송합니다
+func (ch *CommandHandler) sendRegistrationSuccess(s *discordgo.Session, channelID, name string, userInfo interface{}) {
+	// Type assertion to get the actual type
+	info, ok := userInfo.(*api.UserInfo)
+	if !ok {
+		utils.Error("Failed to send registration success: type assertion failed")
 		return
 	}
 
-	tierName := ch.tierManager.GetTierName(userInfo.Tier)
-	colorCode := ch.tierManager.GetTierANSIColor(userInfo.Tier)
+	tierName := ch.tierManager.GetTierName(info.Tier)
+	colorCode := ch.tierManager.GetTierANSIColor(info.Tier)
 
 	response := fmt.Sprintf("```ansi\n"+constants.MsgRegisterSuccess+"\n```",
 		colorCode, name, tierName, ch.tierManager.GetANSIReset())
 
-	if err := errors.SendDiscordSuccess(s, m.ChannelID, response); err != nil {
+	if _, err := s.ChannelMessageSend(channelID, response); err != nil {
+		fmt.Printf("DISCORD API ERROR: Failed to send registration response: %v\n", err)
 		utils.Error("Failed to send registration response: %v", err)
 	}
 }
@@ -339,6 +412,41 @@ func (ch *CommandHandler) isAdmin(s *discordgo.Session, m *discordgo.MessageCrea
 	}
 
 	return false
+}
+
+// handleCacheStats 캐시 통계를 조회합니다
+func (ch *CommandHandler) handleCacheStats(s *discordgo.Session, m *discordgo.MessageCreate) {
+	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
+
+	// 관리자 권한 확인
+	if !ch.isAdmin(s, m) {
+		errorHandlers.Validation().HandleInsufficientPermissions()
+		return
+	}
+
+	if cachedClient, ok := ch.client.(*api.CachedSolvedACClient); ok {
+		stats := cachedClient.GetCacheStats()
+		
+		message := fmt.Sprintf("```\n📊 API Cache Statistics\n\n" +
+			"Total API Calls: %d\n" +
+			"Cache Hits: %d\n" +
+			"Cache Misses: %d\n" +
+			"Hit Rate: %.2f%%\n\n" +
+			"Cached Items:\n" +
+			"  - User Info: %d\n" +
+			"  - User Top100: %d\n" +
+			"  - User Additional: %d\n```",
+			stats.TotalCalls, stats.CacheHits, stats.CacheMisses, stats.HitRate,
+			stats.UserInfoCached, stats.UserTop100Cached, stats.UserAdditionalCached)
+		
+		if err := errors.SendDiscordInfo(s, m.ChannelID, message); err != nil {
+			utils.Error("Failed to send cache stats response: %v", err)
+		}
+	} else {
+		if err := errors.SendDiscordWarning(s, m.ChannelID, "캐시가 비활성화되어 있습니다."); err != nil {
+			utils.Error("Failed to send cache disabled warning: %v", err)
+		}
+	}
 }
 
 
