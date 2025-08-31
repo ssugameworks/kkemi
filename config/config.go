@@ -61,12 +61,45 @@ func Load() *Config {
 
 // Validate 설정의 유효성을 검사합니다
 func (c *Config) Validate() error {
+	// Discord 설정 검증
 	if c.Discord.Token == "" {
 		return &ConfigError{
 			Field:   "Discord.Token",
 			Message: "Discord bot token is required",
 		}
 	}
+
+	// 로그 레벨 검증
+	validLogLevels := map[string]bool{
+		constants.LogLevelDebug: true,
+		constants.LogLevelInfo:  true,
+		constants.LogLevelWarn:  true,
+		constants.LogLevelError: true,
+	}
+	if !validLogLevels[strings.ToUpper(c.Logging.Level)] {
+		return &ConfigError{
+			Field:   "Logging.Level",
+			Message: "LOG_LEVEL must be one of: DEBUG, INFO, WARN, ERROR (got: " + c.Logging.Level + ")",
+		}
+	}
+
+	// 스케줄 설정 검증 (활성화된 경우에만)
+	if c.Schedule.Enabled {
+		if c.Schedule.ScoreboardHour < 0 || c.Schedule.ScoreboardHour > 23 {
+			return &ConfigError{
+				Field:   "Schedule.ScoreboardHour",
+				Message: "SCOREBOARD_HOUR must be between 0 and 23 (got: " + strconv.Itoa(c.Schedule.ScoreboardHour) + ")",
+			}
+		}
+
+		if c.Schedule.ScoreboardMinute < 0 || c.Schedule.ScoreboardMinute > 59 {
+			return &ConfigError{
+				Field:   "Schedule.ScoreboardMinute",
+				Message: "SCOREBOARD_MINUTE must be between 0 and 59 (got: " + strconv.Itoa(c.Schedule.ScoreboardMinute) + ")",
+			}
+		}
+	}
+
 	return nil
 }
 
