@@ -122,8 +122,7 @@ func (ch *CommandHandler) handlePing(s *discordgo.Session, m *discordgo.MessageC
 
 func (ch *CommandHandler) handleHelp(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if _, err := s.ChannelMessageSend(m.ChannelID, constants.HelpMessage); err != nil {
-		fmt.Printf("DISCORD API ERROR: Failed to send help message: %v\n", err)
-		utils.Error("Failed to send help message: %v", err)
+		utils.Error("DISCORD API ERROR: Failed to send help message: %v", err)
 	}
 }
 
@@ -273,8 +272,7 @@ func (ch *CommandHandler) sendRegistrationSuccess(s *discordgo.Session, channelI
 		colorCode, name, tierName, ch.tierManager.GetANSIReset())
 
 	if _, err := s.ChannelMessageSend(channelID, response); err != nil {
-		fmt.Printf("DISCORD API ERROR: Failed to send registration response: %v\n", err)
-		utils.Error("Failed to send registration response: %v", err)
+		utils.Error("DISCORD API ERROR: Failed to send registration response: %v", err)
 	}
 }
 
@@ -295,8 +293,7 @@ func (ch *CommandHandler) handleScoreboard(s *discordgo.Session, m *discordgo.Me
 	}
 
 	if _, err := s.ChannelMessageSendEmbed(m.ChannelID, embed); err != nil {
-		fmt.Printf("DISCORD API ERROR: Failed to send scoreboard embed: %v\n", err)
-		utils.Error("Failed to send scoreboard embed message: %v", err)
+		utils.Error("DISCORD API ERROR: Failed to send scoreboard embed: %v", err)
 	}
 }
 
@@ -327,8 +324,7 @@ func (ch *CommandHandler) handleParticipants(s *discordgo.Session, m *discordgo.
 
 	sb.WriteString("```")
 	if _, err := s.ChannelMessageSend(m.ChannelID, sb.String()); err != nil {
-		fmt.Printf("DISCORD API ERROR: Failed to send participants list: %v\n", err)
-		utils.Error("Failed to send participants list message: %v", err)
+		utils.Error("DISCORD API ERROR: Failed to send participants list: %v", err)
 	}
 }
 

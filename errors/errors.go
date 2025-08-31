@@ -132,13 +132,13 @@ func HandleDiscordError(s *discordgo.Session, channelID string, err error) {
 		}
 
 		if discordErr := SendDiscordMessageWithRetry(s, channelID, constants.EmojiError+" "+appErr.GetUserMessage()); discordErr != nil {
-			fmt.Printf("DISCORD API ERROR: Failed to send error message after retries: %v\n", discordErr)
+			utils.Error("DISCORD API ERROR: Failed to send error message after retries: %v", discordErr)
 		}
 	} else {
 		// 예상치 못한 오류 로깅
 		fmt.Printf("UNEXPECTED ERROR: %v\n", err)
 		if discordErr := SendDiscordMessageWithRetry(s, channelID, constants.EmojiError+" 예상치 못한 오류가 발생했습니다."); discordErr != nil {
-			fmt.Printf("DISCORD API ERROR: Failed to send error message after retries: %v\n", discordErr)
+			utils.Error("DISCORD API ERROR: Failed to send error message after retries: %v", discordErr)
 		}
 	}
 }
@@ -182,6 +182,6 @@ func SendDiscordMessageWithRetry(s *discordgo.Session, channelID, message string
 		}
 	}
 	
-	fmt.Printf("DISCORD API ERROR: All retry attempts failed: %v\n", lastErr)
+	utils.Error("DISCORD API ERROR: All retry attempts failed: %v", lastErr)
 	return lastErr
 }

@@ -229,7 +229,7 @@ func (sm *ScoreboardManager) SendDailyScoreboard(session *discordgo.Session, cha
 
 	_, err = session.ChannelMessageSendEmbed(channelID, embed)
 	if err != nil {
-		fmt.Printf("DISCORD API ERROR: Failed to send daily scoreboard: %v\n", err)
+		utils.Error("DISCORD API ERROR: Failed to send daily scoreboard: %v", err)
 	}
 	return err
 }
