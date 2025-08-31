@@ -10,21 +10,69 @@ import (
 
 // 문자열 유효성 검사
 func IsValidUsername(username string) bool {
-	if len(username) == 0 || len(username) > 50 {
+	// 길이 검증 (최소 2자 이상)
+	if len(username) < 2 || len(username) > 50 {
 		return false
 	}
-	// 특수문자 제한 (기본적인 문자, 숫자, 한글, 공백만 허용)
-	matched, _ := regexp.MatchString(`^[a-zA-Z0-9가-힣\s]+$`, username)
-	return matched
+	
+	// 유니코드 표시 폭 검증 (한글이 2칸 차지하므로 실제 표시 폭 고려)
+	displayWidth := GetDisplayWidth(username)
+	if displayWidth > 40 { // 한글 20자 또는 영문 40자 정도
+		return false
+	}
+	
+	// 특수문자 제한 및 SQL injection, XSS 방지
+	matched, _ := regexp.MatchString(`^[a-zA-Z0-9가-힣ㄱ-ㅎ\s\-_.]+$`, username)
+	if !matched {
+		return false
+	}
+	
+	// 연속된 공백이나 특수문자 방지
+	if strings.Contains(username, "  ") || // 연속 공백
+		strings.Contains(username, "--") || // 연속 하이픈
+		strings.Contains(username, "__") { // 연속 언더스코어
+		return false
+	}
+	
+	// 시작/끝이 공백이나 특수문자인 경우 방지
+	trimmed := strings.TrimSpace(username)
+	if len(trimmed) != len(username) || 
+		strings.HasPrefix(username, "-") || strings.HasSuffix(username, "-") ||
+		strings.HasPrefix(username, "_") || strings.HasSuffix(username, "_") {
+		return false
+	}
+	
+	return true
 }
 
 func IsValidBaekjoonID(id string) bool {
-	if len(id) == 0 || len(id) > 20 {
+	// 길이 검증
+	if len(id) == 0 || len(id) > 20 || len(id) < 3 {
 		return false
 	}
+	
 	// 백준 ID는 영문, 숫자, 언더스코어만 허용
 	matched, _ := regexp.MatchString(`^[a-zA-Z0-9_]+$`, id)
-	return matched
+	if !matched {
+		return false
+	}
+	
+	// 영문으로 시작해야 함
+	if !regexp.MustCompile(`^[a-zA-Z]`).MatchString(id) {
+		return false
+	}
+	
+	// 연속된 언더스코어 방지
+	if strings.Contains(id, "__") {
+		return false
+	}
+	
+	// 끝이 언더스코어인 경우 방지
+	if strings.HasSuffix(id, "_") {
+		return false
+	}
+	
+	return true
 }
 
 // 날짜 유효성 검사
@@ -119,9 +167,44 @@ func PadStringByWidth(s string, targetWidth int) string {
 
 func SanitizeString(s string) string {
 	// Discord 메시지에서 문제가 될 수 있는 특수문자 제거/변경
-	s = strings.ReplaceAll(s, "`", "'")
-	s = strings.ReplaceAll(s, "@", "(at)")
-	return strings.TrimSpace(s)
+	s = strings.ReplaceAll(s, "`", "'")           // 코드 블록 방지
+	s = strings.ReplaceAll(s, "<@", "(at)")       // 사용자 멘션 방지 (@ 보다 먼저)
+	s = strings.ReplaceAll(s, "<#", "(channel)")  // 채널 멘션 방지
+	s = strings.ReplaceAll(s, "<:", "(emoji)")    // 커스텀 이모지 방지
+	s = strings.ReplaceAll(s, "@", "(at)")        // 일반 @ 멘션 방지
+	s = strings.ReplaceAll(s, "||", "")           // 스포일러 태그 방지
+	s = strings.ReplaceAll(s, "**", "")           // 볼드 마크다운 방지
+	s = strings.ReplaceAll(s, "__", "")           // 언더라인 마크다운 방지
+	s = strings.ReplaceAll(s, "~~", "")           // 취소선 마크다운 방지
+	s = strings.ReplaceAll(s, "*", "")            // 이탤릭 마크다운 방지
+	
+	// 제어 문자 제거
+	var cleaned strings.Builder
+	for _, r := range s {
+		if r >= 32 || r == '\n' || r == '\t' { // 출력 가능한 문자만 유지
+			cleaned.WriteRune(r)
+		}
+	}
+	
+	return strings.TrimSpace(cleaned.String())
+}
+
+// SanitizeDiscordMessage Discord 메시지 전용 sanitization
+func SanitizeDiscordMessage(s string) string {
+	// 기본 sanitization 적용
+	s = SanitizeString(s)
+	
+	// 긴 메시지 자르기 (Discord 메시지 제한: 2000자)
+	if len(s) > 1900 { // 여유분 두고 1900자로 제한
+		s = s[:1897] + "..."
+	}
+	
+	// 연속된 줄바꿈 제한 (스팸 방지)
+	for strings.Contains(s, "\n\n\n") {
+		s = strings.ReplaceAll(s, "\n\n\n", "\n\n")
+	}
+	
+	return s
 }
 
 // 슬라이스 유틸리티

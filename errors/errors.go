@@ -3,6 +3,7 @@ package errors
 import (
 	"discord-bot/constants"
 	"fmt"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -130,25 +131,57 @@ func HandleDiscordError(s *discordgo.Session, channelID string, err error) {
 			fmt.Printf("ERROR: %s - %s\n", appErr.Code, appErr.Message)
 		}
 
-		s.ChannelMessageSend(channelID, constants.EmojiError+" "+appErr.GetUserMessage())
+		if discordErr := SendDiscordMessageWithRetry(s, channelID, constants.EmojiError+" "+appErr.GetUserMessage()); discordErr != nil {
+			fmt.Printf("DISCORD API ERROR: Failed to send error message after retries: %v\n", discordErr)
+		}
 	} else {
 		// 예상치 못한 오류 로깅
 		fmt.Printf("UNEXPECTED ERROR: %v\n", err)
-		s.ChannelMessageSend(channelID, constants.EmojiError+" 예상치 못한 오류가 발생했습니다.")
+		if discordErr := SendDiscordMessageWithRetry(s, channelID, constants.EmojiError+" 예상치 못한 오류가 발생했습니다."); discordErr != nil {
+			fmt.Printf("DISCORD API ERROR: Failed to send error message after retries: %v\n", discordErr)
+		}
 	}
 }
 
 // SendDiscordSuccess 성공 메시지를 Discord 채널에 전송합니다
-func SendDiscordSuccess(s *discordgo.Session, channelID, message string) {
-	s.ChannelMessageSend(channelID, constants.EmojiSuccess+" "+message)
+func SendDiscordSuccess(s *discordgo.Session, channelID, message string) error {
+	return SendDiscordMessageWithRetry(s, channelID, constants.EmojiSuccess+" "+message)
 }
 
 // SendDiscordInfo 정보 메시지를 Discord 채널에 전송합니다
-func SendDiscordInfo(s *discordgo.Session, channelID, message string) {
-	s.ChannelMessageSend(channelID, constants.EmojiInfo+" "+message)
+func SendDiscordInfo(s *discordgo.Session, channelID, message string) error {
+	return SendDiscordMessageWithRetry(s, channelID, constants.EmojiInfo+" "+message)
 }
 
 // SendDiscordWarning 경고 메시지를 Discord 채널에 전송합니다
-func SendDiscordWarning(s *discordgo.Session, channelID, message string) {
-	s.ChannelMessageSend(channelID, constants.EmojiWarning+" "+message)
+func SendDiscordWarning(s *discordgo.Session, channelID, message string) error {
+	return SendDiscordMessageWithRetry(s, channelID, constants.EmojiWarning+" "+message)
+}
+
+// SendDiscordMessageWithRetry Discord 메시지 전송을 재시도 로직과 함께 수행합니다
+func SendDiscordMessageWithRetry(s *discordgo.Session, channelID, message string) error {
+	const maxRetries = 3
+	const baseDelay = 1 * time.Second
+	
+	var lastErr error
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		_, err := s.ChannelMessageSend(channelID, message)
+		if err == nil {
+			if attempt > 0 {
+				fmt.Printf("Discord message sent successfully after %d retries\n", attempt)
+			}
+			return nil
+		}
+		
+		lastErr = err
+		if attempt < maxRetries-1 {
+			delay := time.Duration(1<<attempt) * baseDelay // Exponential backoff: 1s, 2s, 4s
+			fmt.Printf("Discord API call failed (attempt %d/%d): %v. Retrying in %v...\n", 
+				attempt+1, maxRetries, err, delay)
+			time.Sleep(delay)
+		}
+	}
+	
+	fmt.Printf("DISCORD API ERROR: All retry attempts failed: %v\n", lastErr)
+	return lastErr
 }

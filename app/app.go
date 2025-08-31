@@ -64,7 +64,11 @@ func (app *Application) initializeDependencies() error {
 	app.apiClient = api.NewSolvedACClient()
 
 	// API 클라이언트를 주입하여 Storage 생성
-	app.storage = storage.NewStorage(app.apiClient)
+	storage, err := storage.NewStorage(app.apiClient)
+	if err != nil {
+		return fmt.Errorf("failed to initialize storage: %w", err)
+	}
+	app.storage = storage
 
 	return nil
 }
