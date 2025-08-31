@@ -76,12 +76,12 @@ const (
 
 // 문자열 크기 제한
 const (
-	MaxUsernameLength     = 15
-	TruncateIndicator     = "..."
-	ScoreboardRankWidth   = 4
-	ScoreboardNameWidth   = 15
-	ScoreboardScoreWidth  = 6
-	ScoreboardSeparator   = "──────────────────────────────"
+	MaxUsernameLength    = 15
+	TruncateIndicator    = "..."
+	ScoreboardRankWidth  = 4
+	ScoreboardNameWidth  = 15
+	ScoreboardScoreWidth = 6
+	ScoreboardSeparator  = "──────────────────────────────"
 )
 
 // 메시지 템플릿
