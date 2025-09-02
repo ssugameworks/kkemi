@@ -63,15 +63,3 @@ const HelpMessage = `🤖 **알고리즘 경진대회 봇 명령어**
 **기타:**
 • ` + "`!ping`" + ` - 봇 응답 확인
 • ` + "`!도움말`" + ` - 도움말 표시`
-
-// 에러 코드와 메시지 매핑
-var ErrorMessages = map[string]string{
-	"REGISTER_INVALID_PARAMS":           MsgRegisterUsage,
-	"REGISTRATION_NOT_STARTED":          "대회가 아직 시작되지 않았습니다.",
-	"NO_SOLVEDAC_NAME":                  MsgRegisterNoSolvedacName,
-	"NAME_MISMATCH":                     "입력한 이름이 solved.ac 이름과 일치하지 않습니다.",
-	"REMOVE_INVALID_PARAMS":             MsgRemoveUsage,
-	"REMOVE_INVALID_BAEKJOON_ID":        MsgRemoveInvalidBaekjoonID,
-	"COMPETITION_CREATE_INVALID_PARAMS": MsgCompetitionCreateUsage,
-	"INSUFFICIENT_PERMISSIONS":          MsgInsufficientPermissions,
-}
