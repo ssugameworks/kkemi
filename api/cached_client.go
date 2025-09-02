@@ -12,7 +12,7 @@ import (
 type CachedSolvedACClient struct {
 	client *SolvedACClient
 	cache  *cache.APICache
-	
+
 	// 성능 메트릭
 	cacheHits   int64
 	cacheMisses int64
@@ -26,10 +26,9 @@ func NewCachedSolvedACClient() *CachedSolvedACClient {
 		client: NewSolvedACClient(),
 		cache:  cache.NewAPICache(),
 	}
-	
+
 	// 캐시 정리 워커 시작
 	client.cache.StartCleanupWorker(constants.CacheCleanupInterval)
-	
 	return client
 }
 
