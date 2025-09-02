@@ -219,16 +219,6 @@ func GetDisplayWidth(s string) int {
 	return width
 }
 
-// 표시 폭을 고려한 문자열 패딩
-func PadStringByWidth(s string, targetWidth int) string {
-	currentWidth := GetDisplayWidth(s)
-	if currentWidth >= targetWidth {
-		return s
-	}
-	padding := targetWidth - currentWidth
-	return s + strings.Repeat(" ", padding)
-}
-
 func SanitizeString(s string) string {
 	// Discord 메시지에서 문제가 될 수 있는 특수문자 제거/변경
 	s = strings.ReplaceAll(s, "`", "'")           // 코드 블록 방지
@@ -271,25 +261,4 @@ func SanitizeDiscordMessage(s string) string {
 	return s
 }
 
-// 슬라이스 유틸리티
-func Contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
-}
-
-// 안전한 정수 변환
-func SafeIntAdd(a, b int) int {
-	const maxInt = int(^uint(0) >> 1)
-	if a > 0 && b > maxInt-a {
-		return maxInt
-	}
-	if a < 0 && b < -maxInt-a {
-		return -maxInt
-	}
-	return a + b
-}
 
