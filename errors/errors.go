@@ -16,8 +16,6 @@ const (
 	TypeAPI
 	TypeNotFound
 	TypeDuplicate
-	TypePermission
-	TypeCompetition
 	TypeSystem
 )
 
@@ -82,26 +80,6 @@ func NewNotFoundError(code, message, userMsg string) *AppError {
 func NewDuplicateError(code, message, userMsg string) *AppError {
 	return &AppError{
 		Type:    TypeDuplicate,
-		Code:    code,
-		Message: message,
-		UserMsg: userMsg,
-	}
-}
-
-// NewPermissionError 권한 관련 오류를 생성합니다
-func NewPermissionError(code, message, userMsg string) *AppError {
-	return &AppError{
-		Type:    TypePermission,
-		Code:    code,
-		Message: message,
-		UserMsg: userMsg,
-	}
-}
-
-// NewCompetitionError 대회 관련 오류를 생성합니다
-func NewCompetitionError(code, message, userMsg string) *AppError {
-	return &AppError{
-		Type:    TypeCompetition,
 		Code:    code,
 		Message: message,
 		UserMsg: userMsg,
