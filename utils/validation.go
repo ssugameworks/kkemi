@@ -21,6 +21,17 @@ func IsValidUsername(username string) bool {
 		return false
 	}
 	
+	// 빈 문자열이나 공백만 있는 경우 방지
+	trimmed := strings.TrimSpace(username)
+	if len(trimmed) == 0 {
+		return false
+	}
+	
+	// 악의적인 패턴 방지 (보안 강화)
+	if containsMaliciousPattern(username) {
+		return false
+	}
+	
 	// 특수문자 제한 및 SQL injection, XSS 방지
 	matched, _ := regexp.MatchString(`^[a-zA-Z0-9가-힣ㄱ-ㅎ\s\-_.]+$`, username)
 	if !matched {
@@ -35,7 +46,6 @@ func IsValidUsername(username string) bool {
 	}
 	
 	// 시작/끝이 공백이나 특수문자인 경우 방지
-	trimmed := strings.TrimSpace(username)
 	if len(trimmed) != len(username) || 
 		strings.HasPrefix(username, "-") || strings.HasSuffix(username, "-") ||
 		strings.HasPrefix(username, "_") || strings.HasSuffix(username, "_") {
@@ -43,6 +53,60 @@ func IsValidUsername(username string) bool {
 	}
 	
 	return true
+}
+
+// containsMaliciousPattern 악의적인 패턴을 감지합니다
+func containsMaliciousPattern(input string) bool {
+	// SQL Injection 패턴 감지
+	sqlPatterns := []string{
+		"'", "\"", ";", "--", "/*", "*/", "union", "select", "insert", "update", "delete", "drop", "create", "alter",
+		"exec", "execute", "sp_", "xp_", "script", "javascript", "vbscript", "onload", "onerror", "onclick",
+	}
+	
+	lowerInput := strings.ToLower(input)
+	for _, pattern := range sqlPatterns {
+		if strings.Contains(lowerInput, pattern) {
+			return true
+		}
+	}
+	
+	// 과도한 반복 문자 방지 (DoS 공격 방지)
+	if hasExcessiveRepeats(input, 5) {
+		return true
+	}
+	
+	// 제어 문자 방지
+	for _, char := range input {
+		if char < 32 && char != 9 && char != 10 && char != 13 { // 탭, 줄바꿈, 캐리지 리턴 제외
+			return true
+		}
+	}
+	
+	return false
+}
+
+// hasExcessiveRepeats 과도한 문자 반복을 감지합니다
+func hasExcessiveRepeats(input string, maxRepeats int) bool {
+	if len(input) == 0 {
+		return false
+	}
+	
+	count := 1
+	prev := rune(0)
+	
+	for _, char := range input {
+		if char == prev {
+			count++
+			if count > maxRepeats {
+				return true
+			}
+		} else {
+			count = 1
+			prev = char
+		}
+	}
+	
+	return false
 }
 
 func IsValidBaekjoonID(id string) bool {
