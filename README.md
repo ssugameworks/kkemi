@@ -32,7 +32,7 @@
 | Bronze V-I | 1-5점 | Silver V-I | 8-16점 | Gold V-I | 18-25점 |
 | Platinum V-I | 28-37점 | Diamond V-I | 40-50점 | Ruby V-I | 55-75점 |
 
-## 설치 및 실행
+## 🚀 배포 및 실행
 
 ### 1. 환경 설정
 `.env` 파일을 생성하고 다음 내용을 추가하세요:

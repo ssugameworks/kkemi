@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ["go_1_21"]
+
+[phases.build]
+cmds = [
+  "go mod download",
+  "go build -o main ."
+]
+
+[phases.start]
+cmd = "./main"
+
+[variables]
+GO_VERSION = "1.21"
+CGO_ENABLED = "0"
+GOOS = "linux"
+GOARCH = "amd64"
