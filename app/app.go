@@ -91,7 +91,7 @@ func (app *Application) setupHandlers() {
 	// 의존성 주입을 통한 컴포넌트 생성
 	calculator := scoring.NewScoreCalculator(app.apiClient, app.tierManager)
 	app.scoreboardManager = bot.NewScoreboardManager(app.storage, calculator, app.apiClient, app.tierManager)
-	app.commandHandler = bot.NewCommandHandler(app.storage, app.apiClient, app.scoreboardManager, app.tierManager)
+	app.commandHandler = bot.NewCommandHandler(app.storage, app.apiClient, app.scoreboardManager, app.tierManager, calculator)
 
 	app.session.AddHandler(app.commandHandler.HandleMessage)
 	app.session.AddHandler(app.handleReady)

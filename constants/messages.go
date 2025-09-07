@@ -3,11 +3,11 @@ package constants
 // 사용자 인터페이스 메시지
 const (
 	// 등록 관련
-	MsgRegisterSuccess        = "%s%s(%s)%s님 성공적으로 등록되었습니다!"
+	MsgRegisterSuccess        = "%s%s(%s)%s님이 %s 리그에 성공적으로 등록되었습니다!"
 	MsgRegisterUsage          = "사용법: `!등록 <이름> <백준ID>`"
 	MsgRegisterNotStarted     = "대회가 아직 시작되지 않았습니다. 등록은 %s부터 가능합니다."
 	MsgRegisterNoSolvedacName = "solved.ac에 이름이 등록되지 않았습니다. solved.ac 프로필에서 본명 또는 영문 이름을 등록한 후 다시 시도해주세요."
-	MsgRegisterNameMismatch   = "입력한 이름 '%s'이 solved.ac에 등록된 이름 '%s'과 일치하지 않습니다."
+	MsgRegisterNameMismatch   = "입력한 이름 '%s'이 solved.ac에 등록된 이름 '%s'와(과) 일치하지 않습니다."
 
 	// 스코어보드 관련
 	MsgScoreboardTitle           = "🏆 %s 스코어보드"
@@ -16,7 +16,7 @@ const (
 	MsgScoreboardBlackoutDesc    = "마지막 3일간 스코어보드가 비공개됩니다"
 	MsgScoreboardNoParticipants  = "참가자가 없습니다."
 	MsgScoreboardNoScores        = "아직 점수가 계산된 참가자가 없습니다."
-	MsgScoreboardBlackoutWarning = "⚠️ %d일 후 스코어보드가 비공개됩니다"
+	MsgScoreboardBlackoutWarning = "⚠️ %d일 후 스코어보드가 비공개됩니다."
 
 	// 참가자 관련
 	MsgParticipantsEmpty = "참가자가 없습니다."
@@ -46,10 +46,10 @@ const (
 )
 
 // 도움말 메시지
-const HelpMessage = `🤖 **알고리즘 경진대회 봇 명령어**
+const HelpMessage = `🤖 **깨미 명령어**
 
 **참가자 명령어:**
-• ` + "`!등록 <이름> <백준ID>`" + ` - 대회 등록 신청 (대회 시작 후, solved.ac 등록 이름과 일치해야 함)
+• ` + "`!등록 <이름> <백준ID>`" + ` - 대회 등록 신청
 
 **관리자 명령어:**
 • ` + "`!스코어보드`" + ` - 현재 스코어보드 확인

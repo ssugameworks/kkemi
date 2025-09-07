@@ -20,14 +20,16 @@ type CommandHandler struct {
 	client             interfaces.APIClient
 	competitionHandler *CompetitionHandler
 	tierManager        *models.TierManager
+	scoreCalculator    interfaces.ScoreCalculator
 }
 
-func NewCommandHandler(storage interfaces.StorageRepository, apiClient interfaces.APIClient, scoreboardManager *ScoreboardManager, tierManager *models.TierManager) *CommandHandler {
+func NewCommandHandler(storage interfaces.StorageRepository, apiClient interfaces.APIClient, scoreboardManager *ScoreboardManager, tierManager *models.TierManager, scoreCalculator interfaces.ScoreCalculator) *CommandHandler {
 	ch := &CommandHandler{
 		storage:           storage,
 		scoreboardManager: scoreboardManager,
 		client:            apiClient,
 		tierManager:       tierManager,
+		scoreCalculator:   scoreCalculator,
 	}
 	ch.competitionHandler = NewCompetitionHandler(ch)
 	return ch
@@ -105,7 +107,7 @@ func (ch *CommandHandler) routeCommand(s *discordgo.Session, m *discordgo.Messag
 // handleScoreboardCommand 스코어보드 명령어를 처리합니다 (DM 체크 포함)
 func (ch *CommandHandler) handleScoreboardCommand(s *discordgo.Session, m *discordgo.MessageCreate, isDM bool) {
 	if isDM {
-		if err := errors.SendDiscordInfo(s, m.ChannelID, constants.MsgScoreboardDMOnly); err != nil {
+		if _, err := s.ChannelMessageSend(m.ChannelID, constants.MsgScoreboardDMOnly); err != nil {
 			utils.Error("Failed to send DM response: %v", err)
 		}
 		return
@@ -267,9 +269,13 @@ func (ch *CommandHandler) sendRegistrationSuccess(s *discordgo.Session, channelI
 
 	tierName := ch.tierManager.GetTierName(info.Tier)
 	colorCode := ch.tierManager.GetTierANSIColor(info.Tier)
+	
+	// 사용자 리그 결정 및 이름 가져오기
+	userLeague := ch.scoreCalculator.GetUserLeague(info.Tier)
+	leagueName := ch.scoreCalculator.GetLeagueName(userLeague)
 
 	response := fmt.Sprintf("```ansi\n"+constants.MsgRegisterSuccess+"\n```",
-		colorCode, name, tierName, ch.tierManager.GetANSIReset())
+		colorCode, name, tierName, ch.tierManager.GetANSIReset(), leagueName)
 
 	if _, err := s.ChannelMessageSend(channelID, response); err != nil {
 		utils.Error("DISCORD API ERROR: Failed to send registration response: %v", err)
