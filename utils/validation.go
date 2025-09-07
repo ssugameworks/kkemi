@@ -149,20 +149,16 @@ func ParseDateWithValidation(dateStr, fieldName string) (time.Time, error) {
 	if dateStr == "" {
 		return time.Time{}, fmt.Errorf("%s 날짜가 비어있습니다", fieldName)
 	}
-
-	// KST 시간대 로드
-	kst, err := time.LoadLocation("Asia/Seoul")
-	if err != nil {
-		return time.Time{}, fmt.Errorf("KST 시간대를 불러올 수 없습니다: %v", err)
-	}
-
-	// KST 시간대를 기준으로 날짜 파싱
-	parsedDate, err := time.ParseInLocation(constants.DateFormat, dateStr, kst)
+	
+	parsedDate, err := time.Parse(constants.DateFormat, dateStr)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("%s 날짜 형식이 올바르지 않습니다: %s (YYYY-MM-DD 형식으로 입력하세요)", fieldName, dateStr)
 	}
-
-	return parsedDate, nil
+	
+	// 로컬 시간대로 변환 (00:00:00 로컬 시간으로 설정)
+	localDate := time.Date(parsedDate.Year(), parsedDate.Month(), parsedDate.Day(), 0, 0, 0, 0, time.Local)
+	
+	return localDate, nil
 }
 
 // ParseDateRange 시작일과 종료일을 파싱하고 범위를 검증합니다
