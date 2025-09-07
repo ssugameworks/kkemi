@@ -176,7 +176,7 @@ func (c *APICache) Clear() {
 }
 
 // StartCleanupWorker 주기적으로 만료된 캐시를 정리하는 워커를 시작합니다
-func (c *APICache) StartCleanupWorker(interval time.Duration) context.Context {
+func (c *APICache) StartCleanupWorker(interval time.Duration) context.CancelFunc {
 	ctx, cancel := context.WithCancel(context.Background())
 	ticker := time.NewTicker(interval)
 	
@@ -192,5 +192,5 @@ func (c *APICache) StartCleanupWorker(interval time.Duration) context.Context {
 		}
 	}()
 	
-	return ctx
+	return cancel
 }
