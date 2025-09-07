@@ -1,230 +1,232 @@
 package storage
 
 import (
+	"context"
 	"discord-bot/constants"
 	"discord-bot/interfaces"
 	"discord-bot/models"
 	"discord-bot/utils"
-	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"time"
+
+	"cloud.google.com/go/firestore"
+	firebase "firebase.google.com/go"
+	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 )
 
-// Storage 참가자와 대회 데이터를 관리하는 저장소입니다
-type Storage struct {
-	participants []models.Participant
-	competition  *models.Competition
-	apiClient    interfaces.APIClient
+// FirebaseStorage 참가자와 대회 데이터를 Firestore에서 관리하는 저장소입니다
+type FirebaseStorage struct {
+	client    *firestore.Client
+	apiClient interfaces.APIClient
+	ctx       context.Context
 }
 
-// NewStorage 새로운 Storage 인스턴스를 생성하고 데이터를 로드합니다
+// NewStorage 새로운 FirebaseStorage 인스턴스를 생성하고 Firestore에 연결합니다
 func NewStorage(apiClient interfaces.APIClient) (interfaces.StorageRepository, error) {
-	utils.Info("Initializing storage system")
-	s := &Storage{
+	utils.Info("Initializing Firebase storage system")
+	ctx := context.Background()
+
+	// Railway 환경 변수에서 직접 JSON 내용을 읽어옵니다.
+	firebaseCreds := os.Getenv("FIREBASE_CREDENTIALS_JSON")
+	if firebaseCreds == "" {
+		return nil, fmt.Errorf("FIREBASE_CREDENTIALS_JSON environment variable not set")
+	}
+
+	opt := option.WithCredentialsJSON([]byte(firebaseCreds))
+
+	app, err := firebase.NewApp(ctx, nil, opt)
+	if err != nil {
+		return nil, fmt.Errorf("error initializing app: %v", err)
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error initializing Firestore client: %v", err)
+	}
+
+	s := &FirebaseStorage{
+		client:    client,
 		apiClient: apiClient,
+		ctx:       ctx,
 	}
-	if err := s.loadData(); err != nil {
-		return nil, fmt.Errorf("failed to initialize storage: %w", err)
-	}
-	utils.Info("Storage system initialized successfully")
+
+	utils.Info("Firebase storage system initialized successfully")
 	return s, nil
 }
 
-func (s *Storage) loadData() error {
-	if err := s.loadParticipants(); err != nil {
-		return fmt.Errorf("failed to load participants: %w", err)
-	}
-	if err := s.loadCompetition(); err != nil {
-		return fmt.Errorf("failed to load competition: %w", err)
-	}
-	return nil
-}
-
-// loadParticipants 참가자 데이터를 파일에서 로드합니다
-func (s *Storage) loadParticipants() error {
-	utils.Debug("Loading participants from file: %s", constants.ParticipantsFileName)
-	
-	// 파일 존재 여부 확인
-	if _, err := os.Stat(constants.ParticipantsFileName); os.IsNotExist(err) {
-		utils.Warn("Participants file not found, starting with empty list")
-		s.participants = []models.Participant{}
-		return nil
+// AddParticipant 새로운 참가자를 Firestore에 추가합니다
+func (s *FirebaseStorage) AddParticipant(name, baekjoonID string, startTier, startRating int) error {
+	competition := s.GetCompetition()
+	if competition == nil {
+		return fmt.Errorf("no active competition to add participant to")
 	}
 
-	file, err := os.Open(constants.ParticipantsFileName)
-	if err != nil {
-		utils.Error("Failed to open participants file: %v", err)
-		return fmt.Errorf("failed to open participants file %s: %w (check file permissions)", constants.ParticipantsFileName, err)
-	}
-	defer file.Close()
-
-	data, err := io.ReadAll(file)
-	if err != nil {
-		utils.Error("Failed to read participants file: %v", err)
-		return fmt.Errorf("failed to read participants file %s: %w (check file system)", constants.ParticipantsFileName, err)
-	}
-
-	// 빈 파일 처리
-	if len(data) == 0 {
-		utils.Info("Empty participants file, starting with empty list")
-		s.participants = []models.Participant{}
-		return nil
-	}
-
-	if err := json.Unmarshal(data, &s.participants); err != nil {
-		utils.Error("Failed to parse participants data: %v", err)
-		// JSON 파싱 실패 시 백업 파일 생성
-		backupFile := constants.ParticipantsFileName + constants.BackupFileSuffix
-		if backupErr := os.WriteFile(backupFile, data, constants.FilePermission); backupErr != nil {
-			utils.Warn("Failed to create backup file %s: %v", backupFile, backupErr)
-		} else {
-			utils.Warn("Corrupted participants file backed up as %s", backupFile)
-		}
-		return fmt.Errorf("participants file is corrupted: %w (backup saved as %s)", err, backupFile)
-	}
-
-	utils.Info("Loaded %d participants", len(s.participants))
-	return nil
-}
-
-// loadCompetition 대회 데이터를 파일에서 로드합니다
-func (s *Storage) loadCompetition() error {
-	utils.Debug("Loading competition from file: %s", constants.CompetitionFileName)
-	
-	// 파일 존재 여부 확인
-	if _, err := os.Stat(constants.CompetitionFileName); os.IsNotExist(err) {
-		utils.Warn("Competition file not found")
-		s.competition = nil
-		return nil
-	}
-
-	file, err := os.Open(constants.CompetitionFileName)
-	if err != nil {
-		utils.Error("Failed to open competition file: %v", err)
-		return fmt.Errorf("failed to open competition file %s: %w (check file permissions)", constants.CompetitionFileName, err)
-	}
-	defer file.Close()
-
-	data, err := io.ReadAll(file)
-	if err != nil {
-		utils.Error("Failed to read competition file: %v", err)
-		return fmt.Errorf("failed to read competition file %s: %w (check file system)", constants.CompetitionFileName, err)
-	}
-
-	// 빈 파일 처리
-	if len(data) == 0 {
-		utils.Info("Empty competition file")
-		s.competition = nil
-		return nil
-	}
-
-	if err := json.Unmarshal(data, &s.competition); err != nil {
-		utils.Error("Failed to parse competition data: %v", err)
-		// JSON 파싱 실패 시 백업 파일 생성
-		backupFile := constants.CompetitionFileName + constants.BackupFileSuffix
-		if backupErr := os.WriteFile(backupFile, data, constants.FilePermission); backupErr != nil {
-			utils.Warn("Failed to create backup file %s: %v", backupFile, backupErr)
-		} else {
-			utils.Warn("Corrupted competition file backed up as %s", backupFile)
-		}
-		return fmt.Errorf("competition file is corrupted: %w (backup saved as %s)", err, backupFile)
-	}
-
-	utils.Info("Loaded competition: %s", s.competition.Name)
-	return nil
-}
-
-// SaveParticipants 참가자 데이터를 파일에 저장합니다
-func (s *Storage) SaveParticipants() error {
-	utils.Debug("Saving participants to file: %s", constants.ParticipantsFileName)
-	data, err := json.MarshalIndent(s.participants, "", constants.JSONIndentSpaces)
-	if err != nil {
-		utils.Error("Failed to marshal participants data: %v", err)
-		return err
-	}
-
-	if err := s.atomicWriteFile(constants.ParticipantsFileName, data); err != nil {
-		utils.Error("Failed to save participants file: %v", err)
-		return err
-	}
-
-	utils.Info("Successfully saved %d participants", len(s.participants))
-	return nil
-}
-
-// SaveCompetition 대회 데이터를 파일에 저장합니다
-func (s *Storage) SaveCompetition() error {
-	if s.competition == nil {
-		utils.Debug("No competition to save")
-		return nil
-	}
-
-	utils.Debug("Saving competition to file: %s", constants.CompetitionFileName)
-	data, err := json.MarshalIndent(s.competition, "", constants.JSONIndentSpaces)
-	if err != nil {
-		utils.Error("Failed to marshal competition data: %v", err)
-		return err
-	}
-
-	if err := s.atomicWriteFile(constants.CompetitionFileName, data); err != nil {
-		utils.Error("Failed to save competition file: %v", err)
-		return err
-	}
-
-	utils.Info("Successfully saved competition: %s", s.competition.Name)
-	return nil
-}
-
-// AddParticipant 새로운 참가자를 추가합니다
-func (s *Storage) AddParticipant(name, baekjoonID string, startTier, startRating int) error {
-	// 입력값 검증
-	if err := s.validateParticipantInput(name, baekjoonID); err != nil {
-		return err
-	}
-
-	// 중복 확인
-	if err := s.checkDuplicateParticipant(name, baekjoonID); err != nil {
-		return err
-	}
-
-	// 시작 문제 데이터 수집
 	startProblemIDs, startProblemCount := s.fetchStartingProblems(baekjoonID)
 
-	// 참가자 생성 및 저장
-	participant := s.createParticipant(name, baekjoonID, startTier, startRating, startProblemIDs, startProblemCount)
-	return s.saveNewParticipant(participant)
-}
+	participant := models.Participant{
+		Name:              utils.SanitizeString(name),
+		BaekjoonID:        baekjoonID,
+		StartTier:         startTier,
+		StartRating:       startRating,
+		CreatedAt:         time.Now(),
+		StartProblemIDs:   startProblemIDs,
+		StartProblemCount: startProblemCount,
+	}
 
-// validateParticipantInput 참가자 입력값을 검증합니다
-func (s *Storage) validateParticipantInput(name, baekjoonID string) error {
-	if !utils.IsValidUsername(name) {
-		return fmt.Errorf("invalid username: %s", name)
+	// 참가자 ID를 백준 ID로 사용하여 중복 방지 및 조회 용이성 확보
+	_, err := s.client.Collection("competitions").Doc(competition.ID).Collection("participants").Doc(baekjoonID).Set(s.ctx, participant)
+	if err != nil {
+		return fmt.Errorf("failed to add participant: %w", err)
 	}
-	if !utils.IsValidBaekjoonID(baekjoonID) {
-		return fmt.Errorf("invalid Baekjoon ID: %s", baekjoonID)
-	}
+
+	utils.Info("Added new participant to Firestore: %s (%s)", name, baekjoonID)
 	return nil
 }
 
-// checkDuplicateParticipant 중복 참가자를 확인합니다
-func (s *Storage) checkDuplicateParticipant(name, baekjoonID string) error {
-	for _, p := range s.participants {
-		if p.BaekjoonID == baekjoonID {
-			utils.Warn("Attempt to add duplicate Baekjoon ID: %s", baekjoonID)
-			return fmt.Errorf("participant with Baekjoon ID %s already exists", baekjoonID)
-		}
-		if p.Name == name {
-			utils.Warn("Attempt to add duplicate name: %s", name)
-			return fmt.Errorf("participant with name %s already exists", name)
-		}
+// GetParticipants 현재 대회에 등록된 모든 참가자를 Firestore에서 조회합니다
+func (s *FirebaseStorage) GetParticipants() []models.Participant {
+	competition := s.GetCompetition()
+	if competition == nil {
+		return []models.Participant{}
 	}
+
+	var participants []models.Participant
+	iter := s.client.Collection("competitions").Doc(competition.ID).Collection("participants").Documents(s.ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			utils.Error("Failed to iterate participants: %v", err)
+			return participants
+		}
+
+		var p models.Participant
+		doc.DataTo(&p)
+		// Firestore 문서 ID가 백준 ID이므로 별도로 설정할 필요 없음
+		participants = append(participants, p)
+	}
+	return participants
+}
+
+// RemoveParticipant 백준ID로 참가자를 Firestore에서 삭제합니다
+func (s *FirebaseStorage) RemoveParticipant(baekjoonID string) error {
+	competition := s.GetCompetition()
+	if competition == nil {
+		return fmt.Errorf("no active competition")
+	}
+
+	_, err := s.client.Collection("competitions").Doc(competition.ID).Collection("participants").Doc(baekjoonID).Delete(s.ctx)
+	if err != nil {
+		return fmt.Errorf("failed to remove participant from Firestore: %w", err)
+	}
+
+	utils.Info("Removed participant from Firestore: %s", baekjoonID)
 	return nil
 }
 
-// fetchStartingProblems 참가 시점의 해결한 문제들을 가져옵니다
-func (s *Storage) fetchStartingProblems(baekjoonID string) ([]int, int) {
+// CreateCompetition 새로운 대회를 Firestore에 생성합니다
+func (s *FirebaseStorage) CreateCompetition(name string, startDate, endDate time.Time) error {
+	blackoutStart := endDate.AddDate(0, 0, -constants.BlackoutDays)
+
+	newComp := models.Competition{
+		Name:              name,
+		StartDate:         startDate,
+		EndDate:           endDate,
+		BlackoutStartDate: blackoutStart,
+		IsActive:          true,
+		ShowScoreboard:    true,
+	}
+
+	// 모든 대회를 비활성화
+	iter := s.client.Collection("competitions").Where("IsActive", "==", true).Documents(s.ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("failed to iterate existing competitions: %w", err)
+		}
+		_, err = doc.Ref.Update(s.ctx, []firestore.Update{{Path: "IsActive", Value: false}})
+		if err != nil {
+			return fmt.Errorf("failed to deactivate old competition: %w", err)
+		}
+	}
+
+	// 새 대회를 활성 상태로 추가
+	_, _, err := s.client.Collection("competitions").Add(s.ctx, newComp)
+	return err
+}
+
+// GetCompetition 현재 활성화된 대회를 Firestore에서 조회합니다
+func (s *FirebaseStorage) GetCompetition() *models.Competition {
+	iter := s.client.Collection("competitions").Where("IsActive", "==", true).Limit(1).Documents(s.ctx)
+	doc, err := iter.Next()
+	if err == iterator.Done {
+		return nil // 활성화된 대회 없음
+	}
+	if err != nil {
+		utils.Error("Failed to get active competition: %v", err)
+		return nil
+	}
+
+	var c models.Competition
+	doc.DataTo(&c)
+	c.ID = doc.Ref.ID // Firestore 문서 ID를 모델 ID로 사용
+
+	return &c
+}
+
+// updateActiveCompetitionField 활성화된 대회의 특정 필드를 업데이트합니다
+func (s *FirebaseStorage) updateActiveCompetitionField(updates []firestore.Update) error {
+	competition := s.GetCompetition()
+	if competition == nil {
+		return fmt.Errorf("no active competition to update")
+	}
+	_, err := s.client.Collection("competitions").Doc(competition.ID).Update(s.ctx, updates)
+	return err
+}
+
+// UpdateCompetitionName 대회명을 업데이트합니다
+func (s *FirebaseStorage) UpdateCompetitionName(name string) error {
+	return s.updateActiveCompetitionField([]firestore.Update{{Path: "Name", Value: name}})
+}
+
+// UpdateCompetitionStartDate 대회 시작일을 업데이트합니다
+func (s *FirebaseStorage) UpdateCompetitionStartDate(startDate time.Time) error {
+	return s.updateActiveCompetitionField([]firestore.Update{{Path: "StartDate", Value: startDate}})
+}
+
+// UpdateCompetitionEndDate 대회 종료일을 업데이트하고 블랙아웃 기간도 자동으로 재설정합니다
+func (s *FirebaseStorage) UpdateCompetitionEndDate(endDate time.Time) error {
+	updates := []firestore.Update{
+		{Path: "EndDate", Value: endDate},
+		{Path: "BlackoutStartDate", Value: endDate.AddDate(0, 0, -constants.BlackoutDays)},
+	}
+	return s.updateActiveCompetitionField(updates)
+}
+
+// SetScoreboardVisibility 스코어보드 공개 여부를 설정합니다
+func (s *FirebaseStorage) SetScoreboardVisibility(visible bool) error {
+	return s.updateActiveCompetitionField([]firestore.Update{{Path: "ShowScoreboard", Value: visible}})
+}
+
+// IsBlackoutPeriod 현재가 블랙아웃 기간인지 확인합니다
+func (s *FirebaseStorage) IsBlackoutPeriod() bool {
+	comp := s.GetCompetition()
+	if comp == nil {
+		return false
+	}
+	now := time.Now()
+	return now.After(comp.BlackoutStartDate) && now.Before(comp.EndDate)
+}
+
+// fetchStartingProblems 참가 시점의 해결한 문제들을 가져옵니다 (이전 로직과 동일)
+func (s *FirebaseStorage) fetchStartingProblems(baekjoonID string) ([]int, int) {
 	startProblemIDs := []int{}
 	startProblemCount := 0
 
@@ -240,135 +242,4 @@ func (s *Storage) fetchStartingProblems(baekjoonID string) ([]int, int) {
 	}
 
 	return startProblemIDs, startProblemCount
-}
-
-// createParticipant 참가자 객체를 생성합니다
-func (s *Storage) createParticipant(name, baekjoonID string, startTier, startRating int, startProblemIDs []int, startProblemCount int) models.Participant {
-	return models.Participant{
-		ID:                len(s.participants) + 1,
-		Name:              utils.SanitizeString(name),
-		BaekjoonID:        baekjoonID,
-		StartTier:         startTier,
-		StartRating:       startRating,
-		CreatedAt:         time.Now(),
-		StartProblemIDs:   startProblemIDs,
-		StartProblemCount: startProblemCount,
-	}
-}
-
-// saveNewParticipant 새 참가자를 저장합니다
-func (s *Storage) saveNewParticipant(participant models.Participant) error {
-	s.participants = append(s.participants, participant)
-	utils.Info("Added new participant: %s (%s)", participant.Name, participant.BaekjoonID)
-	return s.SaveParticipants()
-}
-
-func (s *Storage) GetParticipants() []models.Participant {
-	return s.participants
-}
-
-func (s *Storage) CreateCompetition(name string, startDate, endDate time.Time) error {
-	blackoutStart := endDate.AddDate(0, 0, -constants.BlackoutDays)
-
-	s.competition = &models.Competition{
-		ID:                1,
-		Name:              name,
-		StartDate:         startDate,
-		EndDate:           endDate,
-		BlackoutStartDate: blackoutStart,
-		IsActive:          true,
-		ShowScoreboard:    true,
-		Participants:      s.participants,
-	}
-
-	return s.SaveCompetition()
-}
-
-func (s *Storage) GetCompetition() *models.Competition {
-	return s.competition
-}
-
-func (s *Storage) SetScoreboardVisibility(visible bool) error {
-	if s.competition == nil {
-		return fmt.Errorf("no active competition")
-	}
-
-	s.competition.ShowScoreboard = visible
-	return s.SaveCompetition()
-}
-
-func (s *Storage) IsBlackoutPeriod() bool {
-	if s.competition == nil {
-		return false
-	}
-
-	now := time.Now()
-	return now.After(s.competition.BlackoutStartDate) && now.Before(s.competition.EndDate)
-}
-
-// UpdateCompetitionName은 대회명을 업데이트합니다
-func (s *Storage) UpdateCompetitionName(name string) error {
-	if s.competition == nil {
-		return fmt.Errorf("no active competition")
-	}
-
-	s.competition.Name = name
-	return s.SaveCompetition()
-}
-
-// UpdateCompetitionStartDate는 대회 시작일을 업데이트합니다
-func (s *Storage) UpdateCompetitionStartDate(startDate time.Time) error {
-	if s.competition == nil {
-		return fmt.Errorf("no active competition")
-	}
-
-	s.competition.StartDate = startDate
-	return s.SaveCompetition()
-}
-
-// UpdateCompetitionEndDate는 대회 종료일을 업데이트하고 블랙아웃 기간도 자동으로 재설정합니다
-func (s *Storage) UpdateCompetitionEndDate(endDate time.Time) error {
-	if s.competition == nil {
-		return fmt.Errorf("no active competition")
-	}
-
-	s.competition.EndDate = endDate
-	// 블랙아웃 기간도 자동으로 재설정 (종료일 3일 전부터)
-	s.competition.BlackoutStartDate = endDate.AddDate(0, 0, -constants.BlackoutDays)
-	return s.SaveCompetition()
-}
-
-// RemoveParticipant는 백준ID로 참가자를 삭제합니다
-func (s *Storage) RemoveParticipant(baekjoonID string) error {
-	for i, p := range s.participants {
-		if p.BaekjoonID == baekjoonID {
-			// 슬라이스에서 해당 참가자 제거
-			s.participants = append(s.participants[:i], s.participants[i+1:]...)
-			utils.Info("Removed participant: %s (%s)", p.Name, baekjoonID)
-			return s.SaveParticipants()
-		}
-	}
-	return fmt.Errorf("participant with Baekjoon ID %s not found", baekjoonID)
-}
-
-// atomicWriteFile 파일을 안전하게 원자적으로 쓰기합니다
-func (s *Storage) atomicWriteFile(filename string, data []byte) error {
-	// 임시 파일명 생성 (원본 파일명 + .tmp)
-	tmpFile := filename + ".tmp"
-	
-	// 임시 파일에 데이터 쓰기
-	if err := os.WriteFile(tmpFile, data, constants.FilePermission); err != nil {
-		return fmt.Errorf("failed to write temporary file %s: %w", tmpFile, err)
-	}
-	
-	// 원본 파일로 원자적 이동 (rename)
-	if err := os.Rename(tmpFile, filename); err != nil {
-		// 실패 시 임시 파일 정리
-		if removeErr := os.Remove(tmpFile); removeErr != nil {
-			utils.Warn("Failed to cleanup temporary file %s: %v", tmpFile, removeErr)
-		}
-		return fmt.Errorf("failed to rename %s to %s: %w", tmpFile, filename, err)
-	}
-	
-	return nil
 }
