@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// 문자열 유효성 검사
+// IsValidUsername 문자열 유효성 검사
 func IsValidUsername(username string) bool {
 	// 길이 검증 (최소 2자 이상)
 	if len(username) < constants.MinNameLength || len(username) > constants.MaxNameLength {
@@ -139,12 +139,7 @@ func IsValidBaekjoonID(id string) bool {
 	return true
 }
 
-// 날짜 유효성 검사
-func IsValidDateString(dateStr string) bool {
-	_, err := time.Parse(constants.DateFormat, dateStr)
-	return err == nil
-}
-
+// IsValidDateRange 날짜 유효성 검사
 func IsValidDateRange(startDate, endDate time.Time) bool {
 	return !endDate.Before(startDate)
 }
@@ -154,16 +149,20 @@ func ParseDateWithValidation(dateStr, fieldName string) (time.Time, error) {
 	if dateStr == "" {
 		return time.Time{}, fmt.Errorf("%s 날짜가 비어있습니다", fieldName)
 	}
-	
-	parsedDate, err := time.Parse(constants.DateFormat, dateStr)
+
+	// KST 시간대 로드
+	kst, err := time.LoadLocation("Asia/Seoul")
+	if err != nil {
+		return time.Time{}, fmt.Errorf("KST 시간대를 불러올 수 없습니다: %v", err)
+	}
+
+	// KST 시간대를 기준으로 날짜 파싱
+	parsedDate, err := time.ParseInLocation(constants.DateFormat, dateStr, kst)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("%s 날짜 형식이 올바르지 않습니다: %s (YYYY-MM-DD 형식으로 입력하세요)", fieldName, dateStr)
 	}
-	
-	// 로컬 시간대로 변환 (00:00:00 로컬 시간으로 설정)
-	localDate := time.Date(parsedDate.Year(), parsedDate.Month(), parsedDate.Day(), 0, 0, 0, 0, time.Local)
-	
-	return localDate, nil
+
+	return parsedDate, nil
 }
 
 // ParseDateRange 시작일과 종료일을 파싱하고 범위를 검증합니다
@@ -195,7 +194,7 @@ func ValidateAndParseCompetitionDates(name, startDateStr, endDateStr string) (ti
 	return ParseDateRange(startDateStr, endDateStr)
 }
 
-// 문자열 처리
+// TruncateString 문자열 처리
 func TruncateString(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s
@@ -206,7 +205,7 @@ func TruncateString(s string, maxLen int) string {
 	return s[:maxLen-len(constants.TruncateIndicator)] + constants.TruncateIndicator
 }
 
-// 한글과 영어 문자 폭을 고려한 문자열 길이 계산
+// GetDisplayWidth 한글과 영어 문자 폭을 고려한 문자열 길이 계산
 func GetDisplayWidth(s string) int {
 	width := 0
 	for _, r := range s {
@@ -263,5 +262,3 @@ func SanitizeDiscordMessage(s string) string {
 	
 	return s
 }
-
-
