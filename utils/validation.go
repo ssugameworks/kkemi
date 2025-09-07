@@ -160,7 +160,10 @@ func ParseDateWithValidation(dateStr, fieldName string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("%s 날짜 형식이 올바르지 않습니다: %s (YYYY-MM-DD 형식으로 입력하세요)", fieldName, dateStr)
 	}
 	
-	return parsedDate, nil
+	// 로컬 시간대로 변환 (00:00:00 로컬 시간으로 설정)
+	localDate := time.Date(parsedDate.Year(), parsedDate.Month(), parsedDate.Day(), 0, 0, 0, 0, time.Local)
+	
+	return localDate, nil
 }
 
 // ParseDateRange 시작일과 종료일을 파싱하고 범위를 검증합니다
