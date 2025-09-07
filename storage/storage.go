@@ -145,8 +145,7 @@ func (s *Storage) SaveParticipants() error {
 		return err
 	}
 
-	err = os.WriteFile(constants.ParticipantsFileName, data, constants.FilePermission)
-	if err != nil {
+	if err := s.atomicWriteFile(constants.ParticipantsFileName, data); err != nil {
 		utils.Error("Failed to save participants file: %v", err)
 		return err
 	}
@@ -169,8 +168,7 @@ func (s *Storage) SaveCompetition() error {
 		return err
 	}
 
-	err = os.WriteFile(constants.CompetitionFileName, data, constants.FilePermission)
-	if err != nil {
+	if err := s.atomicWriteFile(constants.CompetitionFileName, data); err != nil {
 		utils.Error("Failed to save competition file: %v", err)
 		return err
 	}
@@ -351,4 +349,26 @@ func (s *Storage) RemoveParticipant(baekjoonID string) error {
 		}
 	}
 	return fmt.Errorf("participant with Baekjoon ID %s not found", baekjoonID)
+}
+
+// atomicWriteFile 파일을 안전하게 원자적으로 쓰기합니다
+func (s *Storage) atomicWriteFile(filename string, data []byte) error {
+	// 임시 파일명 생성 (원본 파일명 + .tmp)
+	tmpFile := filename + ".tmp"
+	
+	// 임시 파일에 데이터 쓰기
+	if err := os.WriteFile(tmpFile, data, constants.FilePermission); err != nil {
+		return fmt.Errorf("failed to write temporary file %s: %w", tmpFile, err)
+	}
+	
+	// 원본 파일로 원자적 이동 (rename)
+	if err := os.Rename(tmpFile, filename); err != nil {
+		// 실패 시 임시 파일 정리
+		if removeErr := os.Remove(tmpFile); removeErr != nil {
+			utils.Warn("Failed to cleanup temporary file %s: %v", tmpFile, removeErr)
+		}
+		return fmt.Errorf("failed to rename %s to %s: %w", tmpFile, filename, err)
+	}
+	
+	return nil
 }

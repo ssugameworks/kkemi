@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"discord-bot/constants"
 	"sync"
 	"time"
@@ -175,11 +176,21 @@ func (c *APICache) Clear() {
 }
 
 // StartCleanupWorker 주기적으로 만료된 캐시를 정리하는 워커를 시작합니다
-func (c *APICache) StartCleanupWorker(interval time.Duration) {
+func (c *APICache) StartCleanupWorker(interval time.Duration) context.Context {
+	ctx, cancel := context.WithCancel(context.Background())
 	ticker := time.NewTicker(interval)
+	
 	go func() {
-		for range ticker.C {
-			c.ClearExpired()
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				c.ClearExpired()
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
+	
+	return ctx
 }
