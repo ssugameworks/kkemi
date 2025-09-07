@@ -2,7 +2,6 @@ package scoring
 
 import (
 	"discord-bot/api"
-	"discord-bot/constants"
 	"discord-bot/models"
 	"fmt"
 	"testing"
@@ -28,7 +27,7 @@ func (m *mockAPIClient) GetUserAdditionalInfo(handle string) (*api.UserAdditiona
 
 func TestScoreCalculator_CalculateScore(t *testing.T) {
 	tierManager := models.NewTierManager()
-	
+
 	mockTop100 := &api.Top100Response{
 		Count: 3,
 		Items: []api.ProblemInfo{
@@ -45,7 +44,7 @@ func TestScoreCalculator_CalculateScore(t *testing.T) {
 	calculator := NewScoreCalculator(mockClient, tierManager)
 
 	t.Run("Basic score calculation with no starting problems", func(t *testing.T) {
-		startTier := 11 // Gold V
+		startTier := 11 // Gold V (프로 리그)
 		startProblemIDs := []int{}
 
 		score, err := calculator.CalculateScore("testuser", startTier, startProblemIDs)
@@ -53,29 +52,29 @@ func TestScoreCalculator_CalculateScore(t *testing.T) {
 			t.Errorf("Expected no error, got: %v", err)
 		}
 
-		// Gold V (same tier): 18 * 1.0 = 18
-		// Gold IV (higher tier): 20 * 1.4 = 28
-		// Gold III (higher tier): 22 * 1.4 = 31 (rounded)
-		// Total: 77
-		expected := float64(77)
+		// Gold V (Level 11, same tier): 11 * 1.0 = 11 (프로 리그 동일 티어)
+		// Gold IV (Level 12, higher tier): 12 * 1.2 = 14.4 (프로 리그 상위 티어)
+		// Gold III (Level 13, higher tier): 13 * 1.2 = 15.6 (프로 리그 상위 티어)
+		// Total: 11 + 14.4 + 15.6 = 41
+		expected := float64(41)
 		if score != expected {
 			t.Errorf("Expected score %f, got %f", expected, score)
 		}
 	})
 
 	t.Run("Score calculation excluding starting problems", func(t *testing.T) {
-		startTier := 11 // Gold V
-		startProblemIDs := []int{1} // Exclude problem 1
+		startTier := 11             // Gold V (프로 리그)
+		startProblemIDs := []int{1} // Exclude problem 1 (Gold V)
 
 		score, err := calculator.CalculateScore("testuser", startTier, startProblemIDs)
 		if err != nil {
 			t.Errorf("Expected no error, got: %v", err)
 		}
 
-		// Gold IV (higher tier): 20 * 1.4 = 28
-		// Gold III (higher tier): 22 * 1.4 = 31 (rounded)
-		// Total: 59
-		expected := float64(59)
+		// Gold IV (Level 12, higher tier): 12 * 1.2 = 14.4 (프로 리그 상위 티어)
+		// Gold III (Level 13, higher tier): 13 * 1.2 = 15.6 (프로 리그 상위 티어)
+		// Total: 14.4 + 15.6 = 30
+		expected := float64(30)
 		if score != expected {
 			t.Errorf("Expected score %f, got %f", expected, score)
 		}
@@ -122,14 +121,14 @@ func TestScoreCalculator_CalculateScoreWithTop100(t *testing.T) {
 			top100: &api.Top100Response{
 				Count: 3,
 				Items: []api.ProblemInfo{
-					{ProblemID: 1, Level: 10}, // Silver I (16 points, penalty multiplier)
-					{ProblemID: 2, Level: 11}, // Gold V (18 points, base multiplier)
-					{ProblemID: 3, Level: 12}, // Gold IV (20 points, challenge multiplier)
+					{ProblemID: 1, Level: 10}, // Silver I (프로 리그 하위 티어)
+					{ProblemID: 2, Level: 11}, // Gold V (프로 리그 동일 티어)
+					{ProblemID: 3, Level: 12}, // Gold IV (프로 리그 상위 티어)
 				},
 			},
-			startTier:       11,
+			startTier:       11, // Gold V (프로 리그)
 			startProblemIDs: []int{},
-			expected:        54, // 16*0.5 + 18*1.0 + 20*1.4 = 8 + 18 + 28 = 54
+			expected:        33, // 10*0.8 + 11*1.0 + 12*1.2 = 8 + 11 + 14.4 = 33.4 → 33 (반올림)
 		},
 		{
 			name: "All problems excluded by starting problems",
@@ -153,9 +152,9 @@ func TestScoreCalculator_CalculateScoreWithTop100(t *testing.T) {
 					{ProblemID: 2, Level: 11}, // Gold V
 				},
 			},
-			startTier:       11,
+			startTier:       11, // Gold V (프로 리그)
 			startProblemIDs: []int{},
-			expected:        18, // Only Gold V contributes: 18 * 1.0
+			expected:        11, // Only Gold V contributes: 11 * 1.0 (프로 리그 동일 티어)
 		},
 	}
 
@@ -169,48 +168,9 @@ func TestScoreCalculator_CalculateScoreWithTop100(t *testing.T) {
 	}
 }
 
-func TestScoreCalculator_getWeight(t *testing.T) {
-	calculator := &ScoreCalculator{}
-
-	tests := []struct {
-		name        string
-		problemTier int
-		startTier   int
-		expected    float64
-	}{
-		{
-			name:        "Challenge tier (higher than start)",
-			problemTier: 12,
-			startTier:   11,
-			expected:    constants.ChallengeMultiplier,
-		},
-		{
-			name:        "Base tier (same as start)",
-			problemTier: 11,
-			startTier:   11,
-			expected:    constants.BaseMultiplier,
-		},
-		{
-			name:        "Penalty tier (lower than start)",
-			problemTier: 10,
-			startTier:   11,
-			expected:    constants.PenaltyMultiplier,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			weight := calculator.getWeight(test.problemTier, test.startTier)
-			if weight != test.expected {
-				t.Errorf("Expected weight %f, got %f", test.expected, weight)
-			}
-		})
-	}
-}
-
 func TestScoreCalculator_Integration(t *testing.T) {
 	tierManager := models.NewTierManager()
-	
+
 	// 실제 데이터와 유사한 시나리오 테스트
 	top100 := &api.Top100Response{
 		Count: 5,
@@ -230,7 +190,7 @@ func TestScoreCalculator_Integration(t *testing.T) {
 	calculator := NewScoreCalculator(mockClient, tierManager)
 
 	t.Run("Gold V starter with some starting problems", func(t *testing.T) {
-		startTier := 11 // Gold V
+		startTier := 11                      // Gold V (프로 리그)
 		startProblemIDs := []int{1000, 1001} // Already solved Silver III and Gold V
 
 		score, err := calculator.CalculateScore("testuser", startTier, startProblemIDs)
@@ -238,19 +198,19 @@ func TestScoreCalculator_Integration(t *testing.T) {
 			t.Errorf("Expected no error, got: %v", err)
 		}
 
-		// Only Gold IV, Gold III, Platinum V should be counted
-		// Gold IV: 20 * 1.4 = 28
-		// Gold III: 22 * 1.4 = 31 (rounded)  
-		// Platinum V: 28 * 1.4 = 39 (rounded)
-		// Total: 98
-		expected := float64(98)
+		// Only Gold IV, Gold III, Platinum V should be counted (프로 리그 가중치)
+		// Gold IV (Level 12, higher): 12 * 1.2 = 14.4
+		// Gold III (Level 13, higher): 13 * 1.2 = 15.6
+		// Platinum V (Level 16, higher): 16 * 1.2 = 19.2
+		// Total: 14.4 + 15.6 + 19.2 = 49.2 → 49 (반올림)
+		expected := float64(49)
 		if score != expected {
 			t.Errorf("Expected score %f, got %f", expected, score)
 		}
 	})
 
 	t.Run("Platinum starter solving lower tier problems", func(t *testing.T) {
-		startTier := 16 // Platinum III
+		startTier := 16 // Platinum V (맥스 리그)
 		startProblemIDs := []int{}
 
 		score, err := calculator.CalculateScore("testuser", startTier, startProblemIDs)
@@ -258,14 +218,14 @@ func TestScoreCalculator_Integration(t *testing.T) {
 			t.Errorf("Expected no error, got: %v", err)
 		}
 
-		// All problems are lower tier except Platinum V
-		// Silver III: 12 * 0.5 = 6
-		// Gold V: 18 * 0.5 = 9
-		// Gold IV: 20 * 0.5 = 10
-		// Gold III: 22 * 0.5 = 11
-		// Platinum V: 28 * 1.0 = 28
-		// Total: 64
-		expected := float64(64)
+		// 맥스 리그는 모든 문제에 동일 가중치 (1.0) 적용
+		// Silver III (Level 8): 8 * 1.0 = 8
+		// Gold V (Level 11): 11 * 1.0 = 11
+		// Gold IV (Level 12): 12 * 1.0 = 12
+		// Gold III (Level 13): 13 * 1.0 = 13
+		// Platinum V (Level 16): 16 * 1.0 = 16
+		// Total: 8 + 11 + 12 + 13 + 16 = 60
+		expected := float64(60)
 		if score != expected {
 			t.Errorf("Expected score %f, got %f", expected, score)
 		}
