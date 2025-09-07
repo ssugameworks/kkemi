@@ -21,11 +21,30 @@ const (
 	MaxConcurrentRequests = 5
 )
 
-// 점수 계산 상수
+
+// 잔디심기 챌린지 리그 분류 상수
 const (
-	ChallengeMultiplier = 1.4
-	BaseMultiplier      = 1.0
-	PenaltyMultiplier   = 0.5
+	LeagueRookie = 0 // 루키: Unrated ~ Silver V (티어 0-6)
+	LeaguePro    = 1 // 프로: Silver IV ~ Gold V (티어 7-11)
+	LeagueMax    = 2 // 맥스: Gold IV ~ (티어 12 이상)
+)
+
+// 각 리그별 가중치 (상위/동일/하위 티어)
+const (
+	// 루키 리그 가중치
+	RookieUpperMultiplier = 1.4 // 상위 티어 문제
+	RookieBaseMultiplier  = 1.0 // 동일 티어 문제
+	RookieLowerMultiplier = 0.5 // 하위 티어 문제
+
+	// 프로 리그 가중치
+	ProUpperMultiplier = 1.2 // 상위 티어 문제
+	ProBaseMultiplier  = 1.0 // 동일 티어 문제
+	ProLowerMultiplier = 0.8 // 하위 티어 문제
+
+	// 맥스 리그 가중치
+	MaxUpperMultiplier = 1.0 // 상위 티어 문제
+	MaxBaseMultiplier  = 1.0 // 동일 티어 문제
+	MaxLowerMultiplier = 1.0 // 하위 티어 문제
 )
 
 // 대회 관련 상수
