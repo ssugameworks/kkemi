@@ -11,7 +11,6 @@ import (
 	"discord-bot/storage"
 	"discord-bot/utils"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -87,7 +86,7 @@ func (app *Application) initializeDiscord() error {
 func (app *Application) setupHandlers() {
 	// 글로벌 TierManager 한 번만 생성
 	app.tierManager = models.GetTierManager()
-	
+
 	// 의존성 주입을 통한 컴포넌트 생성
 	calculator := scoring.NewScoreCalculator(app.apiClient, app.tierManager)
 	app.scoreboardManager = bot.NewScoreboardManager(app.storage, calculator, app.apiClient, app.tierManager)
@@ -95,7 +94,7 @@ func (app *Application) setupHandlers() {
 
 	app.session.AddHandler(app.commandHandler.HandleMessage)
 	app.session.AddHandler(app.handleReady)
-	
+
 	// 캐시 워밍업 - 기존 참가자 데이터로 캐시 미리 로드
 	app.warmupCache()
 }
@@ -117,7 +116,7 @@ func (app *Application) Start() error {
 		utils.Info("매일 %02d:%02d에 자동으로 스코어보드가 띄워집니다.",
 			app.config.Schedule.ScoreboardHour, app.config.Schedule.ScoreboardMinute)
 	} else {
-		log.Println("DISCORD_CHANNEL_ID가 설정되지 않았습니다. 스코어보드가 비활성화되었습니다.")
+		utils.Warn("DISCORD_CHANNEL_ID가 설정되지 않았습니다. 스코어보드가 비활성화되었습니다.")
 	}
 
 	app.printStartupMessage()
@@ -184,6 +183,13 @@ func (app *Application) Stop() error {
 
 	if app.scheduler != nil {
 		app.scheduler.Stop()
+	}
+
+	// API 클라이언트 종료
+	if app.apiClient != nil {
+		if cachedClient, ok := app.apiClient.(*api.CachedSolvedACClient); ok {
+			cachedClient.Close()
+		}
 	}
 
 	if app.session != nil {

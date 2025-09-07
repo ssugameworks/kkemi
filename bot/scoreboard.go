@@ -6,6 +6,7 @@ import (
 	"discord-bot/models"
 	"discord-bot/utils"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"sync"
@@ -57,8 +58,7 @@ func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.Messag
 		return nil, err
 	}
 
-	// 정렬 및 포맷팅
-	sm.sortScores(scores)
+	// 포맷팅
 	return sm.formatScoreboard(competition, scores, isAdmin), nil
 }
 
@@ -92,20 +92,17 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 		return []models.ScoreData{}, nil
 	}
 
-	// 메모리 사용량 최적화: 사전 할당된 슬라이스 사용
 	scores := make([]models.ScoreData, 0, len(participants))
 	scoreChan := make(chan models.ScoreData, len(participants))
 	semaphore := make(chan struct{}, constants.MaxConcurrentRequests)
 	var wg sync.WaitGroup
 	var errorCount int64
 
-	// 각 참가자에 대해 병렬로 점수 계산
 	for _, participant := range participants {
 		wg.Add(1)
 		go func(p models.Participant) {
 			defer wg.Done()
 
-			// 동시 요청 수 제한
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
 
@@ -119,11 +116,9 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 		}(participant)
 	}
 
-	// 고루틴들이 완료될 때까지 대기
 	wg.Wait()
 	close(scoreChan)
 
-	// 결과 수집 - 메모리 효율적으로 수집
 	for score := range scoreChan {
 		scores = append(scores, score)
 	}
@@ -148,9 +143,9 @@ func (sm *ScoreboardManager) calculateParticipantScore(participant models.Partic
 		return models.ScoreData{}, err
 	}
 
-	score := sm.calculator.CalculateScoreWithTop100(top100, participant.StartTier, participant.StartProblemIDs)
+	rawScore := sm.calculator.CalculateScoreWithTop100(top100, participant.StartTier, participant.StartProblemIDs)
+	roundedScore := math.Round(rawScore)
 
-	// 새로 푼 문제 수 계산 (현재 - 시작시점)
 	newProblemCount := top100.Count - participant.StartProblemCount
 	if newProblemCount < 0 {
 		newProblemCount = 0
@@ -160,46 +155,32 @@ func (sm *ScoreboardManager) calculateParticipantScore(participant models.Partic
 		ParticipantID: participant.ID,
 		Name:          participant.Name,
 		BaekjoonID:    participant.BaekjoonID,
-		Score:         score,
+		Score:         roundedScore,
+		RawScore:      rawScore,
+		League:        sm.calculator.GetUserLeague(participant.StartTier),
 		CurrentTier:   userInfo.Tier,
 		CurrentRating: userInfo.Rating,
 		ProblemCount:  newProblemCount,
 	}, nil
 }
 
-// sortScores 점수 데이터를 정렬합니다
-func (sm *ScoreboardManager) sortScores(scores []models.ScoreData) {
-	sort.Slice(scores, func(i, j int) bool {
-		return scores[i].Score > scores[j].Score
-	})
-}
-
-// groupScoresByLeague 참가자들을 시작 티어 기준으로 리그별로 분류합니다
+// groupScoresByLeague 참가자들을 리그별로 분류하고 점수 순으로 정렬합니다
 func (sm *ScoreboardManager) groupScoresByLeague(scores []models.ScoreData) map[int][]models.ScoreData {
 	leagueScores := make(map[int][]models.ScoreData)
 
-	// 각 참가자의 시작 티어를 가져와서 리그별로 분류
-	participants := sm.storage.GetParticipants()
-	participantTiers := make(map[string]int)
-
-	for _, p := range participants {
-		participantTiers[p.BaekjoonID] = p.StartTier
-	}
-
 	for _, score := range scores {
-		startTier, exists := participantTiers[score.BaekjoonID]
-		if !exists {
-			continue // 참가자 정보가 없으면 스킵
-		}
-
-		league := sm.calculator.GetUserLeague(startTier)
-		leagueScores[league] = append(leagueScores[league], score)
+		leagueScores[score.League] = append(leagueScores[score.League], score)
 	}
 
 	// 각 리그별로 점수 순으로 정렬
 	for league := range leagueScores {
 		sort.Slice(leagueScores[league], func(i, j int) bool {
-			return leagueScores[league][i].Score > leagueScores[league][j].Score
+			// 1. RawScore 기준 내림차순
+			if leagueScores[league][i].RawScore != leagueScores[league][j].RawScore {
+				return leagueScores[league][i].RawScore > leagueScores[league][j].RawScore
+			}
+			// 2. 동점일 경우 BaekjoonID 오름차순
+			return leagueScores[league][i].BaekjoonID < leagueScores[league][j].BaekjoonID
 		})
 	}
 
@@ -220,20 +201,17 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 		return embed
 	}
 
-	// 리그별로 참가자들을 분류
 	leagueScores := sm.groupScoresByLeague(scores)
 
 	var sb strings.Builder
 
-	// 각 리그별로 스코어보드 생성
 	leagueOrder := []int{constants.LeagueRookie, constants.LeaguePro, constants.LeagueMax}
 
 	for _, league := range leagueOrder {
-		if leagueScores[league] == nil || len(leagueScores[league]) == 0 {
+		if len(leagueScores[league]) == 0 {
 			continue
 		}
 
-		// 리그명 추가
 		leagueName := sm.calculator.GetLeagueName(league)
 		sb.WriteString(fmt.Sprintf("\n**🏆 %s 리그**\n", leagueName))
 		sb.WriteString("```\n")
@@ -243,20 +221,23 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 			constants.ScoreboardScoreWidth, "점수"))
 		sb.WriteString(constants.ScoreboardSeparator + "\n")
 
-		// 해당 리그 참가자들만 표시
+		var lastRawScore float64 = -1.0
+		var rank int
 		for i, score := range leagueScores[league] {
-			rank := i + 1
+			if score.RawScore != lastRawScore {
+				rank = i + 1
+			}
 			sb.WriteString(fmt.Sprintf("%-*d  %-*s %*.0f\n",
 				constants.ScoreboardRankWidth, rank,
 				constants.ScoreboardNameWidth, utils.TruncateString(score.BaekjoonID, constants.ScoreboardNameWidth),
 				constants.ScoreboardScoreWidth, score.Score))
+			lastRawScore = score.RawScore
 		}
 		sb.WriteString("```\n")
 	}
 
 	embed.Description += sb.String()
 
-	// 블랙아웃 경고 추가
 	now := utils.GetCurrentTimeKST()
 	if now.Before(competition.BlackoutStartDate) {
 		daysLeft := int(competition.BlackoutStartDate.Sub(now).Hours() / 24)
