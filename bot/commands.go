@@ -9,7 +9,6 @@ import (
 	"discord-bot/utils"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -176,7 +175,7 @@ func (ch *CommandHandler) validateCompetitionStatus(errorHandlers *utils.ErrorHa
 		return false
 	}
 
-	now := time.Now()
+	now := utils.GetCurrentTimeKST()
 	if now.Before(competition.StartDate) {
 		errorHandlers.Validation().HandleInvalidParams("REGISTRATION_NOT_STARTED",
 			"Registration not available before competition starts",

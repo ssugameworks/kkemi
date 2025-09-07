@@ -54,7 +54,7 @@ func (s *Scheduler) StartCustomSchedule(hour, minute int) {
 	// 기존 커스텀 스케줄러가 있다면 정리
 	s.stopCustomScheduler()
 
-	now := time.Now()
+	now := utils.GetCurrentTimeKST()
 	nextRun := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, now.Location())
 
 	if nextRun.Before(now) {
@@ -104,7 +104,7 @@ func (s *Scheduler) sendDailyScoreboard() {
 	}
 
 	// 대회 기간 내인지 확인
-	now := time.Now()
+	now := utils.GetCurrentTimeKST()
 	if now.Before(competition.StartDate) || now.After(competition.EndDate) {
 		utils.Debug("Not within competition period - skipping daily scoreboard")
 		return

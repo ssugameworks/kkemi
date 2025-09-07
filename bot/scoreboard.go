@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -105,7 +104,7 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 		wg.Add(1)
 		go func(p models.Participant) {
 			defer wg.Done()
-			
+
 			// 동시 요청 수 제한
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
@@ -178,32 +177,32 @@ func (sm *ScoreboardManager) sortScores(scores []models.ScoreData) {
 // groupScoresByLeague 참가자들을 시작 티어 기준으로 리그별로 분류합니다
 func (sm *ScoreboardManager) groupScoresByLeague(scores []models.ScoreData) map[int][]models.ScoreData {
 	leagueScores := make(map[int][]models.ScoreData)
-	
+
 	// 각 참가자의 시작 티어를 가져와서 리그별로 분류
 	participants := sm.storage.GetParticipants()
 	participantTiers := make(map[string]int)
-	
+
 	for _, p := range participants {
 		participantTiers[p.BaekjoonID] = p.StartTier
 	}
-	
+
 	for _, score := range scores {
 		startTier, exists := participantTiers[score.BaekjoonID]
 		if !exists {
 			continue // 참가자 정보가 없으면 스킵
 		}
-		
+
 		league := sm.calculator.GetUserLeague(startTier)
 		leagueScores[league] = append(leagueScores[league], score)
 	}
-	
+
 	// 각 리그별로 점수 순으로 정렬
 	for league := range leagueScores {
 		sort.Slice(leagueScores[league], func(i, j int) bool {
 			return leagueScores[league][i].Score > leagueScores[league][j].Score
 		})
 	}
-	
+
 	return leagueScores
 }
 
@@ -223,24 +222,24 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 
 	// 리그별로 참가자들을 분류
 	leagueScores := sm.groupScoresByLeague(scores)
-	
+
 	var sb strings.Builder
-	
+
 	// 각 리그별로 스코어보드 생성
 	leagueOrder := []int{constants.LeagueRookie, constants.LeaguePro, constants.LeagueMax}
-	
+
 	for _, league := range leagueOrder {
 		if leagueScores[league] == nil || len(leagueScores[league]) == 0 {
 			continue
 		}
-		
+
 		// 리그명 추가
 		leagueName := sm.calculator.GetLeagueName(league)
 		sb.WriteString(fmt.Sprintf("\n**🏆 %s 리그**\n", leagueName))
 		sb.WriteString("```\n")
 		sb.WriteString(fmt.Sprintf("%-*s %-*s %*s\n",
-			constants.ScoreboardRankWidth, "순위", 
-			constants.ScoreboardNameWidth, "아이디", 
+			constants.ScoreboardRankWidth, "순위",
+			constants.ScoreboardNameWidth, "아이디",
 			constants.ScoreboardScoreWidth, "점수"))
 		sb.WriteString(constants.ScoreboardSeparator + "\n")
 
@@ -258,7 +257,7 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 	embed.Description += sb.String()
 
 	// 블랙아웃 경고 추가
-	now := time.Now()
+	now := utils.GetCurrentTimeKST()
 	if now.Before(competition.BlackoutStartDate) {
 		daysLeft := int(competition.BlackoutStartDate.Sub(now).Hours() / 24)
 		embed.Footer = &discordgo.MessageEmbedFooter{

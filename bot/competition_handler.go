@@ -7,7 +7,6 @@ import (
 	"discord-bot/utils"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -108,7 +107,7 @@ func (ch *CompetitionHandler) handleCompetitionStatus(s *discordgo.Session, m *d
 		return
 	}
 
-	now := time.Now()
+	now := utils.GetCurrentTimeKST()
 	status := constants.StatusActive
 	if now.Before(competition.StartDate) {
 		status = constants.StatusInactive
