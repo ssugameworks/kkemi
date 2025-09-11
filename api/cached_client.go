@@ -120,6 +120,32 @@ func (c *CachedSolvedACClient) GetUserAdditionalInfo(handle string) (*UserAdditi
 	return additionalInfo, nil
 }
 
+// GetUserOrganizations 지정된 사용자의 소속 조직 목록을 가져옵니다 (캐시 포함)
+func (c *CachedSolvedACClient) GetUserOrganizations(handle string) ([]Organization, error) {
+	atomic.AddInt64(&c.totalCalls, 1)
+
+	// 캐시에서 먼저 조회
+	if cachedData, found := c.cache.GetUserOrganizations(handle); found {
+		atomic.AddInt64(&c.cacheHits, 1)
+		utils.Debug("Cache hit for user organizations: %s", handle)
+		return cachedData.([]Organization), nil
+	}
+
+	// 캐시 미스 - API 호출
+	atomic.AddInt64(&c.cacheMisses, 1)
+	utils.Debug("Cache miss for user organizations: %s, calling API", handle)
+
+	organizations, err := c.client.GetUserOrganizations(handle)
+	if err != nil {
+		return nil, err
+	}
+
+	// 성공한 응답을 캐시에 저장
+	c.cache.SetUserOrganizations(handle, organizations)
+
+	return organizations, nil
+}
+
 // GetCacheStats 캐시 통계를 반환합니다
 func (c *CachedSolvedACClient) GetCacheStats() CacheMetrics {
 	cacheStats := c.cache.GetStats()

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"discord-bot/constants"
 	"discord-bot/errors"
 	"fmt"
 
@@ -31,7 +32,7 @@ func (v *ValidationErrorHelper) HandleInvalidParams(code, message, userMsg strin
 func (v *ValidationErrorHelper) HandleInsufficientPermissions() {
 	err := errors.NewValidationError("INSUFFICIENT_PERMISSIONS",
 		"사용자가 필수 권한을 가지고 있지 않습니다",
-		"이 명령어는 관리자만 사용할 수 있습니다.")
+		constants.MsgInsufficientPermissions)
 	errors.HandleDiscordError(v.session, v.channelID, err)
 }
 

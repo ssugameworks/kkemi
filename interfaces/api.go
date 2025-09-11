@@ -7,4 +7,5 @@ type APIClient interface {
 	GetUserInfo(handle string) (*api.UserInfo, error)
 	GetUserTop100(handle string) (*api.Top100Response, error)
 	GetUserAdditionalInfo(handle string) (*api.UserAdditionalInfo, error)
+	GetUserOrganizations(handle string) ([]api.Organization, error)
 }

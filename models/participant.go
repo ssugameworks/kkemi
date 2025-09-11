@@ -8,6 +8,7 @@ type Participant struct {
 	ID                string    `firestore:"-"` // Firestore 문서 ID, firestore 필드에서는 제외
 	Name              string    `firestore:"name"`
 	BaekjoonID        string    `firestore:"baekjoonId"`
+	OrganizationID    int       `firestore:"organizationId"`
 	StartTier         int       `firestore:"startTier"`
 	StartRating       int       `firestore:"startRating"`
 	CreatedAt         time.Time `firestore:"createdAt"`

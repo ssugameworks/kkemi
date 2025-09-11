@@ -57,6 +57,18 @@ type UserAdditionalInfo struct {
 	NameNative  *string `json:"nameNative"`
 }
 
+// Organization solved.ac 조직 정보를 나타냅니다
+type Organization struct {
+	OrganizationID int    `json:"organizationId"`
+	Name           string `json:"name"`
+	Type           string `json:"type"`
+	Rating         int    `json:"rating"`
+	UserCount      int    `json:"userCount"`
+	VoteCount      int    `json:"voteCount"`
+	SolvedCount    int    `json:"solvedCount"`
+	Color          string `json:"color"`
+}
+
 // NewSolvedACClient 새로운 SolvedACClient 인스턴스를 생성합니다
 func NewSolvedACClient() *SolvedACClient {
 	utils.Debug("Creating new SolvedAC API client")
@@ -206,4 +218,31 @@ func (c *SolvedACClient) getUserAdditionalInfoWithRetry(url, handle string) (*Us
 	utils.Debug("Successfully fetched additional info for %s (nameNative: %s)", 
 		handle, nameNativeStr)
 	return &additionalInfo, nil
+}
+
+// GetUserOrganizations 지정된 사용자의 소속 조직 목록을 가져옵니다
+func (c *SolvedACClient) GetUserOrganizations(handle string) ([]Organization, error) {
+	if !utils.IsValidBaekjoonID(handle) {
+		return nil, fmt.Errorf("잘못된 핸들 형식: %s", handle)
+	}
+
+	url := fmt.Sprintf("%s/user/organizations?handle=%s", c.baseURL, handle)
+	return c.getUserOrganizationsWithRetry(url, handle)
+}
+
+// 재시도 로직을 포함한 사용자 조직 목록 조회
+func (c *SolvedACClient) getUserOrganizationsWithRetry(url, handle string) ([]Organization, error) {
+	body, err := c.doRequest(url, "user organizations", handle)
+	if err != nil {
+		return nil, err
+	}
+
+	var organizations []Organization
+	if err := json.Unmarshal(body, &organizations); err != nil {
+		utils.Error("Failed to parse organizations for %s: %v", handle, err)
+		return nil, fmt.Errorf("조직 정보 파싱 실패: %w", err)
+	}
+
+	utils.Debug("Successfully fetched %d organizations for %s", len(organizations), handle)
+	return organizations, nil
 }

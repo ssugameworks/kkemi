@@ -147,12 +147,18 @@ func (ch *CommandHandler) handleRegister(s *discordgo.Session, m *discordgo.Mess
 		return
 	}
 
-	// 4. 참가자 등록
-	if !ch.registerParticipant(name, baekjoonID, userInfo, errorHandlers) {
+	// 4. 숭실대학교 소속 검증
+	organizationID, ok := ch.validateUniversityAffiliation(baekjoonID, errorHandlers)
+	if !ok {
 		return
 	}
 
-	// 5. 성공 메시지 전송
+	// 5. 참가자 등록
+	if !ch.registerParticipant(name, baekjoonID, userInfo, organizationID, errorHandlers) {
+		return
+	}
+
+	// 6. 성공 메시지 전송
 	ch.sendRegistrationSuccess(s, m.ChannelID, name, userInfo)
 }
 
@@ -240,8 +246,33 @@ func (ch *CommandHandler) extractSolvedACName(additionalInfo interface{}, errorH
 	}
 }
 
+// validateUniversityAffiliation 사용자의 숭실대학교 소속을 검증합니다
+func (ch *CommandHandler) validateUniversityAffiliation(baekjoonID string, errorHandlers *utils.ErrorHandlerFactory) (organizationID int, ok bool) {
+	const SoongsilUniversityID = 323 // 숭실대학교 organizationId
+	
+	// solved.ac에서 사용자의 조직 정보 조회
+	organizations, err := ch.client.GetUserOrganizations(baekjoonID)
+	if err != nil {
+		errorHandlers.API().HandleBaekjoonUserNotFound(baekjoonID, err)
+		return 0, false
+	}
+
+	// 숭실대학교 소속인지 확인
+	for _, org := range organizations {
+		if org.OrganizationID == SoongsilUniversityID {
+			return SoongsilUniversityID, true
+		}
+	}
+
+	// 숭실대학교 소속이 아닌 경우 에러 메시지 전송
+	errorHandlers.Validation().HandleInvalidParams("NOT_SOONGSIL_UNIVERSITY",
+		"User is not affiliated with Soongsil University",
+		constants.MsgRegisterNotSoongsilStudent)
+	return 0, false
+}
+
 // registerParticipant 참가자를 등록합니다
-func (ch *CommandHandler) registerParticipant(name, baekjoonID string, userInfo interface{}, errorHandlers *utils.ErrorHandlerFactory) bool {
+func (ch *CommandHandler) registerParticipant(name, baekjoonID string, userInfo interface{}, organizationID int, errorHandlers *utils.ErrorHandlerFactory) bool {
 	// Type assertion to get the actual type
 	info, ok := userInfo.(*api.UserInfo)
 	if !ok {
@@ -249,7 +280,7 @@ func (ch *CommandHandler) registerParticipant(name, baekjoonID string, userInfo 
 		return false
 	}
 
-	err := ch.storage.AddParticipant(name, baekjoonID, info.Tier, info.Rating)
+	err := ch.storage.AddParticipant(name, baekjoonID, info.Tier, info.Rating, organizationID)
 	if err != nil {
 		errorHandlers.Data().HandleParticipantAlreadyExists(baekjoonID)
 		return false

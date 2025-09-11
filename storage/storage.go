@@ -16,14 +16,14 @@ import (
 	"google.golang.org/api/option"
 )
 
-// FirebaseStorage는 Firestore를 사용하여 데이터를 관리하는 저장소입니다.
+// FirebaseStorage Firestore를 사용하여 데이터를 관리하는 저장소입니다.
 type FirebaseStorage struct {
 	client    *firestore.Client
 	apiClient interfaces.APIClient
 	ctx       context.Context
 }
 
-// NewStorage는 새로운 FirebaseStorage 인스턴스를 생성하고 Firestore에 연결합니다.
+// NewStorage 새로운 FirebaseStorage 인스턴스를 생성하고 Firestore에 연결합니다.
 func NewStorage(apiClient interfaces.APIClient) (interfaces.StorageRepository, error) {
 	utils.Info("Initializing Firebase storage system")
 	ctx := context.Background()
@@ -55,8 +55,8 @@ func NewStorage(apiClient interfaces.APIClient) (interfaces.StorageRepository, e
 	return s, nil
 }
 
-// AddParticipant는 새로운 참가자를 Firestore에 추가합니다.
-func (s *FirebaseStorage) AddParticipant(name, baekjoonID string, startTier, startRating int) error {
+// AddParticipant 새로운 참가자를 Firestore에 추가합니다.
+func (s *FirebaseStorage) AddParticipant(name, baekjoonID string, startTier, startRating int, organizationID int) error {
 	// 입력값 검증
 	if !utils.IsValidUsername(name) {
 		return fmt.Errorf("invalid username: %s", name)
@@ -87,6 +87,7 @@ func (s *FirebaseStorage) AddParticipant(name, baekjoonID string, startTier, sta
 	participant := models.Participant{
 		Name:              utils.SanitizeString(name),
 		BaekjoonID:        baekjoonID,
+		OrganizationID:    organizationID,
 		StartTier:         startTier,
 		StartRating:       startRating,
 		CreatedAt:         time.Now(),
@@ -103,7 +104,7 @@ func (s *FirebaseStorage) AddParticipant(name, baekjoonID string, startTier, sta
 	return nil
 }
 
-// GetParticipants는 현재 대회에 등록된 모든 참가자를 Firestore에서 조회합니다.
+// GetParticipants 현재 대회에 등록된 모든 참가자를 Firestore에서 조회합니다.
 func (s *FirebaseStorage) GetParticipants() []models.Participant {
 	competition := s.GetCompetition()
 	if competition == nil {
@@ -130,7 +131,7 @@ func (s *FirebaseStorage) GetParticipants() []models.Participant {
 	return participants
 }
 
-// RemoveParticipant는 백준ID로 참가자를 Firestore에서 삭제합니다.
+// RemoveParticipant 백준ID로 참가자를 Firestore에서 삭제합니다.
 func (s *FirebaseStorage) RemoveParticipant(baekjoonID string) error {
 	competition := s.GetCompetition()
 	if competition == nil {
@@ -146,7 +147,7 @@ func (s *FirebaseStorage) RemoveParticipant(baekjoonID string) error {
 	return nil
 }
 
-// CreateCompetition는 새로운 대회를 Firestore에 생성합니다.
+// CreateCompetition 새로운 대회를 Firestore에 생성합니다.
 func (s *FirebaseStorage) CreateCompetition(name string, startDate, endDate time.Time) error {
 	// 모든 대회를 비활성화
 	iter := s.client.Collection("competitions").Where("isActive", "==", true).Documents(s.ctx)
@@ -177,7 +178,7 @@ func (s *FirebaseStorage) CreateCompetition(name string, startDate, endDate time
 	return err
 }
 
-// GetCompetition는 현재 활성화된 대회를 Firestore에서 조회합니다.
+// GetCompetition 현재 활성화된 대회를 Firestore에서 조회합니다.
 func (s *FirebaseStorage) GetCompetition() *models.Competition {
 	iter := s.client.Collection("competitions").Where("isActive", "==", true).Limit(1).Documents(s.ctx)
 	doc, err := iter.Next()
@@ -195,7 +196,7 @@ func (s *FirebaseStorage) GetCompetition() *models.Competition {
 	return &c
 }
 
-// updateActiveCompetitionField는 활성화된 대회의 특정 필드를 업데이트합니다.
+// updateActiveCompetitionField 활성화된 대회의 특정 필드를 업데이트합니다.
 func (s *FirebaseStorage) updateActiveCompetitionField(updates []firestore.Update) error {
 	competition := s.GetCompetition()
 	if competition == nil {
@@ -250,12 +251,12 @@ func (s *FirebaseStorage) fetchStartingProblems(baekjoonID string) ([]int, int) 
 	return startProblemIDs, startProblemCount
 }
 
-// SaveCompetition은 Firestore에서 쓰기 작업이 즉시 이루어지므로 no-op입니다.
+// SaveCompetition Firestore에서 쓰기 작업이 즉시 이루어지므로 no-op입니다.
 func (s *FirebaseStorage) SaveCompetition() error {
 	return nil
 }
 
-// SaveParticipants는 Firestore에서 쓰기 작업이 즉시 이루어지므로 no-op입니다.
+// SaveParticipants Firestore에서 쓰기 작업이 즉시 이루어지므로 no-op입니다.
 func (s *FirebaseStorage) SaveParticipants() error {
 	return nil
 }

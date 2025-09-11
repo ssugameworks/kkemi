@@ -2,15 +2,6 @@ package constants
 
 import "time"
 
-// 파일 관련 상수
-const (
-	ParticipantsFileName = "participants.json"
-	CompetitionFileName  = "competition.json"
-	FilePermission       = 0600
-	BackupFileSuffix     = ".corrupted"
-	JSONIndentSpaces     = "  "
-)
-
 // API 관련 상수
 const (
 	SolvedACBaseURL       = "https://solved.ac/api/v3"
@@ -20,7 +11,6 @@ const (
 	APIRetryMultiplier    = 2
 	MaxConcurrentRequests = 5
 )
-
 
 // 잔디심기 챌린지 리그 분류 상수
 const (

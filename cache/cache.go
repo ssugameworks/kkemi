@@ -20,28 +20,32 @@ func (c *CacheItem) IsExpired() bool {
 
 // APICache API 응답을 캐싱하는 인메모리 캐시입니다
 type APICache struct {
-	userInfoCache       map[string]*CacheItem
-	userTop100Cache     map[string]*CacheItem
-	userAdditionalCache map[string]*CacheItem
-	mu                  sync.RWMutex
+	userInfoCache           map[string]*CacheItem
+	userTop100Cache         map[string]*CacheItem
+	userAdditionalCache     map[string]*CacheItem
+	userOrganizationsCache  map[string]*CacheItem
+	mu                      sync.RWMutex
 	
 	// 캐시 설정
-	userInfoTTL       time.Duration
-	userTop100TTL     time.Duration
-	userAdditionalTTL time.Duration
+	userInfoTTL           time.Duration
+	userTop100TTL         time.Duration
+	userAdditionalTTL     time.Duration
+	userOrganizationsTTL  time.Duration
 }
 
 // NewAPICache 새로운 APICache 인스턴스를 생성합니다
 func NewAPICache() *APICache {
 	return &APICache{
-		userInfoCache:       make(map[string]*CacheItem),
-		userTop100Cache:     make(map[string]*CacheItem),
-		userAdditionalCache: make(map[string]*CacheItem),
+		userInfoCache:          make(map[string]*CacheItem),
+		userTop100Cache:        make(map[string]*CacheItem),
+		userAdditionalCache:    make(map[string]*CacheItem),
+		userOrganizationsCache: make(map[string]*CacheItem),
 		
 		// 캐시 TTL 설정
-		userInfoTTL:       constants.UserInfoCacheTTL,       // 사용자 정보 캐시 TTL
-		userTop100TTL:     constants.UserTop100CacheTTL,     // TOP 100 캐시 TTL
-		userAdditionalTTL: constants.UserAdditionalCacheTTL, // 추가 정보 캐시 TTL
+		userInfoTTL:          constants.UserInfoCacheTTL,       // 사용자 정보 캐시 TTL
+		userTop100TTL:        constants.UserTop100CacheTTL,     // TOP 100 캐시 TTL
+		userAdditionalTTL:    constants.UserAdditionalCacheTTL, // 추가 정보 캐시 TTL
+		userOrganizationsTTL: constants.UserAdditionalCacheTTL, // 조직 정보 캐시 TTL (추가 정보와 동일)
 	}
 }
 
@@ -117,6 +121,30 @@ func (c *APICache) SetUserAdditionalInfo(handle string, additionalInfo interface
 	}
 }
 
+// GetUserOrganizations 캐시에서 사용자 조직 정보를 조회합니다
+func (c *APICache) GetUserOrganizations(handle string) (interface{}, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	
+	item, exists := c.userOrganizationsCache[handle]
+	if !exists || item.IsExpired() {
+		return nil, false
+	}
+	
+	return item.Data, true
+}
+
+// SetUserOrganizations 사용자 조직 정보를 캐시에 저장합니다
+func (c *APICache) SetUserOrganizations(handle string, organizations interface{}) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	
+	c.userOrganizationsCache[handle] = &CacheItem{
+		Data:      organizations,
+		ExpiresAt: time.Now().Add(c.userOrganizationsTTL),
+	}
+}
+
 // ClearExpired 만료된 캐시 항목들을 정리합니다
 func (c *APICache) ClearExpired() {
 	c.mu.Lock()
@@ -144,6 +172,13 @@ func (c *APICache) ClearExpired() {
 			delete(c.userAdditionalCache, key)
 		}
 	}
+	
+	// 만료된 조직 정보 캐시 정리
+	for key, item := range c.userOrganizationsCache {
+		if now.After(item.ExpiresAt) {
+			delete(c.userOrganizationsCache, key)
+		}
+	}
 }
 
 // GetStats 캐시 통계를 반환합니다
@@ -152,17 +187,19 @@ func (c *APICache) GetStats() CacheStats {
 	defer c.mu.RUnlock()
 	
 	return CacheStats{
-		UserInfoCount:       len(c.userInfoCache),
-		UserTop100Count:     len(c.userTop100Cache),
-		UserAdditionalCount: len(c.userAdditionalCache),
+		UserInfoCount:          len(c.userInfoCache),
+		UserTop100Count:        len(c.userTop100Cache),
+		UserAdditionalCount:    len(c.userAdditionalCache),
+		UserOrganizationsCount: len(c.userOrganizationsCache),
 	}
 }
 
 // CacheStats 캐시 통계 정보를 나타냅니다
 type CacheStats struct {
-	UserInfoCount       int
-	UserTop100Count     int
-	UserAdditionalCount int
+	UserInfoCount          int
+	UserTop100Count        int
+	UserAdditionalCount    int
+	UserOrganizationsCount int
 }
 
 // Clear 모든 캐시를 삭제합니다
@@ -173,6 +210,7 @@ func (c *APICache) Clear() {
 	c.userInfoCache = make(map[string]*CacheItem)
 	c.userTop100Cache = make(map[string]*CacheItem)
 	c.userAdditionalCache = make(map[string]*CacheItem)
+	c.userOrganizationsCache = make(map[string]*CacheItem)
 }
 
 // StartCleanupWorker 주기적으로 만료된 캐시를 정리하는 워커를 시작합니다

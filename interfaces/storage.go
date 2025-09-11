@@ -9,7 +9,7 @@ import (
 type StorageRepository interface {
 	// 참가자 작업
 	GetParticipants() []models.Participant
-	AddParticipant(name, baekjoonID string, startTier, startRating int) error
+	AddParticipant(name, baekjoonID string, startTier, startRating int, organizationID int) error
 	RemoveParticipant(baekjoonID string) error
 	SaveParticipants() error
 
