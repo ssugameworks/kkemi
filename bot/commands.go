@@ -248,8 +248,6 @@ func (ch *CommandHandler) extractSolvedACName(additionalInfo interface{}, errorH
 
 // validateUniversityAffiliation 사용자의 숭실대학교 소속을 검증합니다
 func (ch *CommandHandler) validateUniversityAffiliation(baekjoonID string, errorHandlers *utils.ErrorHandlerFactory) (organizationID int, ok bool) {
-	const SoongsilUniversityID = 323 // 숭실대학교 organizationId
-	
 	// solved.ac에서 사용자의 조직 정보 조회
 	organizations, err := ch.client.GetUserOrganizations(baekjoonID)
 	if err != nil {
@@ -259,8 +257,8 @@ func (ch *CommandHandler) validateUniversityAffiliation(baekjoonID string, error
 
 	// 숭실대학교 소속인지 확인
 	for _, org := range organizations {
-		if org.OrganizationID == SoongsilUniversityID {
-			return SoongsilUniversityID, true
+		if org.OrganizationID == constants.SoongsilUniversityID {
+			return constants.SoongsilUniversityID, true
 		}
 	}
 

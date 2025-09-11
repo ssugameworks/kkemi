@@ -12,6 +12,11 @@ const (
 	MaxConcurrentRequests = 5
 )
 
+// 조직 ID 관련 상수
+const (
+	SoongsilUniversityID = 323 // 숭실대학교 solved.ac organizationId
+)
+
 // 잔디심기 챌린지 리그 분류 상수
 const (
 	LeagueRookie = 0 // 루키: Unrated ~ Silver V (티어 0-6)
