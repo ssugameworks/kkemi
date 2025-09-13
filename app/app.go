@@ -156,7 +156,14 @@ func (app *Application) Run() error {
 }
 
 func (app *Application) handleReady(s *discordgo.Session, event *discordgo.Ready) {
-	// TODO: Welcome message
+	utils.Info("Discord bot connected successfully as %s#%s", event.User.Username, event.User.Discriminator)
+	utils.Info("Bot is serving %d guilds", len(event.Guilds))
+	
+	// 봇 상태 설정
+	err := s.UpdateGameStatus(0, "!도움말 for commands")
+	if err != nil {
+		utils.Warn("Failed to set bot status: %v", err)
+	}
 }
 
 // warmupCache 기존 참가자 데이터로 캐시를 미리 워밍업합니다
