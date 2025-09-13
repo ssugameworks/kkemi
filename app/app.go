@@ -21,6 +21,9 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+// GlobalApp 전역 애플리케이션 인스턴스
+var GlobalApp *Application
+
 type Application struct {
 	config            *config.Config
 	session           *discordgo.Session
@@ -49,6 +52,9 @@ func New() (*Application, error) {
 
 	app.setupHandlers()
 	app.initializeScheduler()
+
+	// 전역 인스턴스 설정
+	GlobalApp = app
 
 	return app, nil
 }
@@ -169,9 +175,31 @@ func (app *Application) handleReady(s *discordgo.Session, event *discordgo.Ready
 	utils.Info("Bot is serving %d guilds", len(event.Guilds))
 
 	// 봇 상태 설정
-	err := s.UpdateGameStatus(0, constants.BotStatusMessage)
+	app.updateBotStatus(s)
+}
+
+// updateBotStatus 봇의 상태를 현재 대회에 맞게 업데이트합니다
+func (app *Application) updateBotStatus(s *discordgo.Session) {
+	statusMessage := constants.BotStatusMessage
+	if competition := app.storage.GetCompetition(); competition != nil && competition.IsActive {
+		statusMessage = competition.Name
+	}
+	
+	err := s.UpdateGameStatus(0, statusMessage)
 	if err != nil {
 		utils.Warn("Failed to set bot status: %v", err)
+	}
+}
+
+// GetSession 세션을 반환합니다 (다른 패키지에서 봇 상태 업데이트를 위해 사용)
+func (app *Application) GetSession() *discordgo.Session {
+	return app.session
+}
+
+// UpdateBotStatus 외부에서 봇 상태를 업데이트할 수 있도록 하는 public 메서드
+func (app *Application) UpdateBotStatus() {
+	if app.session != nil {
+		app.updateBotStatus(app.session)
 	}
 }
 

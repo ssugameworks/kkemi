@@ -40,44 +40,30 @@ func (sm *ScoreboardManager) GetStorage() interfaces.StorageRepository {
 }
 
 func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.MessageEmbed, error) {
-	utils.Info("GenerateScoreboard started for admin: %t", isAdmin)
-	
 	competition := sm.storage.GetCompetition()
 	if competition == nil || !competition.IsActive {
-		utils.Error("No active competition found")
 		return nil, fmt.Errorf("활성화된 대회가 없습니다")
 	}
-	utils.Info("Competition found: %s, Active: %t", competition.Name, competition.IsActive)
 
 	// 블랙아웃 체크
 	if embed := sm.checkBlackoutPeriod(competition, isAdmin); embed != nil {
-		utils.Info("Blackout period detected, returning blackout message")
 		return embed, nil
 	}
-	utils.Info("Blackout check passed")
 
 	// 참가자 체크
 	participants := sm.storage.GetParticipants()
 	if embed := sm.checkEmptyParticipants(competition, participants); embed != nil {
-		utils.Info("No participants found, returning empty message")
 		return embed, nil
 	}
-	utils.Info("Participants found: %d", len(participants))
 
 	// 점수 데이터 수집
-	utils.Info("About to call collectScoreData")
 	scores, err := sm.collectScoreData(participants)
-	utils.Info("collectScoreData call returned, checking error")
 	if err != nil {
-		utils.Error("Failed to collect score data: %v", err)
 		return nil, err
 	}
-	utils.Info("Score data collected: %d scores", len(scores))
 
 	// 포맷팅
-	embed := sm.formatScoreboard(competition, scores, isAdmin)
-	utils.Info("Scoreboard formatted successfully")
-	return embed, nil
+	return sm.formatScoreboard(competition, scores, isAdmin), nil
 }
 
 // checkBlackoutPeriod 블랙아웃 기간인지 확인하고 해당 embed 반환
@@ -106,38 +92,20 @@ func (sm *ScoreboardManager) checkEmptyParticipants(competition *models.Competit
 
 // collectScoreData 참가자들의 점수 데이터를 병렬로 수집합니다
 func (sm *ScoreboardManager) collectScoreData(participants []models.Participant) ([]models.ScoreData, error) {
-	utils.Info("collectScoreData started with %d participants", len(participants))
-	
 	if len(participants) == 0 {
-		utils.Info("No participants, returning empty slice")
 		return []models.ScoreData{}, nil
 	}
 
 	// 메모리 풀에서 재사용 가능한 리소스 가져오기
-	utils.Info("Getting resources from memory pool")
 	scoresPtr := performance.GetScoreDataSlice()
-	defer func() {
-		utils.Info("Returning ScoreDataSlice to pool")
-		performance.PutScoreDataSlice(scoresPtr)
-		utils.Info("ScoreDataSlice returned to pool")
-	}()
+	defer performance.PutScoreDataSlice(scoresPtr)
 	scores := *scoresPtr
-	utils.Info("Memory pool resources acquired")
 	
 	scoreChan := performance.GetScoreDataChannel(len(participants))
-	defer func() {
-		utils.Info("Skipping ScoreDataChannel return to avoid deadlock")
-		// TODO: Fix PutScoreDataChannel deadlock issue
-		// performance.PutScoreDataChannel(scoreChan)
-		utils.Info("ScoreDataChannel cleanup completed")
-	}()
+	defer performance.PutScoreDataChannel(scoreChan)
 	
 	semaphore := performance.GetSemaphoreChannel(sm.concurrencyManager.GetCurrentLimit())
-	defer func() {
-		utils.Info("Returning SemaphoreChannel to pool")
-		performance.PutSemaphoreChannel(semaphore)
-		utils.Info("SemaphoreChannel returned to pool")
-	}()
+	defer performance.PutSemaphoreChannel(semaphore)
 	
 	var wg sync.WaitGroup
 	var errorCount int64
@@ -180,11 +148,8 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 	utils.Info("Successfully calculated scores for %d out of %d participants", len(scores), len(participants))
 	
 	// 결과 복사본 생성 (메모리 풀의 슬라이스는 재사용되므로)
-	utils.Info("Creating result copy with %d scores", len(scores))
 	result := make([]models.ScoreData, len(scores))
 	copy(result, scores)
-	utils.Info("collectScoreData completed successfully with %d scores", len(result))
-	utils.Info("About to return from collectScoreData")
 	return result, nil
 }
 

@@ -81,10 +81,26 @@ func GetScoreDataChannel(bufferSize int) chan models.ScoreData {
 // PutScoreDataChannel 점수 데이터 채널을 풀에 반환합니다
 func PutScoreDataChannel(ch chan models.ScoreData) {
 	if cap(ch) <= constants.MaxPoolChannelCapacity {
-		// 채널을 비운 후 풀에 반환
+		// 채널이 닫혔는지 확인
+		select {
+		case _, ok := <-ch:
+			if !ok {
+				// 채널이 닫혔으므로 풀에 반환하지 않음
+				return
+			}
+			// 받은 데이터는 버리고 계속해서 채널을 비움
+		default:
+			// 채널이 비어있음
+		}
+		
+		// 채널을 완전히 비운 후 풀에 반환
 		for {
 			select {
-			case <-ch:
+			case _, ok := <-ch:
+				if !ok {
+					// 채널이 닫혔으므로 풀에 반환하지 않음
+					return
+				}
 				// 채널에서 모든 데이터 제거
 			default:
 				ScoreDataChanPool.Put(ch)

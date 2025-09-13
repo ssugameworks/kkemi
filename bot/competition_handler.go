@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"discord-bot/app"
 	"discord-bot/constants"
 	"discord-bot/errors"
 	"discord-bot/models"
@@ -85,6 +86,11 @@ func (ch *CompetitionHandler) handleCompetitionCreate(s *discordgo.Session, m *d
 	if err != nil {
 		errorHandlers.System().HandleCompetitionCreateFailed(err)
 		return
+	}
+
+	// 봇 상태 업데이트
+	if app.GlobalApp != nil {
+		app.GlobalApp.UpdateBotStatus()
 	}
 
 	blackoutStart := endDate.AddDate(0, 0, -constants.BlackoutDays)
@@ -228,6 +234,11 @@ func (ch *CompetitionHandler) handleUpdateName(s *discordgo.Session, m *discordg
 		botErr.UserMsg = "대회명 수정에 실패했습니다."
 		errors.HandleDiscordError(s, m.ChannelID, botErr)
 		return
+	}
+
+	// 봇 상태 업데이트
+	if app.GlobalApp != nil {
+		app.GlobalApp.UpdateBotStatus()
 	}
 
 	message := fmt.Sprintf(constants.MsgCompetitionUpdateSuccess, "대회명")
