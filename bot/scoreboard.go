@@ -104,14 +104,19 @@ func (sm *ScoreboardManager) checkEmptyParticipants(competition *models.Competit
 
 // collectScoreData 참가자들의 점수 데이터를 병렬로 수집합니다
 func (sm *ScoreboardManager) collectScoreData(participants []models.Participant) ([]models.ScoreData, error) {
+	utils.Info("collectScoreData started with %d participants", len(participants))
+	
 	if len(participants) == 0 {
+		utils.Info("No participants, returning empty slice")
 		return []models.ScoreData{}, nil
 	}
 
 	// 메모리 풀에서 재사용 가능한 리소스 가져오기
+	utils.Info("Getting resources from memory pool")
 	scoresPtr := performance.GetScoreDataSlice()
 	defer performance.PutScoreDataSlice(scoresPtr)
 	scores := *scoresPtr
+	utils.Info("Memory pool resources acquired")
 	
 	scoreChan := performance.GetScoreDataChannel(len(participants))
 	defer performance.PutScoreDataChannel(scoreChan)
@@ -162,6 +167,7 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 	// 결과 복사본 생성 (메모리 풀의 슬라이스는 재사용되므로)
 	result := make([]models.ScoreData, len(scores))
 	copy(result, scores)
+	utils.Info("collectScoreData completed successfully with %d scores", len(result))
 	return result, nil
 }
 
