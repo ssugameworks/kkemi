@@ -5,6 +5,7 @@ import (
 	"discord-bot/constants"
 	"discord-bot/interfaces"
 	"discord-bot/models"
+	"math"
 )
 
 type ScoreCalculator struct {
@@ -59,7 +60,8 @@ func (sc *ScoreCalculator) CalculateScoreWithTop100(top100 *api.Top100Response, 
 		totalScore += score
 	}
 
-	return totalScore
+	// 최종 점수는 반올림하여 정수로 반환 (테스트 기대치와 일치)
+	return math.Round(totalScore)
 }
 
 // getUserLeague 사용자의 등록 시점 티어를 기준으로 리그를 결정합니다

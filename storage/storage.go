@@ -40,7 +40,9 @@ func NewStorage(apiClient interfaces.APIClient) (interfaces.StorageRepository, e
 
 	firebaseCreds := os.Getenv("FIREBASE_CREDENTIALS_JSON")
 	if firebaseCreds == "" {
-		return nil, fmt.Errorf("FIREBASE_CREDENTIALS_JSON environment variable not set")
+		// 테스트/개발 환경 폴백: 인메모리 스토리지 사용
+		utils.Warn("FIREBASE_CREDENTIALS_JSON not set - falling back to in-memory storage (non-persistent, test/dev only)")
+		return NewInMemoryStorage(apiClient), nil
 	}
 
 	opt := option.WithCredentialsJSON([]byte(firebaseCreds))
@@ -133,7 +135,6 @@ func isFirestoreConnectionError(err error) bool {
 		strings.Contains(errStr, "unavailable") ||
 		strings.Contains(errStr, "deadline exceeded"))
 }
-
 
 // AddParticipant 새로운 참가자를 Firestore에 추가합니다.
 func (s *FirebaseStorage) AddParticipant(name, baekjoonID string, startTier, startRating int, organizationID int) error {

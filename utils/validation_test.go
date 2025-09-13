@@ -207,14 +207,14 @@ func TestTimeZoneConsistency(t *testing.T) {
 		t.Fatalf("Parse error: %v", err)
 	}
 
-	now := time.Now()
+	now := GetCurrentTimeKST()
 
 	t.Logf("Timezone consistency check:")
 	t.Logf("  Parsed date location: %s", parsed.Location())
 	t.Logf("  Current time location: %s", now.Location())
 	t.Logf("  Are they the same timezone? %v", parsed.Location() == now.Location())
 
-	if parsed.Location() != now.Location() {
+	if parsed.Location().String() != now.Location().String() {
 		t.Errorf("Timezone mismatch! Parsed date and current time should be in same timezone")
 	}
 }

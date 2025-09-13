@@ -147,6 +147,16 @@ func IsValidBaekjoonID(id string) bool {
 		return false
 	}
 
+	// 언더스코어로 끝나는 경우 방지
+	if strings.HasSuffix(id, "_") {
+		return false
+	}
+
+	// 연속된 언더스코어 방지
+	if strings.Contains(id, "__") {
+		return false
+	}
+
 	// 예약어 검증 (constants에서 관리)
 	lowerId := strings.ToLower(id)
 	for _, word := range constants.ReservedBaekjoonIDs {
