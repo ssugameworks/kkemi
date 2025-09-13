@@ -65,6 +65,11 @@ func NewStorage(apiClient interfaces.APIClient) (interfaces.StorageRepository, e
 	return s, nil
 }
 
+// GetClient Firestore 클라이언트를 반환합니다 (헬스체크용)
+func (s *FirebaseStorage) GetClient() *firestore.Client {
+	return s.client
+}
+
 // reconnectFirestore Firestore 클라이언트를 재연결합니다
 func (s *FirebaseStorage) reconnectFirestore() error {
 	s.reconnectMutex.Lock()

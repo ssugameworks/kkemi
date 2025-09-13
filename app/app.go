@@ -4,6 +4,7 @@ import (
 	"discord-bot/api"
 	"discord-bot/bot"
 	"discord-bot/config"
+	"discord-bot/health"
 	"discord-bot/interfaces"
 	"discord-bot/models"
 	"discord-bot/scheduler"
@@ -68,6 +69,15 @@ func (app *Application) initializeDependencies() error {
 		return fmt.Errorf("failed to initialize storage: %w", err)
 	}
 	app.storage = storage
+
+	// Firestore 헬스체크 등록
+	if firestoreStorage, ok := storage.(*storage.FirebaseStorage); ok {
+		if firestoreClient := firestoreStorage.GetClient(); firestoreClient != nil {
+			healthChecker := health.NewFirestoreHealthChecker(firestoreClient)
+			health.RegisterHealthChecker("firestore", healthChecker)
+			utils.Info("Firestore health checker registered")
+		}
+	}
 
 	return nil
 }
