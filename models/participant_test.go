@@ -8,7 +8,7 @@ import (
 func TestParticipant_Creation(t *testing.T) {
 	now := time.Now()
 	participant := Participant{
-		ID:                1,
+		ID:                "test-id-001",
 		Name:              "테스트 사용자",
 		BaekjoonID:        "testuser",
 		StartTier:         11,
@@ -18,8 +18,8 @@ func TestParticipant_Creation(t *testing.T) {
 		StartProblemCount: 3,
 	}
 
-	if participant.ID != 1 {
-		t.Errorf("Expected ID 1, got %d", participant.ID)
+	if participant.ID != "test-id-001" {
+		t.Errorf("Expected ID 'test-id-001', got '%s'", participant.ID)
 	}
 	if participant.Name != "테스트 사용자" {
 		t.Errorf("Expected name '테스트 사용자', got '%s'", participant.Name)
@@ -49,24 +49,18 @@ func TestCompetition_Creation(t *testing.T) {
 	endDate := time.Date(2024, 1, 31, 23, 59, 59, 0, time.UTC)
 	blackoutStartDate := time.Date(2024, 1, 28, 23, 59, 59, 0, time.UTC)
 
-	participants := []Participant{
-		{ID: 1, Name: "참가자1", BaekjoonID: "user1"},
-		{ID: 2, Name: "참가자2", BaekjoonID: "user2"},
-	}
-
 	competition := Competition{
-		ID:                1,
+		ID:                "test-competition-001",
 		Name:              "테스트 대회",
 		StartDate:         startDate,
 		EndDate:           endDate,
 		BlackoutStartDate: blackoutStartDate,
 		IsActive:          true,
 		ShowScoreboard:    true,
-		Participants:      participants,
 	}
 
-	if competition.ID != 1 {
-		t.Errorf("Expected ID 1, got %d", competition.ID)
+	if competition.ID != "test-competition-001" {
+		t.Errorf("Expected ID 'test-competition-001', got '%s'", competition.ID)
 	}
 	if competition.Name != "테스트 대회" {
 		t.Errorf("Expected name '테스트 대회', got '%s'", competition.Name)
@@ -86,14 +80,11 @@ func TestCompetition_Creation(t *testing.T) {
 	if !competition.ShowScoreboard {
 		t.Error("Scoreboard should be visible")
 	}
-	if len(competition.Participants) != 2 {
-		t.Errorf("Expected 2 participants, got %d", len(competition.Participants))
-	}
 }
 
 func TestScoreData_Creation(t *testing.T) {
 	scoreData := ScoreData{
-		ParticipantID: 1,
+		ParticipantID: "test-participant-001",
 		Name:          "테스트 사용자",
 		BaekjoonID:    "testuser",
 		Score:         1250.5,
@@ -102,8 +93,8 @@ func TestScoreData_Creation(t *testing.T) {
 		ProblemCount:  25,
 	}
 
-	if scoreData.ParticipantID != 1 {
-		t.Errorf("Expected participant ID 1, got %d", scoreData.ParticipantID)
+	if scoreData.ParticipantID != "test-participant-001" {
+		t.Errorf("Expected participant ID 'test-participant-001', got '%s'", scoreData.ParticipantID)
 	}
 	if scoreData.Name != "테스트 사용자" {
 		t.Errorf("Expected name '테스트 사용자', got '%s'", scoreData.Name)

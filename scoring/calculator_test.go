@@ -25,6 +25,10 @@ func (m *mockAPIClient) GetUserAdditionalInfo(handle string) (*api.UserAdditiona
 	return nil, nil
 }
 
+func (m *mockAPIClient) GetUserOrganizations(handle string) ([]api.Organization, error) {
+	return []api.Organization{}, nil
+}
+
 func TestScoreCalculator_CalculateScore(t *testing.T) {
 	tierManager := models.NewTierManager()
 
