@@ -4,6 +4,9 @@ import (
 	"context"
 	"discord-bot/utils"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"time"
 
 	monitoring "cloud.google.com/go/monitoring/apiv3"
@@ -27,9 +30,17 @@ func NewMetricsClient(projectID string) *MetricsClient {
 		return &MetricsClient{enabled: false}
 	}
 
+	// Firebase 인증 정보를 임시 파일로 생성하여 Google Cloud 인증에 사용
+	if err := setupGoogleCloudCredentials(); err != nil {
+		utils.Warn("Failed to setup Google Cloud credentials: %v", err)
+		utils.Warn("Telemetry disabled - ensure Firebase credentials are available")
+		return &MetricsClient{enabled: false}
+	}
+
 	client, err := monitoring.NewMetricClient(context.Background())
 	if err != nil {
-		utils.Error("Failed to create monitoring client: %v", err)
+		utils.Warn("Failed to create monitoring client: %v", err)
+		utils.Warn("Telemetry disabled")
 		return &MetricsClient{enabled: false}
 	}
 
@@ -247,4 +258,34 @@ func (m *MetricsClient) Close() error {
 		return nil
 	}
 	return m.client.Close()
+}
+
+// setupGoogleCloudCredentials Firebase 인증 정보를 Google Cloud 인증으로 설정합니다
+func setupGoogleCloudCredentials() error {
+	// 이미 GOOGLE_APPLICATION_CREDENTIALS가 설정되어 있다면 스킵
+	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") != "" {
+		return nil
+	}
+
+	// Firebase 인증 JSON이 있는지 확인
+	firebaseCredentials := os.Getenv("FIREBASE_CREDENTIALS_JSON")
+	if firebaseCredentials == "" {
+		return fmt.Errorf("neither GOOGLE_APPLICATION_CREDENTIALS nor FIREBASE_CREDENTIALS_JSON is set")
+	}
+
+	// 임시 파일 생성
+	tempDir := os.TempDir()
+	credFile := filepath.Join(tempDir, "discord-bot-gcloud-credentials.json")
+
+	// JSON 내용을 임시 파일에 저장
+	err := ioutil.WriteFile(credFile, []byte(firebaseCredentials), 0600)
+	if err != nil {
+		return fmt.Errorf("failed to write temporary credentials file: %v", err)
+	}
+
+	// 환경변수 설정
+	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", credFile)
+	
+	utils.Debug("Created temporary Google Cloud credentials file: %s", credFile)
+	return nil
 }
