@@ -65,7 +65,9 @@ func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.Messag
 	utils.Info("Participants found: %d", len(participants))
 
 	// 점수 데이터 수집
+	utils.Info("About to call collectScoreData")
 	scores, err := sm.collectScoreData(participants)
+	utils.Info("collectScoreData call returned, checking error")
 	if err != nil {
 		utils.Error("Failed to collect score data: %v", err)
 		return nil, err
@@ -114,15 +116,27 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 	// 메모리 풀에서 재사용 가능한 리소스 가져오기
 	utils.Info("Getting resources from memory pool")
 	scoresPtr := performance.GetScoreDataSlice()
-	defer performance.PutScoreDataSlice(scoresPtr)
+	defer func() {
+		utils.Info("Returning ScoreDataSlice to pool")
+		performance.PutScoreDataSlice(scoresPtr)
+		utils.Info("ScoreDataSlice returned to pool")
+	}()
 	scores := *scoresPtr
 	utils.Info("Memory pool resources acquired")
 	
 	scoreChan := performance.GetScoreDataChannel(len(participants))
-	defer performance.PutScoreDataChannel(scoreChan)
+	defer func() {
+		utils.Info("Returning ScoreDataChannel to pool")
+		performance.PutScoreDataChannel(scoreChan)
+		utils.Info("ScoreDataChannel returned to pool")
+	}()
 	
 	semaphore := performance.GetSemaphoreChannel(sm.concurrencyManager.GetCurrentLimit())
-	defer performance.PutSemaphoreChannel(semaphore)
+	defer func() {
+		utils.Info("Returning SemaphoreChannel to pool")
+		performance.PutSemaphoreChannel(semaphore)
+		utils.Info("SemaphoreChannel returned to pool")
+	}()
 	
 	var wg sync.WaitGroup
 	var errorCount int64
@@ -165,9 +179,11 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 	utils.Info("Successfully calculated scores for %d out of %d participants", len(scores), len(participants))
 	
 	// 결과 복사본 생성 (메모리 풀의 슬라이스는 재사용되므로)
+	utils.Info("Creating result copy with %d scores", len(scores))
 	result := make([]models.ScoreData, len(scores))
 	copy(result, scores)
 	utils.Info("collectScoreData completed successfully with %d scores", len(result))
+	utils.Info("About to return from collectScoreData")
 	return result, nil
 }
 
