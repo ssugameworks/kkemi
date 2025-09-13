@@ -14,6 +14,7 @@
 - 💬 **다중 채널**: DM 및 서버 채널 지원
 - 🚀 **고성능**: 병렬 API 호출과 메모리 풀로 최적화된 성능
 - 🛡️ **안정성**: 포괄적인 에러 처리 및 복구 시스템
+- 📊 **텔레메트리**: Google Cloud Monitoring을 통한 실시간 메트릭 수집
 
 ## 점수 계산 방식
 
@@ -54,6 +55,10 @@ export COMPETITION_END_DATE="2025-01-31"
 # Scoreboard Schedule Configuration (선택사항)
 export SCOREBOARD_HOUR="9"      # 스코어보드 전송 시간 (0-23)
 export SCOREBOARD_MINUTE="0"    # 스코어보드 전송 분 (0-59)
+
+# Telemetry Configuration (선택사항 - 메트릭 수집)
+export TELEMETRY_ENABLED="true"           # 텔레메트리 활성화
+export GOOGLE_CLOUD_PROJECT="your-project-id"  # Google Cloud 프로젝트 ID
 
 # 기타 설정 (선택사항)
 export LOG_LEVEL="INFO"         # 로그 레벨 (DEBUG, INFO, WARN, ERROR)
@@ -154,6 +159,26 @@ Discord Developer Portal에서 봇 생성 시 다음 권한이 필요합니다:
 - **재시도 로직**: 네트워크 오류 시 자동 재시도 (최대 3회)
 - **레이트 리미팅**: API 과부하 방지를 위한 요청 제한
 
+## 텔레메트리 및 모니터링
+
+### 메트릭 수집
+- **명령어 사용량**: 각 명령어별 호출 횟수와 관리자/일반 사용자 분류
+- **캐시 성능**: API 캐시 히트율, 총 호출 수, 캐시된 데이터 수
+- **대회 활동**: 대회 생성, 참가자 등록 등의 이벤트 추적
+- **성능 메트릭**: 스코어보드 생성 시간, API 응답 시간 등
+
+### Google Cloud Monitoring 연동
+- **커스텀 메트릭**: `custom.googleapis.com/discord_bot/*` 네임스페이스 사용
+- **실시간 대시보드**: 봇 사용량과 성능 지표 실시간 모니터링
+- **알람 설정**: 임계값 초과 시 자동 알림 (선택사항)
+- **로그 통합**: Cloud Logging과 연동된 구조화된 로그
+
+### 설정 방법
+1. Google Cloud Console에서 Monitoring API 활성화
+2. 서비스 계정에 Monitoring Metric Writer 권한 부여
+3. `TELEMETRY_ENABLED=true` 및 `GOOGLE_CLOUD_PROJECT` 환경변수 설정
+4. Firebase 인증 정보로 자동 인증 (동일 프로젝트 권장)
+
 ## 아키텍처
 
 ### 프로젝트 구조
@@ -196,6 +221,8 @@ discord-bot/
 │   └── calculator.go          # 인터페이스 기반 점수 계산
 ├── storage/
 │   └── storage.go             # Firebase/In-Memory 하이브리드 저장소
+├── telemetry/
+│   └── metrics.go             # Google Cloud Monitoring 메트릭 전송
 ├── bot/
 │   ├── commands.go            # 권한 기반 명령어 처리 및 실명 검증
 │   ├── command_deps.go        # 명령어 의존성 관리 및 봇 상태 업데이트
@@ -220,6 +247,7 @@ discord-bot/
 - **실시간 업데이트**: 대회 생성/수정 시 즉시 봇 상태 반영
 - **향상된 로깅**: 구조화된 JSON 로깅 시스템
 - **포괄적 에러 처리**: 타입별 에러 분류와 사용자 친화적 메시지
+- **실시간 모니터링**: Google Cloud Monitoring을 통한 성능 및 사용량 추적
 
 ### 인프라 개선
 - **Firebase/Firestore 지원**: 프로덕션 환경 데이터베이스

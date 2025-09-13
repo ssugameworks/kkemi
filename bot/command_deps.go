@@ -4,6 +4,7 @@ import (
 	"discord-bot/constants"
 	"discord-bot/interfaces"
 	"discord-bot/models"
+	"discord-bot/telemetry"
 	"discord-bot/utils"
 
 	"github.com/bwmarrin/discordgo"
@@ -17,6 +18,7 @@ type CommandDependencies struct {
 	TierManager       *models.TierManager
 	ScoreCalculator   interfaces.ScoreCalculator
 	Session           *discordgo.Session
+	MetricsClient     *telemetry.MetricsClient
 }
 
 // NewCommandDependencies 새로운 CommandDependencies 인스턴스를 생성합니다
@@ -27,6 +29,7 @@ func NewCommandDependencies(
 	tierManager *models.TierManager,
 	scoreCalculator interfaces.ScoreCalculator,
 	session *discordgo.Session,
+	metricsClient *telemetry.MetricsClient,
 ) *CommandDependencies {
 	return &CommandDependencies{
 		Storage:           storage,
@@ -35,6 +38,7 @@ func NewCommandDependencies(
 		TierManager:       tierManager,
 		ScoreCalculator:   scoreCalculator,
 		Session:           session,
+		MetricsClient:     metricsClient,
 	}
 }
 

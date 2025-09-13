@@ -11,6 +11,7 @@ import (
 	"discord-bot/scheduler"
 	"discord-bot/scoring"
 	"discord-bot/storage"
+	"discord-bot/telemetry"
 	"discord-bot/utils"
 	"fmt"
 	"os"
@@ -30,6 +31,7 @@ type Application struct {
 	commandHandler    *bot.CommandHandler
 	scoreboardManager *bot.ScoreboardManager
 	scheduler         *scheduler.Scheduler
+	metricsClient     *telemetry.MetricsClient
 }
 
 func New() (*Application, error) {
@@ -47,6 +49,7 @@ func New() (*Application, error) {
 		return nil, err
 	}
 
+	app.initializeTelemetry()
 	app.setupHandlers()
 	app.initializeScheduler()
 
@@ -101,6 +104,15 @@ func (app *Application) initializeDiscord() error {
 	return nil
 }
 
+func (app *Application) initializeTelemetry() {
+	if app.config.Telemetry.Enabled {
+		app.metricsClient = telemetry.NewMetricsClient(app.config.Telemetry.ProjectID)
+	} else {
+		utils.Info("Telemetry disabled")
+		app.metricsClient = telemetry.NewMetricsClient("") // disabled client
+	}
+}
+
 func (app *Application) setupHandlers() {
 	// 글로벌 TierManager 한 번만 생성
 	app.tierManager = models.GetTierManager()
@@ -108,7 +120,7 @@ func (app *Application) setupHandlers() {
 	// 의존성 주입을 통한 컴포넌트 생성
 	calculator := scoring.NewScoreCalculator(app.apiClient, app.tierManager)
 	app.scoreboardManager = bot.NewScoreboardManager(app.storage, calculator, app.apiClient, app.tierManager)
-	deps := bot.NewCommandDependencies(app.storage, app.apiClient, app.scoreboardManager, app.tierManager, calculator, app.session)
+	deps := bot.NewCommandDependencies(app.storage, app.apiClient, app.scoreboardManager, app.tierManager, calculator, app.session, app.metricsClient)
 	app.commandHandler = bot.NewCommandHandler(deps)
 
 	app.session.AddHandler(app.commandHandler.HandleMessage)
@@ -203,11 +215,21 @@ func (app *Application) warmupCache() {
 	}
 }
 
-// printCacheStats 캐시 통계를 출력합니다
+// printCacheStats 캐시 통계를 출력하고 텔레메트리로 전송합니다
 func (app *Application) printCacheStats() {
 	if cachedClient, ok := app.apiClient.(*api.CachedSolvedACClient); ok {
 		stats := cachedClient.GetCacheStats()
 		utils.Info("📊 %s", stats.String())
+		
+		// 텔레메트리로 캐시 메트릭 전송
+		if app.metricsClient != nil {
+			app.metricsClient.SendCacheMetrics(
+				stats.TotalCalls,
+				stats.CacheHits,
+				stats.CacheMisses,
+				stats.HitRate,
+			)
+		}
 	}
 }
 
@@ -230,6 +252,11 @@ func (app *Application) Stop() error {
 
 	if app.session != nil {
 		app.session.Close()
+	}
+
+	// 메트릭스 클라이언트 종료
+	if app.metricsClient != nil {
+		app.metricsClient.Close()
 	}
 
 	utils.Info("봇이 정상적으로 종료되었습니다.")

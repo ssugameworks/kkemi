@@ -7,6 +7,7 @@ import (
 	"discord-bot/utils"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -74,6 +75,12 @@ func (ch *CommandHandler) parseMessage(m *discordgo.MessageCreate) (command stri
 
 // routeCommand 명령어를 해당 핸들러로 라우팅합니다
 func (ch *CommandHandler) routeCommand(s *discordgo.Session, m *discordgo.MessageCreate, command string, params []string, isDM bool) {
+	// 명령어 사용 텔레메트리 전송
+	isAdmin := ch.isAdmin(s, m)
+	if ch.deps.MetricsClient != nil {
+		ch.deps.MetricsClient.SendCommandMetric(command, isAdmin)
+	}
+
 	switch command {
 	case "help", "도움말":
 		ch.handleHelp(s, m)
@@ -274,6 +281,13 @@ func (ch *CommandHandler) registerParticipant(name, baekjoonID string, userInfo 
 		errorHandlers.Data().HandleParticipantAlreadyExists(baekjoonID)
 		return false
 	}
+
+	// 참가자 등록 텔레메트리 전송
+	if ch.deps.MetricsClient != nil {
+		participantCount := len(ch.deps.Storage.GetParticipants())
+		ch.deps.MetricsClient.SendCompetitionMetric("participant_registered", participantCount)
+	}
+
 	return true
 }
 
@@ -317,7 +331,16 @@ func (ch *CommandHandler) handleScoreboard(s *discordgo.Session, m *discordgo.Me
 		return
 	}
 
+	// 스코어보드 생성 성능 측정 시작
+	startTime := time.Now()
 	embed, err := ch.deps.ScoreboardManager.GenerateScoreboard(isAdmin)
+	duration := time.Since(startTime)
+
+	// 스코어보드 성능 텔레메트리 전송
+	if ch.deps.MetricsClient != nil {
+		ch.deps.MetricsClient.SendPerformanceMetric("scoreboard_generation", duration, err == nil)
+	}
+
 	if err != nil {
 		utils.Error("Failed to generate scoreboard: %v", err)
 		errorHandlers.System().HandleScoreboardGenerationFailed(err)

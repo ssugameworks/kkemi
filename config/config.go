@@ -9,10 +9,11 @@ import (
 
 // Config 애플리케이션의 전체 설정을 관리합니다
 type Config struct {
-	Discord  DiscordConfig
-	Schedule ScheduleConfig
-	Logging  LoggingConfig
-	Features FeatureFlags
+	Discord    DiscordConfig
+	Schedule   ScheduleConfig
+	Logging    LoggingConfig
+	Features   FeatureFlags
+	Telemetry  TelemetryConfig
 }
 
 type DiscordConfig struct {
@@ -36,6 +37,11 @@ type FeatureFlags struct {
 	EnableDetailedErrors bool
 }
 
+type TelemetryConfig struct {
+	Enabled   bool
+	ProjectID string
+}
+
 // Load는 환경변수에서 설정을 로드합니다
 func Load() *Config {
 	return &Config{
@@ -55,6 +61,10 @@ func Load() *Config {
 		Features: FeatureFlags{
 			EnableAutoScoreboard: getEnvBool("ENABLE_AUTO_SCOREBOARD", true),
 			EnableDetailedErrors: getEnvBool("ENABLE_DETAILED_ERRORS", false),
+		},
+		Telemetry: TelemetryConfig{
+			Enabled:   getEnvBool("TELEMETRY_ENABLED", false),
+			ProjectID: getEnv("GOOGLE_CLOUD_PROJECT", ""),
 		},
 	}
 }

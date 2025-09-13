@@ -90,6 +90,12 @@ func (ch *CompetitionHandler) handleCompetitionCreate(s *discordgo.Session, m *d
 	// 봇 상태 업데이트
 	ch.commandHandler.deps.UpdateBotStatus()
 
+	// 대회 생성 텔레메트리 전송
+	if ch.commandHandler.deps.MetricsClient != nil {
+		participantCount := len(ch.commandHandler.deps.Storage.GetParticipants())
+		ch.commandHandler.deps.MetricsClient.SendCompetitionMetric("created", participantCount)
+	}
+
 	blackoutStart := endDate.AddDate(0, 0, -constants.BlackoutDays)
 	response := fmt.Sprintf(constants.MsgCompetitionCreateSuccess,
 		name,
