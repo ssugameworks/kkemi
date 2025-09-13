@@ -9,9 +9,10 @@
 - 🔒 **블랙아웃 모드**: 대회 종료 전 N일간 스코어보드 비공개
 - ⚡ **차등 점수**: 도전/기본/연습 문제에 따른 차등 점수
 - 🛠️ **대회 관리**: 대회 생성, 수정, 상태 관리 기능
+- 🤖 **동적 상태**: 봇 상태가 현재 활성 대회 이름으로 자동 표시
 - ⏰ **자동화**: 설정 가능한 시간에 자동 스코어보드 전송
 - 💬 **다중 채널**: DM 및 서버 채널 지원
-- 🚀 **고성능**: 병렬 API 호출로 빠른 응답 시간
+- 🚀 **고성능**: 병렬 API 호출과 메모리 풀로 최적화된 성능
 - 🛡️ **안정성**: 포괄적인 에러 처리 및 복구 시스템
 
 ## 점수 계산 방식
@@ -42,6 +43,14 @@
 export DISCORD_BOT_TOKEN="your_discord_bot_token_here"
 export DISCORD_CHANNEL_ID="your_channel_id_here"
 
+# Firebase/Firestore Configuration (프로덕션 환경용)
+export FIREBASE_CREDENTIALS_JSON='{"type":"service_account",...}'
+
+# Competition Initialization (선택사항 - 자동 대회 생성)
+export COMPETITION_NAME="Test Competition"
+export COMPETITION_START_DATE="2025-01-01"
+export COMPETITION_END_DATE="2025-01-31"
+
 # Scoreboard Schedule Configuration (선택사항)
 export SCOREBOARD_HOUR="9"      # 스코어보드 전송 시간 (0-23)
 export SCOREBOARD_MINUTE="0"    # 스코어보드 전송 분 (0-59)
@@ -49,6 +58,7 @@ export SCOREBOARD_MINUTE="0"    # 스코어보드 전송 분 (0-59)
 # 기타 설정 (선택사항)
 export LOG_LEVEL="INFO"         # 로그 레벨 (DEBUG, INFO, WARN, ERROR)
 export DEBUG_MODE="false"       # 디버그 모드
+export JSON_LOGGING="false"     # JSON 형식 로깅 (프로덕션용)
 ```
 
 ### 2. 의존성 설치
@@ -118,10 +128,16 @@ Discord Developer Portal에서 봇 생성 시 다음 권한이 필요합니다:
 
 ## 데이터 저장
 
-봇은 JSON 파일을 사용하여 데이터를 저장합니다:
-- `participants.json` - 참가자 정보 및 시작 시점 문제 기록
-- `competition.json` - 대회 설정 및 블랙아웃 정보
-- 파일 손상 시 자동으로 `.corrupted` 백업본을 생성합니다.
+### 프로덕션 환경 (Firebase/Firestore)
+- **참가자 데이터**: Firestore의 `participants` 컬렉션에 저장
+- **대회 정보**: Firestore의 `competitions` 컬렉션에 저장
+- **자동 재연결**: 네트워크 장애 시 자동 복구
+- **헬스체크**: 연결 상태 실시간 모니터링
+
+### 개발/테스트 환경 (In-Memory)
+- **임시 저장소**: 메모리 기반 비영구 데이터 저장
+- **빠른 개발**: Firebase 설정 없이 즉시 테스트 가능
+- **자동 폴백**: Firebase 인증 정보가 없으면 자동 전환
 
 ## API 사용
 
@@ -129,10 +145,14 @@ Discord Developer Portal에서 봇 생성 시 다음 권한이 필요합니다:
 - **사용자 정보**: `https://solved.ac/api/v3/user/show?handle={백준ID}`
 - **TOP 100**: `https://solved.ac/api/v3/user/top_100?handle={백준ID}`
 - **추가 정보**: `https://solved.ac/api/v3/user/additional_info?handle={백준ID}` - 본명 및 개인정보 조회
+- **조직 정보**: `https://solved.ac/api/v3/user/organizations?handle={백준ID}` - 대학 소속 확인
+
+### 성능 최적화
+- **적응형 동시성**: API 응답 시간에 따른 자동 동시성 제어 (1-10개)
+- **메모리 풀**: 객체 재사용으로 GC 압박 감소
+- **효율적 캐시**: 15분 TTL 기반 자동 캐시 관리
 - **재시도 로직**: 네트워크 오류 시 자동 재시도 (최대 3회)
 - **레이트 리미팅**: API 과부하 방지를 위한 요청 제한
-- **병렬 처리**: 다중 사용자 점수 계산 시 동시 요청 (최대 5개)
-- **이름 검증**: 등록 시 solved.ac 프로필의 실명과 입력 이름 일치 확인
 
 ## 아키텍처
 
@@ -143,7 +163,7 @@ discord-bot/
 ├── main.go                    # 애플리케이션 진입점
 ├── app/
 │   └── app.go                 # 애플리케이션 생명주기 및 의존성 관리
-├── interfaces/                # 의존성 역전을 위한 인터페이스 정의
+├── interfaces/
 │   ├── api.go                 # API 클라이언트 인터페이스
 │   ├── storage.go             # 스토리지 리포지토리 인터페이스
 │   └── scoring.go             # 점수 계산 인터페이스
@@ -161,24 +181,57 @@ discord-bot/
 ├── models/
 │   ├── participant.go         # 참가자 데이터 모델
 │   ├── competition.go         # 대회 데이터 모델  
-│   └── tier.go                # 통합된 티어 관리 시스템
+│   ├── tier.go                # 통합된 티어 관리 시스템
+│   └── score_data.go          # 점수 데이터 모델
 ├── api/
-│   └── solvedac.go            # 한글 에러 메시지 및 재시도 로직
+│   └── solvedac.go            # 캐시된 solved.ac API 클라이언트
+├── cache/
+│   └── api_cache.go           # TTL 기반 API 캐시 시스템
+├── performance/
+│   ├── memory_pool.go         # 메모리 풀 및 채널 관리
+│   └── adaptive_concurrency.go # 적응형 동시성 관리
+├── health/
+│   └── health_checker.go      # Firebase/Firestore 헬스체크
 ├── scoring/
 │   └── calculator.go          # 인터페이스 기반 점수 계산
 ├── storage/
-│   └── storage.go             # 인터페이스 기반 데이터 저장소
+│   └── storage.go             # Firebase/In-Memory 하이브리드 저장소
 ├── bot/
 │   ├── commands.go            # 권한 기반 명령어 처리 및 실명 검증
+│   ├── command_deps.go        # 명령어 의존성 관리 및 봇 상태 업데이트
 │   ├── competition_handler.go # 날짜 포맷팅 개선된 대회 관리
-│   └── scoreboard.go          # 스코어보드
+│   └── scoreboard.go          # 병렬 처리 기반 스코어보드
 ├── errors/
 │   └── errors.go              # 포괄적인 타입별 에러 시스템
-├── scheduler/
-│   └── scheduler.go           # 고루틴 리크 수정된 스케줄러
-├── participants.json          # 참가자 데이터 (실행 시 생성)
-└── competition.json           # 대회 데이터 (실행 시 생성)
+└── scheduler/
+    └── scheduler.go           # 고루틴 리크 수정된 스케줄러
 ```
+
+## 🚀 최신 개선사항 (v2.0)
+
+### 성능 최적화
+- **적응형 동시성 관리**: API 응답 시간에 따른 자동 동시성 조절
+- **메모리 풀링**: 객체 재사용으로 GC 압박 최소화
+- **효율적 캐시**: 자동 TTL 관리와 메모리 최적화
+- **데드락 방지**: 채널 반환 시 안전한 메모리 풀 관리
+
+### 사용자 경험
+- **동적 봇 상태**: 현재 활성 대회 이름이 봇 상태로 자동 표시
+- **실시간 업데이트**: 대회 생성/수정 시 즉시 봇 상태 반영
+- **향상된 로깅**: 구조화된 JSON 로깅 시스템
+- **포괄적 에러 처리**: 타입별 에러 분류와 사용자 친화적 메시지
+
+### 인프라 개선
+- **Firebase/Firestore 지원**: 프로덕션 환경 데이터베이스
+- **자동 재연결**: 네트워크 장애 시 자동 복구
+- **헬스체크**: 연결 상태 실시간 모니터링
+- **Railway 배포**: 클라우드 환경 최적화
+
+### 코드 품질
+- **의존성 주입**: 테스트 가능한 깔끔한 아키텍처
+- **인터페이스 분리**: 모듈 간 낮은 결합도
+- **타입 안전성**: 포괄적인 타입 검사
+- **단위 테스트**: 핵심 로직 테스트 커버리지
 
 ## 라이선스
 
