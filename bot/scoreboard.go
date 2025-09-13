@@ -68,7 +68,7 @@ func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.Messag
 
 // checkBlackoutPeriod 블랙아웃 기간인지 확인하고 해당 embed 반환
 func (sm *ScoreboardManager) checkBlackoutPeriod(competition *models.Competition, isAdmin bool) *discordgo.MessageEmbed {
-	if sm.storage.IsBlackoutPeriod() && competition.ShowScoreboard && !isAdmin {
+	if sm.storage.IsBlackoutPeriod() && !isAdmin {
 		return &discordgo.MessageEmbed{
 			Title:       constants.MsgScoreboardBlackout,
 			Description: constants.MsgScoreboardBlackoutDesc,
