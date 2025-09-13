@@ -17,7 +17,7 @@ func IsValidUsername(username string) bool {
 
 	// 유니코드 표시 폭 검증 (한글이 2칸 차지하므로 실제 표시 폭 고려)
 	displayWidth := GetDisplayWidth(username)
-	if displayWidth > 40 { // 한글 20자 또는 영문 40자 정도
+	if displayWidth > constants.MaxUsernameDisplayWidth {
 		return false
 	}
 
@@ -29,6 +29,11 @@ func IsValidUsername(username string) bool {
 
 	// 악의적인 패턴 방지 (보안 강화)
 	if containsMaliciousPattern(username) {
+		return false
+	}
+
+	// 예약어 검증
+	if isReservedUsername(username) {
 		return false
 	}
 
@@ -55,29 +60,35 @@ func IsValidUsername(username string) bool {
 	return true
 }
 
+// isReservedUsername 예약어인지 확인합니다
+func isReservedUsername(username string) bool {
+	lowerUsername := strings.ToLower(strings.TrimSpace(username))
+	for _, reserved := range constants.ReservedBaekjoonIDs {
+		if lowerUsername == reserved {
+			return true
+		}
+	}
+	return false
+}
+
 // containsMaliciousPattern 악의적인 패턴을 감지합니다
 func containsMaliciousPattern(input string) bool {
-	// SQL Injection 패턴 감지
-	sqlPatterns := []string{
-		"'", "\"", ";", "--", "/*", "*/", "union", "select", "insert", "update", "delete", "drop", "create", "alter",
-		"exec", "execute", "sp_", "xp_", "script", "javascript", "vbscript", "onload", "onerror", "onclick",
-	}
-
+	// SQL Injection 및 악성 패턴 감지 (constants에서 관리)
 	lowerInput := strings.ToLower(input)
-	for _, pattern := range sqlPatterns {
+	for _, pattern := range constants.SecurityMaliciousPatterns {
 		if strings.Contains(lowerInput, pattern) {
 			return true
 		}
 	}
 
 	// 과도한 반복 문자 방지 (DoS 공격 방지)
-	if hasExcessiveRepeats(input, 5) {
+	if hasExcessiveRepeats(input, constants.MaxCharacterRepeats) {
 		return true
 	}
 
 	// 제어 문자 방지
 	for _, char := range input {
-		if char < 32 && char != 9 && char != 10 && char != 13 { // 탭, 줄바꿈, 캐리지 리턴 제외
+		if char < constants.ControlCharMin && char != constants.ControlCharTab && char != constants.ControlCharLF && char != constants.ControlCharCR { // 탭, 줄바꿈, 캐리지 리턴 제외
 			return true
 		}
 	}
@@ -136,6 +147,14 @@ func IsValidBaekjoonID(id string) bool {
 		return false
 	}
 
+	// 예약어 검증 (constants에서 관리)
+	lowerId := strings.ToLower(id)
+	for _, word := range constants.ReservedBaekjoonIDs {
+		if lowerId == word {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -156,7 +175,7 @@ func ParseDateWithValidation(dateStr, fieldName string) (time.Time, error) {
 	}
 
 	// KST 시간대로 설정 (Railway 환경에서도 안전하게 작동)
-	kst := time.FixedZone("KST", 9*60*60) // UTC+9
+	kst := time.FixedZone("KST", constants.KSTOffsetSeconds) // UTC+9
 	localDate := time.Date(parsedDate.Year(), parsedDate.Month(), parsedDate.Day(), 0, 0, 0, 0, kst)
 
 	return localDate, nil
@@ -193,7 +212,7 @@ func ValidateAndParseCompetitionDates(name, startDateStr, endDateStr string) (ti
 
 // GetCurrentTimeKST 현재 시간을 KST로 반환합니다 (Railway 환경 대응)
 func GetCurrentTimeKST() time.Time {
-	kst := time.FixedZone("KST", 9*60*60) // UTC+9
+	kst := time.FixedZone("KST", constants.KSTOffsetSeconds) // UTC+9
 	return time.Now().In(kst)
 }
 
@@ -212,10 +231,11 @@ func TruncateString(s string, maxLen int) string {
 func GetDisplayWidth(s string) int {
 	width := 0
 	for _, r := range s {
-		if r >= 0x1100 && r <= 0x11FF || // 한글 자모
-			r >= 0x3130 && r <= 0x318F || // 한글 호환 자모
-			r >= 0xAC00 && r <= 0xD7AF || // 한글 완성형
-			r >= 0xFF01 && r <= 0xFF5E { // 전각 문자
+		if r >= constants.UnicodeHangulJamoStart && r <= constants.UnicodeHangulJamoEnd || // 한글 자모
+			r >= constants.UnicodeHangulCompatStart && r <= constants.UnicodeHangulCompatEnd || // 한글 호환 자모
+			r >= constants.UnicodeHangulSyllableStart && r <= constants.UnicodeHangulSyllableEnd || // 한글 완성형
+			r >= constants.UnicodeCJKStart && r <= constants.UnicodeCJKEnd || // CJK 한자
+			r >= constants.UnicodeFullwidthPrintableStart && r <= constants.UnicodeFullwidthPrintableEnd { // 전각 인쇄 가능 문자
 			width += 2 // 한글, 한자 등 전각 문자는 2칸
 		} else {
 			width += 1 // 영어, 숫자 등 반각 문자는 1칸
@@ -247,4 +267,3 @@ func SanitizeString(s string) string {
 
 	return strings.TrimSpace(cleaned.String())
 }
-

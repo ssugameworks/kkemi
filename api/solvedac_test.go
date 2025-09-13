@@ -1,6 +1,7 @@
 package api
 
 import (
+	"discord-bot/constants"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -53,7 +54,7 @@ func TestSolvedACClient_GetUserInfo_Success(t *testing.T) {
 	defer server.Close()
 
 	client := &SolvedACClient{
-		client:  &http.Client{Timeout: 10 * time.Second},
+		client:  &http.Client{Timeout: constants.TestAPITimeout},
 		baseURL: server.URL,
 	}
 
@@ -89,7 +90,7 @@ func TestSolvedACClient_GetUserInfo_NotFound(t *testing.T) {
 	defer server.Close()
 
 	client := &SolvedACClient{
-		client:  &http.Client{Timeout: 10 * time.Second},
+		client:  &http.Client{Timeout: constants.TestAPITimeout},
 		baseURL: server.URL,
 	}
 
@@ -136,7 +137,7 @@ func TestSolvedACClient_GetUserTop100_Success(t *testing.T) {
 	defer server.Close()
 
 	client := &SolvedACClient{
-		client:  &http.Client{Timeout: 10 * time.Second},
+		client:  &http.Client{Timeout: constants.TestAPITimeout},
 		baseURL: server.URL,
 	}
 
@@ -175,7 +176,7 @@ func TestSolvedACClient_GetUserAdditionalInfo_Success(t *testing.T) {
 	defer server.Close()
 
 	client := &SolvedACClient{
-		client:  &http.Client{Timeout: 10 * time.Second},
+		client:  &http.Client{Timeout: constants.TestAPITimeout},
 		baseURL: server.URL,
 	}
 
@@ -193,7 +194,7 @@ func TestSolvedACClient_GetUserAdditionalInfo_Success(t *testing.T) {
 func TestSolvedACClient_Timeout(t *testing.T) {
 	// 느린 Mock 서버 생성
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(2 * time.Second) // 2초 대기
+		time.Sleep(constants.TestRetryDelay) // 테스트용 대기
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -220,7 +221,7 @@ func TestSolvedACClient_InvalidJSON(t *testing.T) {
 	defer server.Close()
 
 	client := &SolvedACClient{
-		client:  &http.Client{Timeout: 10 * time.Second},
+		client:  &http.Client{Timeout: constants.TestAPITimeout},
 		baseURL: server.URL,
 	}
 

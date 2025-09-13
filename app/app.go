@@ -143,7 +143,7 @@ func (app *Application) Start() error {
 }
 
 func (app *Application) printStartupMessage() {
-	utils.Info("Discord Bot v0.1.0")
+	utils.Info("Discord Bot v%s", constants.BotVersion)
 	utils.Info("📋 사용 가능한 명령어: !help")
 	if app.config.Schedule.Enabled {
 		utils.Info("⏰ 매일 %02d:%02d에 자동으로 스코어보드가 전송됩니다.",

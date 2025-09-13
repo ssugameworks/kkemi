@@ -14,7 +14,7 @@ const (
 
 // 조직 ID 관련 상수
 const (
-	SoongsilUniversityID = 323 // 숭실대학교 solved.ac organizationId
+	UniversityID = 323 // 숭실대학교 organizationId
 )
 
 // 잔디심기 챌린지 리그 분류 상수
@@ -105,7 +105,6 @@ const (
 const (
 	ColorTierGold = 0xE09E37 // 골드 - 스코어보드 기본 색상용
 )
-
 
 // 환경 변수 키
 const (

@@ -2,6 +2,7 @@ package health
 
 import (
 	"context"
+	"discord-bot/constants"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -43,14 +44,14 @@ func (f *FirestoreHealthChecker) CheckHealth() (string, error) {
 		return "disconnected", fmt.Errorf("firestore client is nil")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), constants.FirestoreHealthCheckTimeout)
 	defer cancel()
 
 	// 간단한 쿼리로 연결 상태 확인
-	_, err := f.client.Collection("health_check").Limit(1).Documents(ctx).Next()
+	_, err := f.client.Collection(constants.HealthCheckCollectionName).Limit(1).Documents(ctx).Next()
 	if err != nil {
 		// 컬렉션이 없어도 연결은 정상이므로 특정 에러는 무시
-		if err.Error() == "no more items in iterator" {
+		if err.Error() == constants.FirestoreNoItemsError {
 			return "connected", nil
 		}
 		return "error", err
@@ -72,7 +73,7 @@ func RegisterHealthChecker(name string, checker HealthChecker) {
 // StartHealthServer 헬스체크 HTTP 서버를 시작합니다
 func StartHealthServer(port string) {
 	if port == "" {
-		port = "8080"
+		port = constants.DefaultHTTPPort
 	}
 
 	http.HandleFunc("/health", healthHandler)
@@ -95,7 +96,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	runtime.ReadMemStats(&memStats)
 
 	dependencies := make(map[string]string)
-	overallStatus := "healthy"
+	overallStatus := constants.HealthStatusHealthy
 
 	// 등록된 모든 의존성 헬스체크 수행
 	for name, checker := range healthCheckers {
@@ -103,7 +104,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			dependencies[name] = fmt.Sprintf("%s: %v", status, err)
 			if status == "error" || status == "disconnected" {
-				overallStatus = "unhealthy"
+				overallStatus = constants.HealthStatusUnhealthy
 			}
 		} else {
 			dependencies[name] = status
@@ -114,14 +115,14 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 		Status:       overallStatus,
 		Timestamp:    time.Now(),
 		Uptime:       time.Since(startTime).String(),
-		Version:      "v1.0.0",
+		Version:      constants.APIVersion,
 		GoVersion:    runtime.Version(),
-		Memory:       fmt.Sprintf("%.2f MB", float64(memStats.Alloc)/1024/1024),
+		Memory:       fmt.Sprintf("%.2f MB", float64(memStats.Alloc)/constants.BytesToMB),
 		Dependencies: dependencies,
 	}
 
 	// 전체 상태에 따라 HTTP 상태 코드 설정
-	if overallStatus == "healthy" {
+	if overallStatus == constants.HealthStatusHealthy {
 		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusServiceUnavailable)

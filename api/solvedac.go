@@ -120,7 +120,7 @@ func (c *SolvedACClient) doRequest(url, requestType, handle string) ([]byte, err
 		if resp.StatusCode != http.StatusOK {
 			lastErr = fmt.Errorf("API가 상태 코드 %d를 반환했습니다", resp.StatusCode)
 			utils.Warn("API returned non-200 status for %s %s: %d", requestType, handle, resp.StatusCode)
-			if resp.StatusCode >= 500 {
+			if resp.StatusCode >= constants.HTTPServerErrorThreshold {
 				continue // 서버 에러는 재시도
 			}
 			break // 클라이언트 에러는 즉시 반환

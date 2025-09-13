@@ -248,8 +248,8 @@ func (ch *CommandHandler) validateUniversityAffiliation(baekjoonID string, error
 
 	// 특정 학교 소속인지 확인
 	for _, org := range organizations {
-		if org.OrganizationID == constants.SoongsilUniversityID {
-			return constants.SoongsilUniversityID, true
+		if org.OrganizationID == constants.UniversityID {
+			return constants.UniversityID, true
 		}
 	}
 

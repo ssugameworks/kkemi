@@ -1,6 +1,7 @@
 package performance
 
 import (
+	"discord-bot/constants"
 	"discord-bot/models"
 	"strings"
 	"sync"
@@ -53,14 +54,14 @@ func GetScoreDataSlice() *[]models.ScoreData {
 // PutScoreDataSlice 점수 데이터 슬라이스를 풀에 반환합니다
 func PutScoreDataSlice(slice *[]models.ScoreData) {
 	// 메모리 누수 방지를 위해 큰 슬라이스는 풀에 반환하지 않음
-	if cap(*slice) <= 200 {
+	if cap(*slice) <= constants.MaxPoolSliceCapacity {
 		ScoreDataSlicePool.Put(slice)
 	}
 }
 
 // GetScoreDataChannel 재사용 가능한 점수 데이터 채널을 가져옵니다
 func GetScoreDataChannel(bufferSize int) chan models.ScoreData {
-	if bufferSize <= 100 {
+	if bufferSize <= constants.MaxPoolChannelCapacity {
 		// 풀에서 재사용 가능한 채널 가져오기
 		ch := ScoreDataChanPool.Get().(chan models.ScoreData)
 		// 채널이 비어있는지 확인하고 비우기
@@ -79,7 +80,7 @@ func GetScoreDataChannel(bufferSize int) chan models.ScoreData {
 
 // PutScoreDataChannel 점수 데이터 채널을 풀에 반환합니다
 func PutScoreDataChannel(ch chan models.ScoreData) {
-	if cap(ch) <= 100 {
+	if cap(ch) <= constants.MaxPoolChannelCapacity {
 		// 채널을 비운 후 풀에 반환
 		for {
 			select {
@@ -95,7 +96,7 @@ func PutScoreDataChannel(ch chan models.ScoreData) {
 
 // GetSemaphoreChannel 재사용 가능한 세마포어 채널을 가져옵니다
 func GetSemaphoreChannel(size int) chan struct{} {
-	if size <= 20 {
+	if size <= constants.MaxPoolSemaphoreSize {
 		ch := SemaphoreChanPool.Get().(chan struct{})
 		// 채널이 비어있는지 확인하고 비우기
 		for {
@@ -113,7 +114,7 @@ func GetSemaphoreChannel(size int) chan struct{} {
 
 // PutSemaphoreChannel 세마포어 채널을 풀에 반환합니다
 func PutSemaphoreChannel(ch chan struct{}) {
-	if cap(ch) <= 20 {
+	if cap(ch) <= constants.MaxPoolSemaphoreSize {
 		// 채널을 비운 후 풀에 반환
 		for {
 			select {
@@ -137,7 +138,7 @@ func GetStringBuilder() *strings.Builder {
 // PutStringBuilder 문자열 빌더를 풀에 반환합니다
 func PutStringBuilder(sb *strings.Builder) {
 	// 너무 큰 빌더는 풀에 반환하지 않음 (메모리 누수 방지)
-	if sb.Cap() <= 1024 {
+	if sb.Cap() <= constants.MaxStringBuilderSize {
 		StringBuilderPool.Put(sb)
 	}
 }

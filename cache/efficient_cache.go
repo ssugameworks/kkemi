@@ -113,8 +113,8 @@ func NewEfficientAPICache() *EfficientAPICache {
 		userOrganizationsTTL: constants.UserAdditionalCacheTTL,
 		
 		// 효율적인 정리 설정
-		cleanupBatchSize:   50,                    // 한 번에 50개씩 처리
-		maxCleanupDuration: 10 * time.Millisecond, // 최대 10ms까지만 정리 작업
+		cleanupBatchSize:   constants.CacheCleanupBatchSize,   // 한 번에 처리할 항목 수
+		maxCleanupDuration: constants.MaxCacheCleanupDuration, // 최대 정리 시간
 		lastCleanup:        time.Now(),
 	}
 }
