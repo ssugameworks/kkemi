@@ -16,6 +16,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"cloud.google.com/go/firestore"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -70,12 +71,18 @@ func (app *Application) initializeDependencies() error {
 	}
 	app.storage = storage
 
-	// Firestore 헬스체크 등록
-	if firestoreStorage, ok := storage.(*storage.FirebaseStorage); ok {
-		if firestoreClient := firestoreStorage.GetClient(); firestoreClient != nil {
-			healthChecker := health.NewFirestoreHealthChecker(firestoreClient)
-			health.RegisterHealthChecker("firestore", healthChecker)
-			utils.Info("Firestore health checker registered")
+	// Firestore 헬스체크 등록 (타입 확인을 위한 인터페이스 메서드 사용)
+	type ClientProvider interface {
+		GetClient() interface{}
+	}
+	
+	if clientProvider, ok := storage.(ClientProvider); ok {
+		if client := clientProvider.GetClient(); client != nil {
+			if firestoreClient, ok := client.(*firestore.Client); ok && firestoreClient != nil {
+				healthChecker := health.NewFirestoreHealthChecker(firestoreClient)
+				health.RegisterHealthChecker("firestore", healthChecker)
+				utils.Info("Firestore health checker registered")
+			}
 		}
 	}
 

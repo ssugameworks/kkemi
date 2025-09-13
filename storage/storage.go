@@ -66,7 +66,7 @@ func NewStorage(apiClient interfaces.APIClient) (interfaces.StorageRepository, e
 }
 
 // GetClient Firestore 클라이언트를 반환합니다 (헬스체크용)
-func (s *FirebaseStorage) GetClient() *firestore.Client {
+func (s *FirebaseStorage) GetClient() interface{} {
 	return s.client
 }
 

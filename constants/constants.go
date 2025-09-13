@@ -12,14 +12,6 @@ const (
 	MaxConcurrentRequests = 5
 )
 
-// 캐시 관련 상수
-const (
-	UserInfoCacheTTL       = 30 * time.Minute // 사용자 정보 캐시 유지 시간
-	UserTop100CacheTTL     = 1 * time.Hour    // TOP 100 캐시 유지 시간 (변경 빈도 낮음)
-	UserAdditionalCacheTTL = 6 * time.Hour    // 추가 정보 캐시 유지 시간 (거의 변경되지 않음)
-	CacheCleanupInterval   = 10 * time.Minute // 캐시 정리 주기
-)
-
 // 조직 ID 관련 상수
 const (
 	SoongsilUniversityID = 323 // 숭실대학교 solved.ac organizationId
