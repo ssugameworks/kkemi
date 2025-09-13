@@ -4,6 +4,7 @@ import (
 	"discord-bot/api"
 	"discord-bot/bot"
 	"discord-bot/config"
+	"discord-bot/constants"
 	"discord-bot/health"
 	"discord-bot/interfaces"
 	"discord-bot/models"
@@ -142,9 +143,9 @@ func (app *Application) Start() error {
 
 func (app *Application) printStartupMessage() {
 	utils.Info("Discord Bot v0.1.0")
-	fmt.Println("📋 사용 가능한 명령어: !help")
+	utils.Info("📋 사용 가능한 명령어: !help")
 	if app.config.Schedule.Enabled {
-		fmt.Printf("⏰ 매일 %02d:%02d에 자동으로 스코어보드가 전송됩니다.\n",
+		utils.Info("⏰ 매일 %02d:%02d에 자동으로 스코어보드가 전송됩니다.",
 			app.config.Schedule.ScoreboardHour, app.config.Schedule.ScoreboardMinute)
 	}
 }
@@ -167,7 +168,7 @@ func (app *Application) handleReady(s *discordgo.Session, event *discordgo.Ready
 	utils.Info("Bot is serving %d guilds", len(event.Guilds))
 	
 	// 봇 상태 설정
-	err := s.UpdateGameStatus(0, "!도움말 for commands")
+	err := s.UpdateGameStatus(0, constants.BotStatusMessage)
 	if err != nil {
 		utils.Warn("Failed to set bot status: %v", err)
 	}
@@ -200,7 +201,7 @@ func (app *Application) printCacheStats() {
 }
 
 func (app *Application) Stop() error {
-	fmt.Println("🔄 봇을 종료하는 중...")
+	utils.Info("🔄 봇을 종료하는 중...")
 
 	// 종료 전 캐시 통계 출력
 	app.printCacheStats()
@@ -220,6 +221,6 @@ func (app *Application) Stop() error {
 		app.session.Close()
 	}
 
-	fmt.Println("봇이 정상적으로 종료되었습니다.")
+	utils.Info("봇이 정상적으로 종료되었습니다.")
 	return nil
 }

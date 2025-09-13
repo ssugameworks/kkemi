@@ -98,7 +98,6 @@ const (
 
 // 메시지 템플릿
 const (
-	DMReceivedTemplate  = "DM 수신: %s from %s\n"
 	CommandPrefixLength = 1 // "!" 길이
 )
 

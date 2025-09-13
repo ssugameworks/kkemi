@@ -56,7 +56,7 @@ func (ch *CommandHandler) shouldIgnoreMessage(s *discordgo.Session, m *discordgo
 
 	// DM 디버깅 로그
 	if m.GuildID == "" {
-		fmt.Printf(constants.DMReceivedTemplate, m.Content, m.Author.Username)
+		utils.Debug("DM 수신: %s from %s", m.Content, m.Author.Username)
 	}
 
 	return false

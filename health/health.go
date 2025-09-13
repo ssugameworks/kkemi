@@ -79,6 +79,7 @@ func StartHealthServer(port string) {
 	http.HandleFunc("/", healthHandler) // Railway의 기본 헬스체크
 	
 	go func() {
+		// 간단한 로그 출력 (utils import를 피하기 위해 log 패키지 사용)
 		fmt.Printf("Health check server starting on port %s\n", port)
 		if err := http.ListenAndServe(":"+port, nil); err != nil {
 			fmt.Printf("Health server error: %v\n", err)
