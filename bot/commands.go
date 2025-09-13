@@ -304,21 +304,32 @@ func (ch *CommandHandler) sendRegistrationSuccess(s *discordgo.Session, channelI
 func (ch *CommandHandler) handleScoreboard(s *discordgo.Session, m *discordgo.MessageCreate) {
 	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
 
+	utils.Info("Scoreboard command received from user: %s (ID: %s)", m.Author.Username, m.Author.ID)
+	utils.Info("Guild ID: %s, Channel ID: %s", m.GuildID, m.ChannelID)
+
 	// 관리자 권한 확인
-	if !ch.isAdmin(s, m) {
+	isAdmin := ch.isAdmin(s, m)
+	utils.Info("User %s admin status: %t", m.Author.Username, isAdmin)
+
+	if !isAdmin {
+		utils.Warn("User %s attempted to use scoreboard without admin permissions", m.Author.Username)
 		errorHandlers.Validation().HandleInsufficientPermissions()
 		return
 	}
 
-	isAdmin := ch.isAdmin(s, m)
 	embed, err := ch.deps.ScoreboardManager.GenerateScoreboard(isAdmin)
 	if err != nil {
+		utils.Error("Failed to generate scoreboard: %v", err)
 		errorHandlers.System().HandleScoreboardGenerationFailed(err)
 		return
 	}
 
+	utils.Info("Scoreboard generated successfully, sending to channel %s", m.ChannelID)
+
 	if _, err := s.ChannelMessageSendEmbed(m.ChannelID, embed); err != nil {
 		utils.Error("DISCORD API ERROR: Failed to send scoreboard embed: %v", err)
+	} else {
+		utils.Info("Scoreboard sent successfully")
 	}
 }
 
@@ -395,8 +406,11 @@ func (ch *CommandHandler) handleRemoveParticipant(s *discordgo.Session, m *disco
 
 // isAdmin 사용자가 서버 관리자 권한을 가지고 있는지 확인합니다
 func (ch *CommandHandler) isAdmin(s *discordgo.Session, m *discordgo.MessageCreate) bool {
+	utils.Info("Checking admin permissions for user %s (ID: %s)", m.Author.Username, m.Author.ID)
+
 	// DM에서는 관리자 권한 없음
 	if m.GuildID == "" {
+		utils.Info("User is in DM, no admin permissions")
 		return false
 	}
 
@@ -407,31 +421,41 @@ func (ch *CommandHandler) isAdmin(s *discordgo.Session, m *discordgo.MessageCrea
 		return false
 	}
 
+	utils.Info("Guild found: %s (ID: %s), Owner: %s", guild.Name, guild.ID, guild.OwnerID)
+
 	// 서버 소유자인지 확인
 	if m.Author.ID == guild.OwnerID {
+		utils.Info("User %s is the guild owner - granting admin access", m.Author.Username)
 		return true
 	}
 
 	// 멤버 정보 가져오기
 	member, err := s.GuildMember(m.GuildID, m.Author.ID)
 	if err != nil || member == nil {
-		utils.Warn("Cannot get member information: %v", err)
+		utils.Warn("Cannot get member information for %s: %v", m.Author.Username, err)
 		return false
 	}
+
+	utils.Info("Member found with %d roles", len(member.Roles))
 
 	// 멤버의 역할들을 확인
 	for _, roleID := range member.Roles {
 		role, err := s.State.Role(m.GuildID, roleID)
 		if err != nil {
+			utils.Warn("Cannot get role %s: %v", roleID, err)
 			continue
 		}
 
+		utils.Info("Checking role: %s (ID: %s), Permissions: %d", role.Name, role.ID, role.Permissions)
+
 		// 관리자 권한(ADMINISTRATOR) 확인
 		if role.Permissions&discordgo.PermissionAdministrator != 0 {
+			utils.Info("User %s has ADMINISTRATOR permission through role %s - granting admin access", m.Author.Username, role.Name)
 			return true
 		}
 	}
 
+	utils.Info("User %s has no admin permissions", m.Author.Username)
 	return false
 }
 
