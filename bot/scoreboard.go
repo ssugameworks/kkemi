@@ -126,9 +126,10 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 	
 	scoreChan := performance.GetScoreDataChannel(len(participants))
 	defer func() {
-		utils.Info("Returning ScoreDataChannel to pool")
-		performance.PutScoreDataChannel(scoreChan)
-		utils.Info("ScoreDataChannel returned to pool")
+		utils.Info("Skipping ScoreDataChannel return to avoid deadlock")
+		// TODO: Fix PutScoreDataChannel deadlock issue
+		// performance.PutScoreDataChannel(scoreChan)
+		utils.Info("ScoreDataChannel cleanup completed")
 	}()
 	
 	semaphore := performance.GetSemaphoreChannel(sm.concurrencyManager.GetCurrentLimit())
