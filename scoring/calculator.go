@@ -37,7 +37,7 @@ func (sc *ScoreCalculator) CalculateScoreWithTop100(top100 *api.Top100Response, 
 
 	// 참가자의 리그 결정 (등록 시점 티어 기준)
 	userLeague := sc.getUserLeague(startTier)
-	
+
 	totalScore := 0.0
 
 	for _, problem := range top100.Items {
@@ -68,7 +68,7 @@ func (sc *ScoreCalculator) getUserLeague(startTier int) int {
 	if startTier <= 6 {
 		return constants.LeagueRookie
 	}
-	// 프로: Silver IV ~ Gold V (티어 7-11)  
+	// 프로: Silver IV ~ Gold V (티어 7-11)
 	if startTier <= 11 {
 		return constants.LeaguePro
 	}
@@ -95,7 +95,7 @@ func (sc *ScoreCalculator) getRookieWeight(problemLevel, startTier int) float64 
 	if problemLevel > startTier {
 		return constants.RookieUpperMultiplier // × 1.4
 	} else if problemLevel == startTier {
-		return constants.RookieBaseMultiplier  // × 1.0
+		return constants.RookieBaseMultiplier // × 1.0
 	} else {
 		return constants.RookieLowerMultiplier // × 0.5
 	}
@@ -106,7 +106,7 @@ func (sc *ScoreCalculator) getProWeight(problemLevel, startTier int) float64 {
 	if problemLevel > startTier {
 		return constants.ProUpperMultiplier // × 1.2
 	} else if problemLevel == startTier {
-		return constants.ProBaseMultiplier  // × 1.0
+		return constants.ProBaseMultiplier // × 1.0
 	} else {
 		return constants.ProLowerMultiplier // × 0.8
 	}
@@ -117,7 +117,7 @@ func (sc *ScoreCalculator) getMaxWeight(problemLevel, startTier int) float64 {
 	if problemLevel > startTier {
 		return constants.MaxUpperMultiplier // × 1.0
 	} else if problemLevel == startTier {
-		return constants.MaxBaseMultiplier  // × 1.0
+		return constants.MaxBaseMultiplier // × 1.0
 	} else {
 		return constants.MaxLowerMultiplier // × 1.0
 	}

@@ -77,7 +77,7 @@ func StartHealthServer(port string) {
 
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/", healthHandler) // Railway의 기본 헬스체크
-	
+
 	go func() {
 		// 간단한 로그 출력 (utils import를 피하기 위해 log 패키지 사용)
 		fmt.Printf("Health check server starting on port %s\n", port)
@@ -90,13 +90,13 @@ func StartHealthServer(port string) {
 // healthHandler 헬스체크 핸들러
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
-	
+
 	dependencies := make(map[string]string)
 	overallStatus := "healthy"
-	
+
 	// 등록된 모든 의존성 헬스체크 수행
 	for name, checker := range healthCheckers {
 		status, err := checker.CheckHealth()
@@ -109,7 +109,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 			dependencies[name] = status
 		}
 	}
-	
+
 	status := HealthStatus{
 		Status:       overallStatus,
 		Timestamp:    time.Now(),
@@ -119,13 +119,13 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 		Memory:       fmt.Sprintf("%.2f MB", float64(memStats.Alloc)/1024/1024),
 		Dependencies: dependencies,
 	}
-	
+
 	// 전체 상태에 따라 HTTP 상태 코드 설정
 	if overallStatus == "healthy" {
 		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
-	
+
 	json.NewEncoder(w).Encode(status)
 }

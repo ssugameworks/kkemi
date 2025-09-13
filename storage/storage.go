@@ -125,8 +125,8 @@ func isFirestoreConnectionError(err error) bool {
 	}
 	errStr := err.Error()
 	return fmt.Sprintf("%v", err) != "" && (
-		// 일반적인 연결 오류 패턴들
-		contains(errStr, "connection") ||
+	// 일반적인 연결 오류 패턴들
+	contains(errStr, "connection") ||
 		contains(errStr, "network") ||
 		contains(errStr, "timeout") ||
 		contains(errStr, "unavailable") ||
@@ -135,7 +135,7 @@ func isFirestoreConnectionError(err error) bool {
 
 // contains 문자열 포함 여부를 확인하는 헬퍼 함수
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || 
+	return len(s) >= len(substr) && (s == substr ||
 		(len(s) > len(substr) && findSubstring(s, substr)))
 }
 

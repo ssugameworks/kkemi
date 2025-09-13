@@ -32,7 +32,7 @@ const (
 
 	// 기본 응답
 	MsgPong = "Pong! 🏓"
-	
+
 	// 봇 상태 메시지
 	BotStatusMessage = "!도움말 for commands"
 

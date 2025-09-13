@@ -81,7 +81,7 @@ func (ch *CompetitionHandler) handleCompetitionCreate(s *discordgo.Session, m *d
 		return
 	}
 
-	err = ch.commandHandler.storage.CreateCompetition(name, startDate, endDate)
+	err = ch.commandHandler.deps.Storage.CreateCompetition(name, startDate, endDate)
 	if err != nil {
 		errorHandlers.System().HandleCompetitionCreateFailed(err)
 		return
@@ -98,7 +98,7 @@ func (ch *CompetitionHandler) handleCompetitionCreate(s *discordgo.Session, m *d
 }
 
 func (ch *CompetitionHandler) handleCompetitionStatus(s *discordgo.Session, m *discordgo.MessageCreate) {
-	competition := ch.commandHandler.storage.GetCompetition()
+	competition := ch.commandHandler.deps.Storage.GetCompetition()
 	if competition == nil {
 		err := errors.NewNotFoundError("NO_ACTIVE_COMPETITION",
 			"No active competition found",
@@ -116,7 +116,7 @@ func (ch *CompetitionHandler) handleCompetitionStatus(s *discordgo.Session, m *d
 	}
 
 	blackoutStatus := constants.StatusVisible
-	if ch.commandHandler.storage.IsBlackoutPeriod() {
+	if ch.commandHandler.deps.Storage.IsBlackoutPeriod() {
 		blackoutStatus = constants.StatusHidden
 	}
 
@@ -126,7 +126,7 @@ func (ch *CompetitionHandler) handleCompetitionStatus(s *discordgo.Session, m *d
 		utils.FormatDate(competition.EndDate),
 		blackoutStatus,
 		status,
-		len(ch.commandHandler.storage.GetParticipants()))
+		len(ch.commandHandler.deps.Storage.GetParticipants()))
 
 	if _, err := s.ChannelMessageSend(m.ChannelID, response); err != nil {
 		utils.Error("Failed to send competition status message: %v", err)
@@ -158,7 +158,7 @@ func (ch *CompetitionHandler) handleCompetitionBlackout(s *discordgo.Session, m 
 		return
 	}
 
-	err := ch.commandHandler.storage.SetScoreboardVisibility(visible)
+	err := ch.commandHandler.deps.Storage.SetScoreboardVisibility(visible)
 	if err != nil {
 		botErr := errors.NewSystemError("BLACKOUT_SETTING_FAILED",
 			"Failed to set scoreboard visibility", err)
@@ -188,7 +188,7 @@ func (ch *CompetitionHandler) handleCompetitionUpdate(s *discordgo.Session, m *d
 	field := strings.ToLower(params[0])
 	value := strings.Join(params[1:], " ")
 
-	competition := ch.commandHandler.storage.GetCompetition()
+	competition := ch.commandHandler.deps.Storage.GetCompetition()
 	if competition == nil {
 		err := errors.NewNotFoundError("NO_ACTIVE_COMPETITION",
 			"No active competition found",
@@ -221,7 +221,7 @@ func (ch *CompetitionHandler) handleUpdateName(s *discordgo.Session, m *discordg
 		return
 	}
 
-	err := ch.commandHandler.storage.UpdateCompetitionName(newName)
+	err := ch.commandHandler.deps.Storage.UpdateCompetitionName(newName)
 	if err != nil {
 		botErr := errors.NewSystemError("COMPETITION_UPDATE_FAILED",
 			"Failed to update competition name", err)
@@ -248,7 +248,7 @@ func (ch *CompetitionHandler) handleUpdateStartDate(s *discordgo.Session, m *dis
 		return
 	}
 
-	err = ch.commandHandler.storage.UpdateCompetitionStartDate(startDate)
+	err = ch.commandHandler.deps.Storage.UpdateCompetitionStartDate(startDate)
 	if err != nil {
 		botErr := errors.NewSystemError("COMPETITION_UPDATE_FAILED",
 			"Failed to update competition start date", err)
@@ -275,7 +275,7 @@ func (ch *CompetitionHandler) handleUpdateEndDate(s *discordgo.Session, m *disco
 		return
 	}
 
-	err = ch.commandHandler.storage.UpdateCompetitionEndDate(endDate)
+	err = ch.commandHandler.deps.Storage.UpdateCompetitionEndDate(endDate)
 	if err != nil {
 		botErr := errors.NewSystemError("COMPETITION_UPDATE_FAILED",
 			"Failed to update competition end date", err)

@@ -160,24 +160,24 @@ func (c *CachedSolvedACClient) GetCacheStats() CacheMetrics {
 	}
 
 	return CacheMetrics{
-		TotalCalls:          totalCalls,
-		CacheHits:           hits,
-		CacheMisses:         misses,
-		HitRate:             hitRate,
-		UserInfoCached:      cacheStats.UserInfoCount,
-		UserTop100Cached:    cacheStats.UserTop100Count,
+		TotalCalls:           totalCalls,
+		CacheHits:            hits,
+		CacheMisses:          misses,
+		HitRate:              hitRate,
+		UserInfoCached:       cacheStats.UserInfoCount,
+		UserTop100Cached:     cacheStats.UserTop100Count,
 		UserAdditionalCached: cacheStats.UserAdditionalCount,
 	}
 }
 
 // CacheMetrics 캐시 성능 메트릭을 나타냅니다
 type CacheMetrics struct {
-	TotalCalls          int64
-	CacheHits           int64
-	CacheMisses         int64
-	HitRate             float64
-	UserInfoCached      int
-	UserTop100Cached    int
+	TotalCalls           int64
+	CacheHits            int64
+	CacheMisses          int64
+	HitRate              float64
+	UserInfoCached       int
+	UserTop100Cached     int
 	UserAdditionalCached int
 }
 

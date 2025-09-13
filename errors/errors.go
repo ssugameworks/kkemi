@@ -136,20 +136,20 @@ func SendDiscordWarning(s *discordgo.Session, channelID, message string) error {
 func SendDiscordMessageWithRetry(s *discordgo.Session, channelID, message string) error {
 	const maxRetries = constants.MaxDiscordRetries
 	const baseDelay = constants.BaseRetryDelay
-	
+
 	var lastErr error
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		_, err := s.ChannelMessageSend(channelID, message)
 		if err == nil {
 			return nil
 		}
-		
+
 		lastErr = err
 		if attempt < maxRetries-1 {
 			delay := time.Duration(1<<attempt) * baseDelay // Exponential backoff: 1s, 2s, 4s
 			time.Sleep(delay)
 		}
 	}
-	
+
 	return lastErr
 }

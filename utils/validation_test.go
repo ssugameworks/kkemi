@@ -175,26 +175,26 @@ func TestParseTimeZoneHandling(t *testing.T) {
 	now := time.Now()
 	t.Logf("Current time: %s", now.Format("2006-01-02 15:04:05 MST"))
 	t.Logf("Current UTC time: %s", now.UTC().Format("2006-01-02 15:04:05 MST"))
-	
+
 	// 오늘 날짜로 파싱 테스트
 	today := now.Format(constants.DateFormat)
 	t.Logf("Today's date string: %s", today)
-	
+
 	parsedDate, err := ParseDateWithValidation(today, "test")
 	if err != nil {
 		t.Fatalf("Failed to parse today's date: %v", err)
 	}
-	
+
 	t.Logf("Parsed date: %s", parsedDate.Format("2006-01-02 15:04:05 MST"))
 	t.Logf("Parsed date UTC: %s", parsedDate.UTC().Format("2006-01-02 15:04:05 MST"))
-	
+
 	// 현재 시간이 파싱된 날짜 이후인지 확인
 	isAfterStart := !now.Before(parsedDate)
-	t.Logf("Is now (%s) after or equal to parsed start (%s)? %v", 
-		now.Format("2006-01-02 15:04:05 MST"), 
-		parsedDate.Format("2006-01-02 15:04:05 MST"), 
+	t.Logf("Is now (%s) after or equal to parsed start (%s)? %v",
+		now.Format("2006-01-02 15:04:05 MST"),
+		parsedDate.Format("2006-01-02 15:04:05 MST"),
 		isAfterStart)
-	
+
 	// 비교 결과 확인
 	if now.Hour() >= 0 && !isAfterStart {
 		t.Errorf("Expected current time to be after parsed start date, but got false")
@@ -207,19 +207,19 @@ func TestParseTimeZoneHandling(t *testing.T) {
 func TestCompetitionDateComparison(t *testing.T) {
 	// 2025-09-08로 테스트
 	testDateStr := "2025-09-08"
-	
+
 	parsedDate, err := ParseDateWithValidation(testDateStr, "start")
 	if err != nil {
 		t.Fatalf("Failed to parse test date: %v", err)
 	}
-	
+
 	now := GetCurrentTimeKST()
-	
+
 	t.Logf("Test scenario:")
 	t.Logf("  Competition start: %s", parsedDate.Format("2006-01-02 15:04:05 MST"))
 	t.Logf("  Current time (KST): %s", now.Format("2006-01-02 15:04:05 MST"))
 	t.Logf("  now.Before(start): %v", now.Before(parsedDate))
-	
+
 	// 현재가 9월 8일 이후라면 등록 가능해야 함
 	if now.Year() == 2025 && now.Month() == 9 && now.Day() >= 8 {
 		if now.Before(parsedDate) {
@@ -232,19 +232,19 @@ func TestCompetitionDateComparison(t *testing.T) {
 func TestTimeZoneConsistency(t *testing.T) {
 	// 시간대 일관성 테스트
 	testDate := "2025-09-08"
-	
+
 	parsed, err := ParseDateWithValidation(testDate, "test")
 	if err != nil {
 		t.Fatalf("Parse error: %v", err)
 	}
-	
+
 	now := time.Now()
-	
+
 	t.Logf("Timezone consistency check:")
 	t.Logf("  Parsed date location: %s", parsed.Location())
 	t.Logf("  Current time location: %s", now.Location())
 	t.Logf("  Are they the same timezone? %v", parsed.Location() == now.Location())
-	
+
 	if parsed.Location() != now.Location() {
 		t.Errorf("Timezone mismatch! Parsed date and current time should be in same timezone")
 	}

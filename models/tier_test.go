@@ -8,8 +8,8 @@ func TestTierManager_GetTierInfo(t *testing.T) {
 	tm := NewTierManager()
 
 	tests := []struct {
-		tier         int
-		expectedName string
+		tier           int
+		expectedName   string
 		expectedPoints int
 	}{
 		{0, "Unranked", 0},
@@ -218,11 +218,11 @@ func TestTierManager_EdgeCases(t *testing.T) {
 			tier     int
 			category TierCategory
 		}{
-			{5, CategoryBronze},   // Highest Bronze
-			{6, CategorySilver},   // Lowest Silver
-			{10, CategorySilver},  // Highest Silver
-			{11, CategoryGold},    // Lowest Gold
-			{15, CategoryGold},    // Highest Gold
+			{5, CategoryBronze},    // Highest Bronze
+			{6, CategorySilver},    // Lowest Silver
+			{10, CategorySilver},   // Highest Silver
+			{11, CategoryGold},     // Lowest Gold
+			{15, CategoryGold},     // Highest Gold
 			{16, CategoryPlatinum}, // Lowest Platinum
 		}
 

@@ -76,7 +76,7 @@ func (app *Application) initializeDependencies() error {
 	type ClientProvider interface {
 		GetClient() interface{}
 	}
-	
+
 	if clientProvider, ok := storage.(ClientProvider); ok {
 		if client := clientProvider.GetClient(); client != nil {
 			if firestoreClient, ok := client.(*firestore.Client); ok && firestoreClient != nil {
@@ -108,7 +108,8 @@ func (app *Application) setupHandlers() {
 	// 의존성 주입을 통한 컴포넌트 생성
 	calculator := scoring.NewScoreCalculator(app.apiClient, app.tierManager)
 	app.scoreboardManager = bot.NewScoreboardManager(app.storage, calculator, app.apiClient, app.tierManager)
-	app.commandHandler = bot.NewCommandHandler(app.storage, app.apiClient, app.scoreboardManager, app.tierManager, calculator)
+	deps := bot.NewCommandDependencies(app.storage, app.apiClient, app.scoreboardManager, app.tierManager, calculator)
+	app.commandHandler = bot.NewCommandHandler(deps)
 
 	app.session.AddHandler(app.commandHandler.HandleMessage)
 	app.session.AddHandler(app.handleReady)
@@ -166,7 +167,7 @@ func (app *Application) Run() error {
 func (app *Application) handleReady(s *discordgo.Session, event *discordgo.Ready) {
 	utils.Info("Discord bot connected successfully as %s#%s", event.User.Username, event.User.Discriminator)
 	utils.Info("Bot is serving %d guilds", len(event.Guilds))
-	
+
 	// 봇 상태 설정
 	err := s.UpdateGameStatus(0, constants.BotStatusMessage)
 	if err != nil {

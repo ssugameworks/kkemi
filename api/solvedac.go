@@ -215,7 +215,7 @@ func (c *SolvedACClient) getUserAdditionalInfoWithRetry(url, handle string) (*Us
 	if additionalInfo.NameNative != nil {
 		nameNativeStr = *additionalInfo.NameNative
 	}
-	utils.Debug("Successfully fetched additional info for %s (nameNative: %s)", 
+	utils.Debug("Successfully fetched additional info for %s (nameNative: %s)",
 		handle, nameNativeStr)
 	return &additionalInfo, nil
 }

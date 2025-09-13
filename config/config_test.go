@@ -68,7 +68,7 @@ func TestConfigValidation(t *testing.T) {
 
 func TestValidLogLevels(t *testing.T) {
 	validLevels := []string{"DEBUG", "INFO", "WARN", "ERROR", "debug", "info", "warn", "error"}
-	
+
 	baseConfig := &Config{
 		Discord: DiscordConfig{Token: "test_token"},
 		Schedule: ScheduleConfig{
@@ -89,8 +89,8 @@ func TestValidLogLevels(t *testing.T) {
 
 func TestBoundaryValues(t *testing.T) {
 	baseConfig := &Config{
-		Discord: DiscordConfig{Token: "test_token"},
-		Logging: LoggingConfig{Level: constants.LogLevelInfo},
+		Discord:  DiscordConfig{Token: "test_token"},
+		Logging:  LoggingConfig{Level: constants.LogLevelInfo},
 		Schedule: ScheduleConfig{Enabled: true},
 	}
 
@@ -99,9 +99,9 @@ func TestBoundaryValues(t *testing.T) {
 		hour   int
 		minute int
 	}{
-		{0, 0},     // 최소값
-		{23, 59},   // 최대값
-		{12, 30},   // 중간값
+		{0, 0},   // 최소값
+		{23, 59}, // 최대값
+		{12, 30}, // 중간값
 	}
 
 	for _, combo := range validCombinations {
@@ -118,10 +118,10 @@ func TestBoundaryValues(t *testing.T) {
 		hour   int
 		minute int
 	}{
-		{-1, 0},    // 음수 시간
-		{24, 0},    // 24시
-		{0, -1},    // 음수 분
-		{0, 60},    // 60분
+		{-1, 0}, // 음수 시간
+		{24, 0}, // 24시
+		{0, -1}, // 음수 분
+		{0, 60}, // 60분
 	}
 
 	for _, combo := range invalidCombinations {
@@ -141,7 +141,7 @@ func TestLoadFromEnv(t *testing.T) {
 	os.Setenv("LOG_LEVEL", "DEBUG")
 	os.Setenv("SCOREBOARD_HOUR", "15")
 	os.Setenv("SCOREBOARD_MINUTE", "45")
-	
+
 	// 테스트 후 정리
 	defer func() {
 		os.Unsetenv("DISCORD_BOT_TOKEN")
@@ -151,19 +151,19 @@ func TestLoadFromEnv(t *testing.T) {
 	}()
 
 	config := Load()
-	
+
 	if config.Discord.Token != "test_token" {
 		t.Errorf("Expected token 'test_token', got '%s'", config.Discord.Token)
 	}
-	
+
 	if config.Logging.Level != "DEBUG" {
 		t.Errorf("Expected log level 'DEBUG', got '%s'", config.Logging.Level)
 	}
-	
+
 	if config.Schedule.ScoreboardHour != 15 {
 		t.Errorf("Expected hour 15, got %d", config.Schedule.ScoreboardHour)
 	}
-	
+
 	if config.Schedule.ScoreboardMinute != 45 {
 		t.Errorf("Expected minute 45, got %d", config.Schedule.ScoreboardMinute)
 	}

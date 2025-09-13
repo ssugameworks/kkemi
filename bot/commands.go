@@ -4,8 +4,6 @@ import (
 	"discord-bot/api"
 	"discord-bot/constants"
 	"discord-bot/errors"
-	"discord-bot/interfaces"
-	"discord-bot/models"
 	"discord-bot/utils"
 	"fmt"
 	"strings"
@@ -14,21 +12,13 @@ import (
 )
 
 type CommandHandler struct {
-	storage            interfaces.StorageRepository
-	scoreboardManager  *ScoreboardManager
-	client             interfaces.APIClient
+	deps               *CommandDependencies
 	competitionHandler *CompetitionHandler
-	tierManager        *models.TierManager
-	scoreCalculator    interfaces.ScoreCalculator
 }
 
-func NewCommandHandler(storage interfaces.StorageRepository, apiClient interfaces.APIClient, scoreboardManager *ScoreboardManager, tierManager *models.TierManager, scoreCalculator interfaces.ScoreCalculator) *CommandHandler {
+func NewCommandHandler(deps *CommandDependencies) *CommandHandler {
 	ch := &CommandHandler{
-		storage:           storage,
-		scoreboardManager: scoreboardManager,
-		client:            apiClient,
-		tierManager:       tierManager,
-		scoreCalculator:   scoreCalculator,
+		deps: deps,
 	}
 	ch.competitionHandler = NewCompetitionHandler(ch)
 	return ch
@@ -175,7 +165,7 @@ func (ch *CommandHandler) validateRegisterParams(params []string, errorHandlers 
 
 // validateCompetitionStatus 대회 상태를 확인합니다
 func (ch *CommandHandler) validateCompetitionStatus(errorHandlers *utils.ErrorHandlerFactory) bool {
-	competition := ch.storage.GetCompetition()
+	competition := ch.deps.Storage.GetCompetition()
 	if competition == nil {
 		errorHandlers.Data().HandleNoActiveCompetition()
 		return false
@@ -185,7 +175,7 @@ func (ch *CommandHandler) validateCompetitionStatus(errorHandlers *utils.ErrorHa
 	if now.Before(competition.StartDate) {
 		errorHandlers.Validation().HandleInvalidParams("REGISTRATION_NOT_STARTED",
 			"Registration not available before competition starts",
-			fmt.Sprintf(constants.MsgRegisterNotStarted, 
+			fmt.Sprintf(constants.MsgRegisterNotStarted,
 				utils.FormatDateTime(competition.StartDate)))
 		return false
 	}
@@ -195,14 +185,14 @@ func (ch *CommandHandler) validateCompetitionStatus(errorHandlers *utils.ErrorHa
 // validateSolvedACUser solved.ac 사용자 정보를 조회하고 이름을 검증합니다
 func (ch *CommandHandler) validateSolvedACUser(name, baekjoonID string, errorHandlers *utils.ErrorHandlerFactory) (userInfo interface{}, ok bool) {
 	// solved.ac 사용자 정보 조회
-	info, err := ch.client.GetUserInfo(baekjoonID)
+	info, err := ch.deps.APIClient.GetUserInfo(baekjoonID)
 	if err != nil {
 		errorHandlers.API().HandleBaekjoonUserNotFound(baekjoonID, err)
 		return nil, false
 	}
 
 	// solved.ac 추가 정보 조회 (본명 확인용)
-	additionalInfo, err := ch.client.GetUserAdditionalInfo(baekjoonID)
+	additionalInfo, err := ch.deps.APIClient.GetUserAdditionalInfo(baekjoonID)
 	if err != nil {
 		errorHandlers.API().HandleBaekjoonUserNotFound(baekjoonID, err)
 		return nil, false
@@ -249,7 +239,7 @@ func (ch *CommandHandler) extractSolvedACName(additionalInfo interface{}, errorH
 // validateUniversityAffiliation 사용자의 숭실대학교 소속을 검증합니다
 func (ch *CommandHandler) validateUniversityAffiliation(baekjoonID string, errorHandlers *utils.ErrorHandlerFactory) (organizationID int, ok bool) {
 	// solved.ac에서 사용자의 조직 정보 조회
-	organizations, err := ch.client.GetUserOrganizations(baekjoonID)
+	organizations, err := ch.deps.APIClient.GetUserOrganizations(baekjoonID)
 	if err != nil {
 		errorHandlers.API().HandleBaekjoonUserNotFound(baekjoonID, err)
 		return 0, false
@@ -278,7 +268,7 @@ func (ch *CommandHandler) registerParticipant(name, baekjoonID string, userInfo 
 		return false
 	}
 
-	err := ch.storage.AddParticipant(name, baekjoonID, info.Tier, info.Rating, organizationID)
+	err := ch.deps.Storage.AddParticipant(name, baekjoonID, info.Tier, info.Rating, organizationID)
 	if err != nil {
 		errorHandlers.Data().HandleParticipantAlreadyExists(baekjoonID)
 		return false
@@ -295,15 +285,15 @@ func (ch *CommandHandler) sendRegistrationSuccess(s *discordgo.Session, channelI
 		return
 	}
 
-	tierName := ch.tierManager.GetTierName(info.Tier)
-	colorCode := ch.tierManager.GetTierANSIColor(info.Tier)
-	
+	tierName := ch.deps.TierManager.GetTierName(info.Tier)
+	colorCode := ch.deps.TierManager.GetTierANSIColor(info.Tier)
+
 	// 사용자 리그 결정 및 이름 가져오기
-	userLeague := ch.scoreCalculator.GetUserLeague(info.Tier)
-	leagueName := ch.scoreCalculator.GetLeagueName(userLeague)
+	userLeague := ch.deps.ScoreCalculator.GetUserLeague(info.Tier)
+	leagueName := ch.deps.ScoreCalculator.GetLeagueName(userLeague)
 
 	response := fmt.Sprintf("```ansi\n"+constants.MsgRegisterSuccess+"\n```",
-		colorCode, name, tierName, ch.tierManager.GetANSIReset(), leagueName)
+		colorCode, name, tierName, ch.deps.TierManager.GetANSIReset(), leagueName)
 
 	if _, err := s.ChannelMessageSend(channelID, response); err != nil {
 		utils.Error("DISCORD API ERROR: Failed to send registration response: %v", err)
@@ -320,7 +310,7 @@ func (ch *CommandHandler) handleScoreboard(s *discordgo.Session, m *discordgo.Me
 	}
 
 	isAdmin := ch.isAdmin(s, m)
-	embed, err := ch.scoreboardManager.GenerateScoreboard(isAdmin)
+	embed, err := ch.deps.ScoreboardManager.GenerateScoreboard(isAdmin)
 	if err != nil {
 		errorHandlers.System().HandleScoreboardGenerationFailed(err)
 		return
@@ -340,7 +330,7 @@ func (ch *CommandHandler) handleParticipants(s *discordgo.Session, m *discordgo.
 		return
 	}
 
-	participants := ch.storage.GetParticipants()
+	participants := ch.deps.Storage.GetParticipants()
 	if len(participants) == 0 {
 		errors.SendDiscordInfo(s, m.ChannelID, constants.MsgParticipantsEmpty)
 		return
@@ -350,10 +340,10 @@ func (ch *CommandHandler) handleParticipants(s *discordgo.Session, m *discordgo.
 	sb.WriteString("```ansi\n")
 
 	for i, p := range participants {
-		tierName := ch.tierManager.GetTierName(p.StartTier)
-		colorCode := ch.tierManager.GetTierANSIColor(p.StartTier)
+		tierName := ch.deps.TierManager.GetTierName(p.StartTier)
+		colorCode := ch.deps.TierManager.GetTierANSIColor(p.StartTier)
 		sb.WriteString(fmt.Sprintf("%s%d. %s - %s%s\n",
-			colorCode, i+1, p.BaekjoonID, tierName, ch.tierManager.GetANSIReset()))
+			colorCode, i+1, p.BaekjoonID, tierName, ch.deps.TierManager.GetANSIReset()))
 	}
 
 	sb.WriteString("```")
@@ -390,7 +380,7 @@ func (ch *CommandHandler) handleRemoveParticipant(s *discordgo.Session, m *disco
 	}
 
 	// 참가자 삭제
-	err := ch.storage.RemoveParticipant(baekjoonID)
+	err := ch.deps.Storage.RemoveParticipant(baekjoonID)
 	if err != nil {
 		errorHandlers.Data().HandleParticipantNotFound(baekjoonID)
 		return
@@ -454,21 +444,21 @@ func (ch *CommandHandler) handleCacheStats(s *discordgo.Session, m *discordgo.Me
 		return
 	}
 
-	if cachedClient, ok := ch.client.(*api.CachedSolvedACClient); ok {
+	if cachedClient, ok := ch.deps.APIClient.(*api.CachedSolvedACClient); ok {
 		stats := cachedClient.GetCacheStats()
-		
-		message := fmt.Sprintf("```\n📊 API Cache Statistics\n\n" +
-			"Total API Calls: %d\n" +
-			"Cache Hits: %d\n" +
-			"Cache Misses: %d\n" +
-			"Hit Rate: %.2f%%\n\n" +
-			"Cached Items:\n" +
-			"  - User Info: %d\n" +
-			"  - User Top100: %d\n" +
+
+		message := fmt.Sprintf("```\n📊 API Cache Statistics\n\n"+
+			"Total API Calls: %d\n"+
+			"Cache Hits: %d\n"+
+			"Cache Misses: %d\n"+
+			"Hit Rate: %.2f%%\n\n"+
+			"Cached Items:\n"+
+			"  - User Info: %d\n"+
+			"  - User Top100: %d\n"+
 			"  - User Additional: %d\n```",
 			stats.TotalCalls, stats.CacheHits, stats.CacheMisses, stats.HitRate,
 			stats.UserInfoCached, stats.UserTop100Cached, stats.UserAdditionalCached)
-		
+
 		if err := errors.SendDiscordInfo(s, m.ChannelID, message); err != nil {
 			utils.Error("Failed to send cache stats response: %v", err)
 		}
@@ -478,6 +468,3 @@ func (ch *CommandHandler) handleCacheStats(s *discordgo.Session, m *discordgo.Me
 		}
 	}
 }
-
-
-

@@ -145,7 +145,7 @@ func (l *Logger) logJSON(level LogLevel, message string, fields map[string]inter
 func (l *Logger) logText(level LogLevel, message string) {
 	levelStr := l.getLevelString(level)
 	timestamp := time.Now().Format(constants.DateTimeFormat)
-	
+
 	if l.component != "" {
 		l.logger.Printf("[%s] %s [%s] %s", timestamp, levelStr, l.component, message)
 	} else {
@@ -167,20 +167,20 @@ func (l *Logger) filterSensitiveInfo(message string) string {
 		}
 		message = strings.Join(words, " ")
 	}
-	
+
 	// 기본적인 키워드 기반 마스킹
 	sensitiveKeywords := []string{"token", "key", "secret", "password"}
 	lowerMessage := strings.ToLower(message)
-	
+
 	for _, keyword := range sensitiveKeywords {
 		if strings.Contains(lowerMessage, keyword+"=") ||
-		   strings.Contains(lowerMessage, keyword+":") ||
-		   strings.Contains(lowerMessage, keyword+"\"") {
+			strings.Contains(lowerMessage, keyword+":") ||
+			strings.Contains(lowerMessage, keyword+"\"") {
 			// 키워드가 포함된 경우 마스킹 처리
 			if idx := strings.Index(lowerMessage, keyword); idx != -1 {
 				before := message[:idx+len(keyword)]
 				remaining := message[idx+len(keyword):]
-				
+
 				// = 또는 : 다음의 값을 찾아 마스킹
 				for _, sep := range []string{"=", ":", "\""} {
 					if strings.HasPrefix(remaining, sep) {
@@ -191,7 +191,7 @@ func (l *Logger) filterSensitiveInfo(message string) string {
 			}
 		}
 	}
-	
+
 	return message
 }
 

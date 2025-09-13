@@ -11,15 +11,15 @@ const (
 	CacheCleanupInterval   = 5 * time.Minute  // 캐시 정리 간격
 
 	// Discord API 재시도 설정
-	MaxDiscordRetries = 3                // 최대 재시도 횟수
-	BaseRetryDelay    = 1 * time.Second  // 기본 재시도 지연 시간
+	MaxDiscordRetries = 3               // 최대 재시도 횟수
+	BaseRetryDelay    = 1 * time.Second // 기본 재시도 지연 시간
 
 )
 
 // 검증 규칙 상수
 const (
-	MinBaekjoonIDLength = 3              // 백준 ID 최소 길이
-	MaxBaekjoonIDLength = 20             // 백준 ID 최대 길이
-	MinNameLength       = 2              // 이름 최소 길이
-	MaxNameLength       = 50             // 이름 최대 길이
+	MinBaekjoonIDLength = 3  // 백준 ID 최소 길이
+	MaxBaekjoonIDLength = 20 // 백준 ID 최대 길이
+	MinNameLength       = 2  // 이름 최소 길이
+	MaxNameLength       = 50 // 이름 최대 길이
 )
