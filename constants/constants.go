@@ -126,4 +126,5 @@ const (
 	EnvChannelID    = "DISCORD_CHANNEL_ID"
 	EnvLogLevel     = "LOG_LEVEL"
 	EnvDebugMode    = "DEBUG_MODE"
+	EnvJSONLogging  = "JSON_LOGGING"
 )
