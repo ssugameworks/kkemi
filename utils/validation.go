@@ -248,20 +248,3 @@ func SanitizeString(s string) string {
 	return strings.TrimSpace(cleaned.String())
 }
 
-// SanitizeDiscordMessage Discord 메시지 전용 sanitization
-func SanitizeDiscordMessage(s string) string {
-	// 기본 sanitization 적용
-	s = SanitizeString(s)
-
-	// 긴 메시지 자르기 (Discord 메시지 제한: 2000자)
-	if len(s) > 1900 { // 여유분 두고 1900자로 제한
-		s = s[:1897] + "..."
-	}
-
-	// 연속된 줄바꿈 제한 (스팸 방지)
-	for strings.Contains(s, "\n\n\n") {
-		s = strings.ReplaceAll(s, "\n\n\n", "\n\n")
-	}
-
-	return s
-}

@@ -8,6 +8,7 @@ import (
 	"discord-bot/utils"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -126,28 +127,13 @@ func isFirestoreConnectionError(err error) bool {
 	errStr := err.Error()
 	return fmt.Sprintf("%v", err) != "" && (
 	// 일반적인 연결 오류 패턴들
-	contains(errStr, "connection") ||
-		contains(errStr, "network") ||
-		contains(errStr, "timeout") ||
-		contains(errStr, "unavailable") ||
-		contains(errStr, "deadline exceeded"))
+	strings.Contains(errStr, "connection") ||
+		strings.Contains(errStr, "network") ||
+		strings.Contains(errStr, "timeout") ||
+		strings.Contains(errStr, "unavailable") ||
+		strings.Contains(errStr, "deadline exceeded"))
 }
 
-// contains 문자열 포함 여부를 확인하는 헬퍼 함수
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr ||
-		(len(s) > len(substr) && findSubstring(s, substr)))
-}
-
-// findSubstring 부분 문자열을 찾는 헬퍼 함수
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
 
 // AddParticipant 새로운 참가자를 Firestore에 추가합니다.
 func (s *FirebaseStorage) AddParticipant(name, baekjoonID string, startTier, startRating int, organizationID int) error {

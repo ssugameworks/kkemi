@@ -106,10 +106,6 @@ const (
 	ColorTierGold = 0xE09E37 // 골드 - 스코어보드 기본 색상용
 )
 
-// ANSI 색상 코드 (deprecated - use models.TierManager instead)
-const (
-	ANSIReset = "\x1b[0m"
-)
 
 // 환경 변수 키
 const (

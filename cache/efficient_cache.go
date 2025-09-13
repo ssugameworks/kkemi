@@ -338,25 +338,3 @@ func (c *EfficientAPICache) StartEfficientCleanupWorker(interval time.Duration) 
 	return cancel
 }
 
-// GetEfficiencyStats 효율적인 캐시의 통계를 반환합니다
-func (c *EfficientAPICache) GetEfficiencyStats() EfficiencyStats {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	return EfficiencyStats{
-		QueueSize:          c.expirationQueue.Len(),
-		KeyIndexSize:       len(c.keyToEntry),
-		LastCleanup:        c.lastCleanup,
-		CleanupBatchSize:   c.cleanupBatchSize,
-		MaxCleanupDuration: c.maxCleanupDuration,
-	}
-}
-
-// EfficiencyStats 효율적인 캐시의 통계 정보
-type EfficiencyStats struct {
-	QueueSize          int
-	KeyIndexSize       int
-	LastCleanup        time.Time
-	CleanupBatchSize   int
-	MaxCleanupDuration time.Duration
-}

@@ -12,7 +12,6 @@ const (
 
 	// Discord API 재시도 설정
 	MaxDiscordRetries = 3               // 최대 재시도 횟수
-	BaseRetryDelay    = 1 * time.Second // 기본 재시도 지연 시간
 
 )
 

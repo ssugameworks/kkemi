@@ -2,7 +2,6 @@ package utils
 
 import (
 	"discord-bot/constants"
-	"strings"
 	"testing"
 	"time"
 )
@@ -118,36 +117,6 @@ func TestSanitizeString(t *testing.T) {
 	}
 }
 
-func TestSanitizeDiscordMessage(t *testing.T) {
-	tests := []struct {
-		input  string
-		maxLen int
-		desc   string
-	}{
-		{"normal message", 14, "normal message unchanged"},
-		{"message\n\n\nwith\n\n\nmany\n\n\nlinebreaks", 0, "multiple linebreaks reduced"},
-	}
-
-	for _, test := range tests {
-		result := SanitizeDiscordMessage(test.input)
-		if test.maxLen > 0 && len(result) != test.maxLen {
-			t.Errorf("SanitizeDiscordMessage(%q) length = %d, expected %d (%s)", test.input, len(result), test.maxLen, test.desc)
-		}
-		if test.desc == "multiple linebreaks reduced" && strings.Contains(result, "\n\n\n") {
-			t.Errorf("SanitizeDiscordMessage should reduce multiple linebreaks, got %q", result)
-		}
-	}
-
-	// Test long message truncation
-	longMessage := strings.Repeat("a", 2000)
-	result := SanitizeDiscordMessage(longMessage)
-	if len(result) > 1900 {
-		t.Errorf("SanitizeDiscordMessage should truncate long messages to 1900 chars, got %d", len(result))
-	}
-	if !strings.HasSuffix(result, "...") {
-		t.Errorf("SanitizeDiscordMessage should add ellipsis to truncated messages")
-	}
-}
 
 func TestGetDisplayWidth(t *testing.T) {
 	tests := []struct {
