@@ -115,7 +115,12 @@ func IsValidBaekjoonID(id string) bool {
 		return false
 	}
 
-	// 백준 ID는 영문, 숫자, 언더스코어만 허용
+	// 기본적인 악의적 패턴 검사
+	if containsMaliciousPattern(id) {
+		return false
+	}
+
+	// 백준 ID는 영문, 숫자, 언더스코어만 허용 (하이픈 제외)
 	matched, _ := regexp.MatchString(`^[a-zA-Z0-9_]+$`, id)
 	if !matched {
 		return false
@@ -126,13 +131,8 @@ func IsValidBaekjoonID(id string) bool {
 		return false
 	}
 
-	// 연속된 언더스코어 방지
-	if strings.Contains(id, "__") {
-		return false
-	}
-
-	// 끝이 언더스코어인 경우 방지
-	if strings.HasSuffix(id, "_") {
+	// 숫자로만 구성된 경우 방지
+	if regexp.MustCompile(`^[0-9_]+$`).MatchString(id) {
 		return false
 	}
 
