@@ -32,6 +32,9 @@ const (
 
 	// 기본 응답
 	MsgPong = "Pong! 🏓"
+	
+	// 봇 상태 메시지
+	BotStatusMessage = "!도움말 for commands"
 
 	// 대회 관리 관련
 	MsgCompetitionCreateUsage   = "사용법: `!대회 create <대회명> <시작일> <종료일>` (날짜 형식: YYYY-MM-DD)"
