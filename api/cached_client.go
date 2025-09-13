@@ -12,7 +12,18 @@ import (
 // CachedSolvedACClient 캐시 기능을 포함한 SolvedAC API 클라이언트입니다
 type CachedSolvedACClient struct {
 	client        *SolvedACClient
-	cache         *cache.APICache
+	cache         interface{ // 기존 APICache와 EfficientAPICache 모두 지원
+		GetUserInfo(string) (interface{}, bool)
+		SetUserInfo(string, interface{})
+		GetUserTop100(string) (interface{}, bool)
+		SetUserTop100(string, interface{})
+		GetUserAdditionalInfo(string) (interface{}, bool)
+		SetUserAdditionalInfo(string, interface{})
+		GetUserOrganizations(string) (interface{}, bool)
+		SetUserOrganizations(string, interface{})
+		GetStats() cache.CacheStats
+		Clear()
+	}
 	cleanupCancel context.CancelFunc
 
 	// 성능 메트릭
@@ -23,14 +34,18 @@ type CachedSolvedACClient struct {
 
 // NewCachedSolvedACClient 새로운 CachedSolvedACClient 인스턴스를 생성합니다
 func NewCachedSolvedACClient() *CachedSolvedACClient {
-	utils.Info("Creating cached SolvedAC API client")
+	utils.Info("Creating cached SolvedAC API client with efficient cache")
+	
+	// 효율적인 캐시를 사용하되, 기존 인터페이스와 호환되도록 래핑
+	efficientCache := cache.NewEfficientAPICache()
+	
 	client := &CachedSolvedACClient{
 		client: NewSolvedACClient(),
-		cache:  cache.NewAPICache(),
+		cache:  efficientCache,
 	}
 
-	// 캐시 정리 워커 시작
-	client.cleanupCancel = client.cache.StartCleanupWorker(constants.CacheCleanupInterval)
+	// 효율적인 캐시 정리 워커 시작
+	client.cleanupCancel = efficientCache.StartEfficientCleanupWorker(constants.CacheCleanupInterval)
 	return client
 }
 

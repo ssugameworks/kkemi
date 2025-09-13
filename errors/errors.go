@@ -111,7 +111,7 @@ func HandleDiscordError(s *discordgo.Session, channelID string, err error) {
 	}
 
 	if discordErr := SendDiscordMessageWithRetry(s, channelID, constants.EmojiError+" "+userMessage); discordErr != nil {
-		// 디스코드 메시지 전송 실패는 콘솔에 기록 (최후의 보루)
+		// 디스코드 메시지 전송 실패는 콘솔에 기록
 		// utils import 순환 참조 방지를 위해 fmt 사용
 		fmt.Printf("FATAL: Failed to send error message to Discord. ChannelID: %s, OriginalError: %v, DiscordError: %v\n", channelID, err, discordErr)
 	}

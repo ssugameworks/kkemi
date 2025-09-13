@@ -4,6 +4,7 @@ import (
 	"discord-bot/constants"
 	"discord-bot/interfaces"
 	"discord-bot/models"
+	"discord-bot/performance"
 	"discord-bot/utils"
 	"fmt"
 	"math"
@@ -11,23 +12,26 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 type ScoreboardManager struct {
-	storage     interfaces.StorageRepository
-	calculator  interfaces.ScoreCalculator
-	client      interfaces.APIClient
-	tierManager *models.TierManager
+	storage            interfaces.StorageRepository
+	calculator         interfaces.ScoreCalculator
+	client             interfaces.APIClient
+	tierManager        *models.TierManager
+	concurrencyManager *performance.AdaptiveConcurrencyManager
 }
 
 func NewScoreboardManager(storage interfaces.StorageRepository, calculator interfaces.ScoreCalculator, client interfaces.APIClient, tierManager *models.TierManager) *ScoreboardManager {
 	return &ScoreboardManager{
-		storage:     storage,
-		calculator:  calculator,
-		client:      client,
-		tierManager: tierManager,
+		storage:            storage,
+		calculator:         calculator,
+		client:             client,
+		tierManager:        tierManager,
+		concurrencyManager: performance.NewAdaptiveConcurrencyManager(),
 	}
 }
 
@@ -92,9 +96,17 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 		return []models.ScoreData{}, nil
 	}
 
-	scores := make([]models.ScoreData, 0, len(participants))
-	scoreChan := make(chan models.ScoreData, len(participants))
-	semaphore := make(chan struct{}, constants.MaxConcurrentRequests)
+	// 메모리 풀에서 재사용 가능한 리소스 가져오기
+	scoresPtr := performance.GetScoreDataSlice()
+	defer performance.PutScoreDataSlice(scoresPtr)
+	scores := *scoresPtr
+	
+	scoreChan := performance.GetScoreDataChannel(len(participants))
+	defer performance.PutScoreDataChannel(scoreChan)
+	
+	semaphore := performance.GetSemaphoreChannel(sm.concurrencyManager.GetCurrentLimit())
+	defer performance.PutSemaphoreChannel(semaphore)
+	
 	var wg sync.WaitGroup
 	var errorCount int64
 
@@ -106,7 +118,13 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
 
+			startTime := time.Now()
 			scoreData, err := sm.calculateParticipantScore(p)
+			responseTime := time.Since(startTime)
+
+			// 응답 시간을 적응형 동시성 관리자에 기록
+			sm.concurrencyManager.RecordResponseTime(responseTime)
+
 			if err != nil {
 				utils.Warn("Failed to calculate score for participant %s: %v", p.Name, err)
 				atomic.AddInt64(&errorCount, 1)
@@ -128,7 +146,11 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 	}
 
 	utils.Info("Successfully calculated scores for %d out of %d participants", len(scores), len(participants))
-	return scores, nil
+	
+	// 결과 복사본 생성 (메모리 풀의 슬라이스는 재사용되므로)
+	result := make([]models.ScoreData, len(scores))
+	copy(result, scores)
+	return result, nil
 }
 
 // calculateParticipantScore 개별 참가자의 점수를 계산합니다
@@ -187,6 +209,7 @@ func (sm *ScoreboardManager) groupScoresByLeague(scores []models.ScoreData) map[
 	return leagueScores
 }
 
+// formatScoreboard 점수 데이터를 포맷팅하여 Discord 임베드 메시지로 반환합니다
 func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, scores []models.ScoreData, isAdmin bool) *discordgo.MessageEmbed {
 	embed := &discordgo.MessageEmbed{
 		Title: fmt.Sprintf(constants.MsgScoreboardTitle, competition.Name),
@@ -249,6 +272,7 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 	return embed
 }
 
+// SendDailyScoreboard 매일 스코어보드를 지정된 채널에 전송합니다
 func (sm *ScoreboardManager) SendDailyScoreboard(session *discordgo.Session, channelID string) error {
 	embed, err := sm.GenerateScoreboard(false) // 자동 스코어보드는 관리자 권한 없음
 	if err != nil {

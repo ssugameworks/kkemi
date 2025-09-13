@@ -24,6 +24,7 @@ func NewCommandHandler(deps *CommandDependencies) *CommandHandler {
 	return ch
 }
 
+// HandleMessage Discord 메시지를 처리합니다
 func (ch *CommandHandler) HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if ch.shouldIgnoreMessage(s, m) {
 		return
@@ -236,7 +237,7 @@ func (ch *CommandHandler) extractSolvedACName(additionalInfo interface{}, errorH
 	}
 }
 
-// validateUniversityAffiliation 사용자의 숭실대학교 소속을 검증합니다
+// validateUniversityAffiliation 사용자의 학교 소속을 검증합니다
 func (ch *CommandHandler) validateUniversityAffiliation(baekjoonID string, errorHandlers *utils.ErrorHandlerFactory) (organizationID int, ok bool) {
 	// solved.ac에서 사용자의 조직 정보 조회
 	organizations, err := ch.deps.APIClient.GetUserOrganizations(baekjoonID)
@@ -245,14 +246,14 @@ func (ch *CommandHandler) validateUniversityAffiliation(baekjoonID string, error
 		return 0, false
 	}
 
-	// 숭실대학교 소속인지 확인
+	// 특정 학교 소속인지 확인
 	for _, org := range organizations {
 		if org.OrganizationID == constants.SoongsilUniversityID {
 			return constants.SoongsilUniversityID, true
 		}
 	}
 
-	// 숭실대학교 소속이 아닌 경우 에러 메시지 전송
+	// 특정 학교 소속이 아닌 경우 에러 메시지 전송
 	errorHandlers.Validation().HandleInvalidParams("NOT_SOONGSIL_UNIVERSITY",
 		"User is not affiliated with Soongsil University",
 		constants.MsgRegisterNotSoongsilStudent)
@@ -392,7 +393,7 @@ func (ch *CommandHandler) handleRemoveParticipant(s *discordgo.Session, m *disco
 	}
 }
 
-// isAdmin는 사용자가 서버 관리자 권한을 가지고 있는지 확인합니다
+// isAdmin 사용자가 서버 관리자 권한을 가지고 있는지 확인합니다
 func (ch *CommandHandler) isAdmin(s *discordgo.Session, m *discordgo.MessageCreate) bool {
 	// DM에서는 관리자 권한 없음
 	if m.GuildID == "" {
