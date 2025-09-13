@@ -8,6 +8,25 @@ import (
 	"time"
 )
 
+// CacheItem 캐시에 저장되는 개별 아이템을 나타냅니다
+type CacheItem struct {
+	Data      interface{}
+	ExpiresAt time.Time
+}
+
+// IsExpired 캐시 아이템이 만료되었는지 확인합니다
+func (c *CacheItem) IsExpired() bool {
+	return time.Now().After(c.ExpiresAt)
+}
+
+// CacheStats 캐시 통계 정보를 나타냅니다
+type CacheStats struct {
+	UserInfoCount          int
+	UserTop100Count        int
+	UserAdditionalCount    int
+	UserOrganizationsCount int
+}
+
 // ExpirationEntry 만료 시간 기반 우선순위 큐의 항목
 type ExpirationEntry struct {
 	Key       string
