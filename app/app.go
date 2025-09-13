@@ -21,9 +21,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// GlobalApp 전역 애플리케이션 인스턴스
-var GlobalApp *Application
-
 type Application struct {
 	config            *config.Config
 	session           *discordgo.Session
@@ -52,9 +49,6 @@ func New() (*Application, error) {
 
 	app.setupHandlers()
 	app.initializeScheduler()
-
-	// 전역 인스턴스 설정
-	GlobalApp = app
 
 	return app, nil
 }
@@ -114,7 +108,7 @@ func (app *Application) setupHandlers() {
 	// 의존성 주입을 통한 컴포넌트 생성
 	calculator := scoring.NewScoreCalculator(app.apiClient, app.tierManager)
 	app.scoreboardManager = bot.NewScoreboardManager(app.storage, calculator, app.apiClient, app.tierManager)
-	deps := bot.NewCommandDependencies(app.storage, app.apiClient, app.scoreboardManager, app.tierManager, calculator)
+	deps := bot.NewCommandDependencies(app.storage, app.apiClient, app.scoreboardManager, app.tierManager, calculator, app.session)
 	app.commandHandler = bot.NewCommandHandler(deps)
 
 	app.session.AddHandler(app.commandHandler.HandleMessage)
@@ -188,18 +182,6 @@ func (app *Application) updateBotStatus(s *discordgo.Session) {
 	err := s.UpdateGameStatus(0, statusMessage)
 	if err != nil {
 		utils.Warn("Failed to set bot status: %v", err)
-	}
-}
-
-// GetSession 세션을 반환합니다 (다른 패키지에서 봇 상태 업데이트를 위해 사용)
-func (app *Application) GetSession() *discordgo.Session {
-	return app.session
-}
-
-// UpdateBotStatus 외부에서 봇 상태를 업데이트할 수 있도록 하는 public 메서드
-func (app *Application) UpdateBotStatus() {
-	if app.session != nil {
-		app.updateBotStatus(app.session)
 	}
 }
 
