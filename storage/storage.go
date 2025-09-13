@@ -8,6 +8,7 @@ import (
 	"discord-bot/utils"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -18,10 +19,18 @@ import (
 
 // FirebaseStorage Firestore를 사용하여 데이터를 관리하는 저장소입니다.
 type FirebaseStorage struct {
-	client    *firestore.Client
-	apiClient interfaces.APIClient
-	ctx       context.Context
+	client         *firestore.Client
+	apiClient      interfaces.APIClient
+	ctx            context.Context
+	app            *firebase.App
+	reconnectMutex sync.Mutex
 }
+
+// 에러 복구 관련 상수
+const (
+	maxReconnectAttempts = 3
+	reconnectDelay       = 2 * time.Second
+)
 
 // NewStorage 새로운 FirebaseStorage 인스턴스를 생성하고 Firestore에 연결합니다.
 func NewStorage(apiClient interfaces.APIClient) (interfaces.StorageRepository, error) {
@@ -49,59 +58,141 @@ func NewStorage(apiClient interfaces.APIClient) (interfaces.StorageRepository, e
 		client:    client,
 		apiClient: apiClient,
 		ctx:       ctx,
+		app:       app,
 	}
 
 	utils.Info("Firebase storage system initialized successfully")
 	return s, nil
 }
 
+// reconnectFirestore Firestore 클라이언트를 재연결합니다
+func (s *FirebaseStorage) reconnectFirestore() error {
+	s.reconnectMutex.Lock()
+	defer s.reconnectMutex.Unlock()
+
+	utils.Warn("Attempting to reconnect to Firestore")
+
+	for attempt := 1; attempt <= maxReconnectAttempts; attempt++ {
+		// 기존 클라이언트 종료
+		if s.client != nil {
+			s.client.Close()
+		}
+
+		// 새 클라이언트 생성
+		newClient, err := s.app.Firestore(s.ctx)
+		if err != nil {
+			utils.Warn("Firestore reconnection attempt %d/%d failed: %v", attempt, maxReconnectAttempts, err)
+			if attempt < maxReconnectAttempts {
+				time.Sleep(reconnectDelay * time.Duration(attempt)) // 점진적 지연
+			}
+			continue
+		}
+
+		s.client = newClient
+		utils.Info("Successfully reconnected to Firestore on attempt %d", attempt)
+		return nil
+	}
+
+	return fmt.Errorf("failed to reconnect to Firestore after %d attempts", maxReconnectAttempts)
+}
+
+// executeWithRetry Firestore 작업을 재시도 로직과 함께 실행합니다
+func (s *FirebaseStorage) executeWithRetry(operation func() error) error {
+	err := operation()
+	if err != nil {
+		// Firestore 연결 오류인 경우 재연결 시도
+		if isFirestoreConnectionError(err) {
+			utils.Warn("Detected Firestore connection error, attempting reconnection: %v", err)
+			if reconnectErr := s.reconnectFirestore(); reconnectErr != nil {
+				return fmt.Errorf("operation failed and reconnection failed: %v (original: %v)", reconnectErr, err)
+			}
+			// 재연결 성공 시 작업 재시도
+			return operation()
+		}
+	}
+	return err
+}
+
+// isFirestoreConnectionError Firestore 연결 관련 에러인지 확인합니다
+func isFirestoreConnectionError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return fmt.Sprintf("%v", err) != "" && (
+		// 일반적인 연결 오류 패턴들
+		contains(errStr, "connection") ||
+		contains(errStr, "network") ||
+		contains(errStr, "timeout") ||
+		contains(errStr, "unavailable") ||
+		contains(errStr, "deadline exceeded"))
+}
+
+// contains 문자열 포함 여부를 확인하는 헬퍼 함수
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || 
+		(len(s) > len(substr) && findSubstring(s, substr)))
+}
+
+// findSubstring 부분 문자열을 찾는 헬퍼 함수
+func findSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
+
 // AddParticipant 새로운 참가자를 Firestore에 추가합니다.
 func (s *FirebaseStorage) AddParticipant(name, baekjoonID string, startTier, startRating int, organizationID int) error {
-	// 입력값 검증
-	if !utils.IsValidUsername(name) {
-		return fmt.Errorf("invalid username: %s", name)
-	}
-	if !utils.IsValidBaekjoonID(baekjoonID) {
-		return fmt.Errorf("invalid Baekjoon ID: %s", baekjoonID)
-	}
+	return s.executeWithRetry(func() error {
+		// 입력값 검증
+		if !utils.IsValidUsername(name) {
+			return fmt.Errorf("invalid username: %s", name)
+		}
+		if !utils.IsValidBaekjoonID(baekjoonID) {
+			return fmt.Errorf("invalid Baekjoon ID: %s", baekjoonID)
+		}
 
-	competition := s.GetCompetition()
-	if competition == nil {
-		return fmt.Errorf("no active competition to add participant to")
-	}
+		competition := s.GetCompetition()
+		if competition == nil {
+			return fmt.Errorf("no active competition to add participant to")
+		}
 
-	// 중복 확인
-	existingDoc, err := s.client.Collection("competitions").Doc(competition.ID).Collection("participants").Doc(baekjoonID).Get(s.ctx)
-	if err == nil && existingDoc.Exists() {
-		return fmt.Errorf("participant with Baekjoon ID %s already exists", baekjoonID)
-	}
+		// 중복 확인
+		existingDoc, err := s.client.Collection("competitions").Doc(competition.ID).Collection("participants").Doc(baekjoonID).Get(s.ctx)
+		if err == nil && existingDoc.Exists() {
+			return fmt.Errorf("participant with Baekjoon ID %s already exists", baekjoonID)
+		}
 
-	// 이름 중복 확인
-	iter := s.client.Collection("competitions").Doc(competition.ID).Collection("participants").Where("name", "==", name).Limit(1).Documents(s.ctx)
-	if doc, err := iter.Next(); err == nil && doc != nil {
-		return fmt.Errorf("participant with name %s already exists", name)
-	}
+		// 이름 중복 확인
+		iter := s.client.Collection("competitions").Doc(competition.ID).Collection("participants").Where("name", "==", name).Limit(1).Documents(s.ctx)
+		if doc, err := iter.Next(); err == nil && doc != nil {
+			return fmt.Errorf("participant with name %s already exists", name)
+		}
 
-	startProblemIDs, startProblemCount := s.fetchStartingProblems(baekjoonID)
+		startProblemIDs, startProblemCount := s.fetchStartingProblems(baekjoonID)
 
-	participant := models.Participant{
-		Name:              utils.SanitizeString(name),
-		BaekjoonID:        baekjoonID,
-		OrganizationID:    organizationID,
-		StartTier:         startTier,
-		StartRating:       startRating,
-		CreatedAt:         time.Now(),
-		StartProblemIDs:   startProblemIDs,
-		StartProblemCount: startProblemCount,
-	}
+		participant := models.Participant{
+			Name:              utils.SanitizeString(name),
+			BaekjoonID:        baekjoonID,
+			OrganizationID:    organizationID,
+			StartTier:         startTier,
+			StartRating:       startRating,
+			CreatedAt:         time.Now(),
+			StartProblemIDs:   startProblemIDs,
+			StartProblemCount: startProblemCount,
+		}
 
-	_, err = s.client.Collection("competitions").Doc(competition.ID).Collection("participants").Doc(baekjoonID).Set(s.ctx, participant)
-	if err != nil {
-		return fmt.Errorf("failed to add participant: %w", err)
-	}
+		_, err = s.client.Collection("competitions").Doc(competition.ID).Collection("participants").Doc(baekjoonID).Set(s.ctx, participant)
+		if err != nil {
+			return fmt.Errorf("failed to add participant: %w", err)
+		}
 
-	utils.Info("Added new participant to Firestore: %s (%s)", name, baekjoonID)
-	return nil
+		utils.Info("Added new participant to Firestore: %s (%s)", name, baekjoonID)
+		return nil
+	})
 }
 
 // GetParticipants 현재 대회에 등록된 모든 참가자를 Firestore에서 조회합니다.
