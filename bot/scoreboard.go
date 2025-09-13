@@ -40,30 +40,42 @@ func (sm *ScoreboardManager) GetStorage() interfaces.StorageRepository {
 }
 
 func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.MessageEmbed, error) {
+	utils.Info("GenerateScoreboard started for admin: %t", isAdmin)
+	
 	competition := sm.storage.GetCompetition()
 	if competition == nil || !competition.IsActive {
+		utils.Error("No active competition found")
 		return nil, fmt.Errorf("활성화된 대회가 없습니다")
 	}
+	utils.Info("Competition found: %s, Active: %t", competition.Name, competition.IsActive)
 
 	// 블랙아웃 체크
 	if embed := sm.checkBlackoutPeriod(competition, isAdmin); embed != nil {
+		utils.Info("Blackout period detected, returning blackout message")
 		return embed, nil
 	}
+	utils.Info("Blackout check passed")
 
 	// 참가자 체크
 	participants := sm.storage.GetParticipants()
 	if embed := sm.checkEmptyParticipants(competition, participants); embed != nil {
+		utils.Info("No participants found, returning empty message")
 		return embed, nil
 	}
+	utils.Info("Participants found: %d", len(participants))
 
 	// 점수 데이터 수집
 	scores, err := sm.collectScoreData(participants)
 	if err != nil {
+		utils.Error("Failed to collect score data: %v", err)
 		return nil, err
 	}
+	utils.Info("Score data collected: %d scores", len(scores))
 
 	// 포맷팅
-	return sm.formatScoreboard(competition, scores, isAdmin), nil
+	embed := sm.formatScoreboard(competition, scores, isAdmin)
+	utils.Info("Scoreboard formatted successfully")
+	return embed, nil
 }
 
 // checkBlackoutPeriod 블랙아웃 기간인지 확인하고 해당 embed 반환
