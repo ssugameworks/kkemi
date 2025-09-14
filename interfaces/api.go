@@ -1,6 +1,6 @@
 package interfaces
 
-import "discord-bot/api"
+import "github.com/ssugameworks/Discord-Bot/api"
 
 // APIClient 외부 API와의 통신을 위한 인터페이스입니다
 type APIClient interface {

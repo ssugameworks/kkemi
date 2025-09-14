@@ -1,6 +1,6 @@
 package interfaces
 
-import "discord-bot/api"
+import "github.com/ssugameworks/Discord-Bot/api"
 
 // ScoreCalculator 점수 계산을 위한 인터페이스입니다
 type ScoreCalculator interface {

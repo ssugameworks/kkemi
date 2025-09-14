@@ -1,10 +1,10 @@
 package scoring
 
 import (
-	"discord-bot/api"
-	"discord-bot/constants"
-	"discord-bot/interfaces"
-	"discord-bot/models"
+	"github.com/ssugameworks/Discord-Bot/api"
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/interfaces"
+	"github.com/ssugameworks/Discord-Bot/models"
 	"math"
 )
 

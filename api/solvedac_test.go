@@ -1,7 +1,7 @@
 package api
 
 import (
-	"discord-bot/constants"
+	"github.com/ssugameworks/Discord-Bot/constants"
 	"net/http"
 	"net/http/httptest"
 	"testing"

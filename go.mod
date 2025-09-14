@@ -1,4 +1,4 @@
-module discord-bot
+module github.com/ssugameworks/Discord-Bot
 
 go 1.25.0
 

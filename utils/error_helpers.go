@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"discord-bot/constants"
-	"discord-bot/errors"
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/errors"
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"

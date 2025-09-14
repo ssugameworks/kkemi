@@ -1,7 +1,7 @@
 package errors
 
 import (
-	"discord-bot/constants"
+	"github.com/ssugameworks/Discord-Bot/constants"
 	"fmt"
 	"testing"
 )

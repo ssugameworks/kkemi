@@ -2,7 +2,7 @@ package telemetry
 
 import (
 	"context"
-	"discord-bot/utils"
+	"github.com/ssugameworks/Discord-Bot/utils"
 	"fmt"
 	"io/ioutil"
 	"os"

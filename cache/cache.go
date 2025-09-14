@@ -3,7 +3,7 @@ package cache
 import (
 	"container/heap"
 	"context"
-	"discord-bot/constants"
+	"github.com/ssugameworks/Discord-Bot/constants"
 	"sync"
 	"time"
 )

@@ -1,8 +1,8 @@
 package bot
 
 import (
-	"discord-bot/api"
-	"discord-bot/constants"
+	"github.com/ssugameworks/Discord-Bot/api"
+	"github.com/ssugameworks/Discord-Bot/constants"
 	"fmt"
 	"testing"
 

@@ -1,8 +1,8 @@
 package scoring
 
 import (
-	"discord-bot/api"
-	"discord-bot/models"
+	"github.com/ssugameworks/Discord-Bot/api"
+	"github.com/ssugameworks/Discord-Bot/models"
 	"fmt"
 	"testing"
 )

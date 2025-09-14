@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"discord-bot/constants"
+	"github.com/ssugameworks/Discord-Bot/constants"
 	"fmt"
 	"regexp"
 	"strings"

@@ -1,8 +1,8 @@
 package performance
 
 import (
-	"discord-bot/constants"
-	"discord-bot/models"
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/models"
 	"strings"
 	"sync"
 )

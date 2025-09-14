@@ -2,7 +2,7 @@ package health
 
 import (
 	"context"
-	"discord-bot/constants"
+	"github.com/ssugameworks/Discord-Bot/constants"
 	"encoding/json"
 	"fmt"
 	"net/http"

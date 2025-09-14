@@ -1,11 +1,11 @@
 package bot
 
 import (
-	"discord-bot/constants"
-	"discord-bot/interfaces"
-	"discord-bot/models"
-	"discord-bot/telemetry"
-	"discord-bot/utils"
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/interfaces"
+	"github.com/ssugameworks/Discord-Bot/models"
+	"github.com/ssugameworks/Discord-Bot/telemetry"
+	"github.com/ssugameworks/Discord-Bot/utils"
 
 	"github.com/bwmarrin/discordgo"
 )

@@ -1,7 +1,7 @@
 package app
 
 import (
-	"discord-bot/config"
+	"github.com/ssugameworks/Discord-Bot/config"
 	"os"
 	"testing"
 )

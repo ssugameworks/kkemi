@@ -1,7 +1,7 @@
 package interfaces
 
 import (
-	"discord-bot/models"
+	"github.com/ssugameworks/Discord-Bot/models"
 	"time"
 )
 

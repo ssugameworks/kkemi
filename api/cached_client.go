@@ -2,9 +2,9 @@ package api
 
 import (
 	"context"
-	"discord-bot/cache"
-	"discord-bot/constants"
-	"discord-bot/utils"
+	"github.com/ssugameworks/Discord-Bot/cache"
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/utils"
 	"fmt"
 	"sync/atomic"
 )

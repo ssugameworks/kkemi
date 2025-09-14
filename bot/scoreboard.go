@@ -1,11 +1,11 @@
 package bot
 
 import (
-	"discord-bot/constants"
-	"discord-bot/interfaces"
-	"discord-bot/models"
-	"discord-bot/performance"
-	"discord-bot/utils"
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/interfaces"
+	"github.com/ssugameworks/Discord-Bot/models"
+	"github.com/ssugameworks/Discord-Bot/performance"
+	"github.com/ssugameworks/Discord-Bot/utils"
 	"fmt"
 	"math"
 	"sort"

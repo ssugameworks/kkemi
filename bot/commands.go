@@ -1,10 +1,10 @@
 package bot
 
 import (
-	"discord-bot/api"
-	"discord-bot/constants"
-	"discord-bot/errors"
-	"discord-bot/utils"
+	"github.com/ssugameworks/Discord-Bot/api"
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/errors"
+	"github.com/ssugameworks/Discord-Bot/utils"
 	"fmt"
 	"strings"
 	"time"

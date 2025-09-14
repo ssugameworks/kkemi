@@ -1,9 +1,9 @@
 package main
 
 import (
-	"discord-bot/app"
-	"discord-bot/constants"
-	"discord-bot/health"
+	"github.com/ssugameworks/Discord-Bot/app"
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/health"
 	"log"
 	"os"
 )

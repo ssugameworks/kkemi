@@ -1,10 +1,10 @@
 package scheduler
 
 import (
-	"discord-bot/bot"
-	"discord-bot/config"
-	"discord-bot/constants"
-	"discord-bot/utils"
+	"github.com/ssugameworks/Discord-Bot/bot"
+	"github.com/ssugameworks/Discord-Bot/config"
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/utils"
 	"sync"
 	"time"
 
