@@ -73,11 +73,11 @@ type EfficientAPICache struct {
 	userTop100Cache        map[string]*CacheItem
 	userAdditionalCache    map[string]*CacheItem
 	userOrganizationsCache map[string]*CacheItem
-	
+
 	// 만료 시간 추적을 위한 우선순위 큐와 인덱스
 	expirationQueue *ExpirationQueue
-	keyToEntry     map[string]*ExpirationEntry // 빠른 조회를 위한 인덱스
-	
+	keyToEntry      map[string]*ExpirationEntry // 빠른 조회를 위한 인덱스
+
 	mu sync.RWMutex
 
 	// 캐시 설정
@@ -87,31 +87,31 @@ type EfficientAPICache struct {
 	userOrganizationsTTL time.Duration
 
 	// 효율적인 정리를 위한 설정
-	lastCleanup          time.Time
-	cleanupBatchSize     int
-	maxCleanupDuration   time.Duration
+	lastCleanup        time.Time
+	cleanupBatchSize   int
+	maxCleanupDuration time.Duration
 }
 
 // NewEfficientAPICache 새로운 EfficientAPICache 인스턴스를 생성합니다
 func NewEfficientAPICache() *EfficientAPICache {
 	pq := &ExpirationQueue{}
 	heap.Init(pq)
-	
+
 	return &EfficientAPICache{
 		userInfoCache:          make(map[string]*CacheItem),
 		userTop100Cache:        make(map[string]*CacheItem),
 		userAdditionalCache:    make(map[string]*CacheItem),
 		userOrganizationsCache: make(map[string]*CacheItem),
-		
+
 		expirationQueue: pq,
-		keyToEntry:     make(map[string]*ExpirationEntry),
+		keyToEntry:      make(map[string]*ExpirationEntry),
 
 		// 캐시 TTL 설정
 		userInfoTTL:          constants.UserInfoCacheTTL,
 		userTop100TTL:        constants.UserTop100CacheTTL,
 		userAdditionalTTL:    constants.UserAdditionalCacheTTL,
 		userOrganizationsTTL: constants.UserAdditionalCacheTTL,
-		
+
 		// 효율적인 정리 설정
 		cleanupBatchSize:   constants.CacheCleanupBatchSize,   // 한 번에 처리할 항목 수
 		maxCleanupDuration: constants.MaxCacheCleanupDuration, // 최대 정리 시간
@@ -238,7 +238,7 @@ func (c *EfficientAPICache) ClearExpiredEfficient() int {
 	now := time.Now()
 	startTime := time.Now()
 	cleaned := 0
-	
+
 	// 시간 제한과 배치 크기 제한으로 정리
 	for cleaned < c.cleanupBatchSize && time.Since(startTime) < c.maxCleanupDuration {
 		if c.expirationQueue.Len() == 0 {
@@ -247,7 +247,7 @@ func (c *EfficientAPICache) ClearExpiredEfficient() int {
 
 		// 가장 빨리 만료되는 항목 확인
 		entry := (*c.expirationQueue)[0]
-		
+
 		// 무효화된 항목이거나 아직 만료되지 않은 경우
 		if entry.ExpiresAt.IsZero() || now.Before(entry.ExpiresAt) {
 			if entry.ExpiresAt.IsZero() {
@@ -265,7 +265,7 @@ func (c *EfficientAPICache) ClearExpiredEfficient() int {
 		// 만료된 항목 제거
 		heap.Pop(c.expirationQueue)
 		delete(c.keyToEntry, entry.Key)
-		
+
 		// 해당 캐시 맵에서도 제거
 		switch entry.CacheType {
 		case "userInfo":
@@ -277,10 +277,10 @@ func (c *EfficientAPICache) ClearExpiredEfficient() int {
 		case "userOrganizations":
 			delete(c.userOrganizationsCache, entry.Key)
 		}
-		
+
 		cleaned++
 	}
-	
+
 	c.lastCleanup = now
 	return cleaned
 }
@@ -307,7 +307,7 @@ func (c *EfficientAPICache) Clear() {
 	c.userTop100Cache = make(map[string]*CacheItem)
 	c.userAdditionalCache = make(map[string]*CacheItem)
 	c.userOrganizationsCache = make(map[string]*CacheItem)
-	
+
 	// 우선순위 큐와 인덱스도 초기화
 	c.expirationQueue = &ExpirationQueue{}
 	heap.Init(c.expirationQueue)
@@ -337,4 +337,3 @@ func (c *EfficientAPICache) StartEfficientCleanupWorker(interval time.Duration) 
 
 	return cancel
 }
-

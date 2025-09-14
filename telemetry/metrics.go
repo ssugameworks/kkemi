@@ -288,7 +288,7 @@ func setupGoogleCloudCredentials() error {
 
 	// 환경변수 설정
 	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", credFile)
-	
+
 	utils.Debug("Created temporary Google Cloud credentials file: %s", credFile)
 	return nil
 }

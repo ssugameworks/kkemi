@@ -9,11 +9,11 @@ import (
 
 // Config 애플리케이션의 전체 설정을 관리합니다
 type Config struct {
-	Discord    DiscordConfig
-	Schedule   ScheduleConfig
-	Logging    LoggingConfig
-	Features   FeatureFlags
-	Telemetry  TelemetryConfig
+	Discord   DiscordConfig
+	Schedule  ScheduleConfig
+	Logging   LoggingConfig
+	Features  FeatureFlags
+	Telemetry TelemetryConfig
 }
 
 type DiscordConfig struct {

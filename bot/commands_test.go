@@ -256,8 +256,8 @@ func TestExtractSolvedACName(t *testing.T) {
 			if test.shouldFail {
 				// shouldFail 테스트의 경우 에러 핸들러가 호출되므로 직접 로직 검증
 				info := test.additionalInfo
-				hasName := (info.NameNative != nil && *info.NameNative != "") || 
-						   (info.Name != nil && *info.Name != "")
+				hasName := (info.NameNative != nil && *info.NameNative != "") ||
+					(info.Name != nil && *info.Name != "")
 				if hasName {
 					t.Errorf("%s: 이름이 있는데 실패 테스트로 분류됨", test.name)
 				}
@@ -293,7 +293,7 @@ func TestValidateUniversityAffiliation(t *testing.T) {
 	invalidOrgs := []api.Organization{
 		{OrganizationID: 999, Name: "Other University"},
 	}
-	
+
 	hasValidOrg := false
 	for _, org := range invalidOrgs {
 		if org.OrganizationID == constants.UniversityID {
@@ -301,7 +301,7 @@ func TestValidateUniversityAffiliation(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if hasValidOrg {
 		t.Error("테스트 로직 오류: 유효하지 않은 조직 목록에 숭실대학교가 포함됨")
 	}

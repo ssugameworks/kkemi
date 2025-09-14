@@ -100,13 +100,13 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 	scoresPtr := performance.GetScoreDataSlice()
 	defer performance.PutScoreDataSlice(scoresPtr)
 	scores := *scoresPtr
-	
+
 	scoreChan := performance.GetScoreDataChannel(len(participants))
 	defer performance.PutScoreDataChannel(scoreChan)
-	
+
 	semaphore := performance.GetSemaphoreChannel(sm.concurrencyManager.GetCurrentLimit())
 	defer performance.PutSemaphoreChannel(semaphore)
-	
+
 	var wg sync.WaitGroup
 	var errorCount int64
 
@@ -146,7 +146,7 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 	}
 
 	utils.Info("Successfully calculated scores for %d out of %d participants", len(scores), len(participants))
-	
+
 	// 결과 복사본 생성 (메모리 풀의 슬라이스는 재사용되므로)
 	result := make([]models.ScoreData, len(scores))
 	copy(result, scores)

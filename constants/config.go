@@ -11,7 +11,7 @@ const (
 	CacheCleanupInterval   = 5 * time.Minute  // 캐시 정리 간격
 
 	// Discord API 재시도 설정
-	MaxDiscordRetries = 3               // 최대 재시도 횟수
+	MaxDiscordRetries = 3 // 최대 재시도 횟수
 
 )
 

@@ -100,7 +100,6 @@ func (c *SolvedACClient) doRequest(url, requestType, handle string) ([]byte, err
 			time.Sleep(constants.RetryDelay * time.Duration(attempt))
 		}
 
-
 		utils.Debug("Fetching %s from: %s", requestType, url)
 
 		resp, err := c.client.Get(url)
@@ -202,7 +201,6 @@ func (c *SolvedACClient) getUserAdditionalInfoWithRetry(url, handle string) (*Us
 	if err != nil {
 		return nil, err
 	}
-
 
 	var additionalInfo UserAdditionalInfo
 	// API 응답 디버깅

@@ -92,7 +92,7 @@ func PutScoreDataChannel(ch chan models.ScoreData) {
 		default:
 			// 채널이 비어있음
 		}
-		
+
 		// 채널을 완전히 비운 후 풀에 반환
 		for {
 			select {

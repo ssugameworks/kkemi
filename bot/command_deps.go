@@ -47,12 +47,12 @@ func (deps *CommandDependencies) UpdateBotStatus() {
 	if deps.Session == nil {
 		return
 	}
-	
+
 	statusMessage := constants.BotStatusMessage
 	if competition := deps.Storage.GetCompetition(); competition != nil && competition.IsActive {
 		statusMessage = competition.Name
 	}
-	
+
 	err := deps.Session.UpdateGameStatus(0, statusMessage)
 	if err != nil {
 		utils.Warn("Failed to set bot status: %v", err)

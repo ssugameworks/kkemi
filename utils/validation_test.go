@@ -117,7 +117,6 @@ func TestSanitizeString(t *testing.T) {
 	}
 }
 
-
 func TestGetDisplayWidth(t *testing.T) {
 	tests := []struct {
 		input    string

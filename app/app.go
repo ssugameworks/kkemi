@@ -190,7 +190,7 @@ func (app *Application) updateBotStatus(s *discordgo.Session) {
 	if competition := app.storage.GetCompetition(); competition != nil && competition.IsActive {
 		statusMessage = competition.Name
 	}
-	
+
 	err := s.UpdateGameStatus(0, statusMessage)
 	if err != nil {
 		utils.Warn("Failed to set bot status: %v", err)
@@ -220,7 +220,7 @@ func (app *Application) printCacheStats() {
 	if cachedClient, ok := app.apiClient.(*api.CachedSolvedACClient); ok {
 		stats := cachedClient.GetCacheStats()
 		utils.Info("📊 %s", stats.String())
-		
+
 		// 텔레메트리로 캐시 메트릭 전송
 		if app.metricsClient != nil {
 			app.metricsClient.SendCacheMetrics(
