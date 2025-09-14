@@ -2,9 +2,9 @@ package telemetry
 
 import (
 	"context"
+	"github.com/ssugameworks/Discord-Bot/constants"
 	"github.com/ssugameworks/Discord-Bot/utils"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -116,9 +116,9 @@ func (m *MetricsClient) SendCommandMetric(command string, isAdmin bool) {
 					Labels: map[string]string{
 						"project_id": m.projectID,
 						"location":   "global",
-						"namespace":  "discord-bot",
-						"job":        "competition-bot",
-						"task_id":    "main",
+						"namespace":  constants.TelemetryNamespace,
+						"job":        constants.TelemetryJobName,
+						"task_id":    constants.TelemetryTaskID,
 					},
 				},
 				Points: []*monitoringpb.Point{
@@ -231,9 +231,9 @@ func (m *MetricsClient) sendLabeledMetric(ctx context.Context, metricType string
 					Labels: map[string]string{
 						"project_id": m.projectID,
 						"location":   "global",
-						"namespace":  "discord-bot",
-						"job":        "competition-bot",
-						"task_id":    "main",
+						"namespace":  constants.TelemetryNamespace,
+						"job":        constants.TelemetryJobName,
+						"task_id":    constants.TelemetryTaskID,
 					},
 				},
 				Points: []*monitoringpb.Point{
@@ -278,12 +278,12 @@ func setupGoogleCloudCredentials() error {
 
 	// 임시 파일 생성
 	tempDir := os.TempDir()
-	credFile := filepath.Join(tempDir, "discord-bot-gcloud-credentials.json")
+	credFile := filepath.Join(tempDir, constants.TelemetryCredentialsFile)
 
 	// JSON 내용을 임시 파일에 저장
-	err := ioutil.WriteFile(credFile, []byte(firebaseCredentials), 0600)
+	err := os.WriteFile(credFile, []byte(firebaseCredentials), constants.TelemetryFilePermissions)
 	if err != nil {
-		return fmt.Errorf("failed to write temporary credentials file: %v", err)
+		return fmt.Errorf("failed to write temporary credentials file: %w", err)
 	}
 
 	// 환경변수 설정

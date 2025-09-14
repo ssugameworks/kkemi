@@ -49,12 +49,12 @@ func NewStorage(apiClient interfaces.APIClient) (interfaces.StorageRepository, e
 
 	app, err := firebase.NewApp(ctx, nil, opt)
 	if err != nil {
-		return nil, fmt.Errorf("error initializing app: %v", err)
+		return nil, fmt.Errorf("error initializing app: %w", err)
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error initializing Firestore client: %v", err)
+		return nil, fmt.Errorf("error initializing Firestore client: %w", err)
 	}
 
 	s := &FirebaseStorage{
@@ -112,7 +112,7 @@ func (s *FirebaseStorage) executeWithRetry(operation func() error) error {
 		if isFirestoreConnectionError(err) {
 			utils.Warn("Detected Firestore connection error, attempting reconnection: %v", err)
 			if reconnectErr := s.reconnectFirestore(); reconnectErr != nil {
-				return fmt.Errorf("operation failed and reconnection failed: %v (original: %v)", reconnectErr, err)
+				return fmt.Errorf("operation failed and reconnection failed: %w (original: %v)", reconnectErr, err)
 			}
 			// 재연결 성공 시 작업 재시도
 			return operation()
@@ -194,7 +194,8 @@ func (s *FirebaseStorage) GetParticipants() []models.Participant {
 		return []models.Participant{}
 	}
 
-	var participants []models.Participant
+	// 메모리 할당 최적화: 초기 용량 할당
+	participants := make([]models.Participant, 0, 50) // 대부분의 대회는 50명 미만
 	iter := s.client.Collection("competitions").Doc(competition.ID).Collection("participants").Documents(s.ctx)
 	for {
 		doc, err := iter.Next()
@@ -319,18 +320,20 @@ func (s *FirebaseStorage) IsBlackoutPeriod() bool {
 }
 
 func (s *FirebaseStorage) fetchStartingProblems(baekjoonID string) ([]int, int) {
-	startProblemIDs := []int{}
-	startProblemCount := 0
 	top100, err := s.apiClient.GetUserTop100(baekjoonID)
-	if err == nil {
-		for _, problem := range top100.Items {
-			startProblemIDs = append(startProblemIDs, problem.ProblemID)
-		}
-		startProblemCount = len(startProblemIDs)
-		utils.Info("Loaded %d starting problems for participant %s", startProblemCount, baekjoonID)
-	} else {
+	if err != nil {
 		utils.Warn("Failed to load starting problems for participant %s: %v", baekjoonID, err)
+		return []int{}, 0
 	}
+
+	// 메모리 할당 최적화: 미리 용량 할당
+	startProblemIDs := make([]int, 0, len(top100.Items))
+	for _, problem := range top100.Items {
+		startProblemIDs = append(startProblemIDs, problem.ProblemID)
+	}
+	
+	startProblemCount := len(startProblemIDs)
+	utils.Info("Loaded %d starting problems for participant %s", startProblemCount, baekjoonID)
 	return startProblemIDs, startProblemCount
 }
 
