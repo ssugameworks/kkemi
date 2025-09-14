@@ -100,6 +100,7 @@ func (c *SolvedACClient) doRequest(url, requestType, handle string) ([]byte, err
 			time.Sleep(constants.RetryDelay * time.Duration(attempt))
 		}
 
+
 		utils.Debug("Fetching %s from: %s", requestType, url)
 
 		resp, err := c.client.Get(url)
@@ -202,10 +203,11 @@ func (c *SolvedACClient) getUserAdditionalInfoWithRetry(url, handle string) (*Us
 		return nil, err
 	}
 
+
+	var additionalInfo UserAdditionalInfo
 	// API 응답 디버깅
 	utils.Debug("Raw API response for additional info %s: %s", handle, string(body))
 
-	var additionalInfo UserAdditionalInfo
 	if err := json.Unmarshal(body, &additionalInfo); err != nil {
 		utils.Error("Failed to parse additional info for %s: %v", handle, err)
 		return nil, fmt.Errorf("추가 정보 파싱 실패: %w", err)

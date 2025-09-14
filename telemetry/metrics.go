@@ -143,6 +143,7 @@ func (m *MetricsClient) SendCommandMetric(command string, isAdmin bool) {
 	}
 
 	utils.Debug("Command metric sent: %s (admin: %t)", command, isAdmin)
+
 }
 
 // SendCompetitionMetric 대회 관련 메트릭을 전송합니다
@@ -169,6 +170,7 @@ func (m *MetricsClient) SendCompetitionMetric(action string, participantCount in
 	}
 
 	utils.Debug("Competition metric sent: %s (participants: %d)", action, participantCount)
+
 }
 
 // SendPerformanceMetric 성능 메트릭을 전송합니다
@@ -202,6 +204,7 @@ func (m *MetricsClient) SendPerformanceMetric(operation string, duration time.Du
 	}
 
 	utils.Debug("Performance metric sent: %s (duration: %v, success: %t)", operation, duration, success)
+
 }
 
 // sendCustomMetric 단순한 커스텀 메트릭을 전송합니다

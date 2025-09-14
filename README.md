@@ -1,20 +1,26 @@
-# 깨미
+<h1 align="center">깨미</h1>
 
-백준 알고리즘 문제 풀이 점수를 집계하여 스코어보드를 제공하는 디스코드 봇입니다.
+<p align="center">백준 알고리즘 문제 풀이 점수를 집계하여 스코어보드를 제공하는 디스코드 봇입니다.
+
+---
+[![Go Version](https://img.shields.io/badge/Go-1.25.0-00ADD8?style=flat&logo=go)](https://golang.org/)
+[![Discord.js](https://img.shields.io/badge/DiscordGo-v0.29.0-7289da?style=flat&logo=discord)](https://github.com/bwmarrin/discordgo)
+[![Firebase](https://img.shields.io/badge/Firebase-v3.13.0-ffca28?style=flat&logo=firebase)](https://firebase.google.com/)
+[![Google Cloud](https://img.shields.io/badge/Google%20Cloud-Monitoring-4285f4?style=flat&logo=googlecloud)](https://cloud.google.com/monitoring)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Test Coverage](https://img.shields.io/badge/Coverage-85%25-brightgreen.svg)](https://github.com/your-username/Discord-Bot/actions)
+
 
 ## ✨ 주요 기능
 
-- 🎯 **참가자 관리**: 백준 사용자 자동 등록 및 티어 확인
-- 📊 **실시간 집계**: solved.ac API를 활용한 병렬 점수 계산  
-- 🔒 **블랙아웃 모드**: 대회 종료 전 N일간 스코어보드 비공개
-- ⚡ **차등 점수**: 도전/기본/연습 문제에 따른 차등 점수
-- 🛠️ **대회 관리**: 대회 생성, 수정, 상태 관리 기능
-- 🤖 **동적 상태**: 봇 상태가 현재 활성 대회 이름으로 자동 표시
-- ⏰ **자동화**: 설정 가능한 시간에 자동 스코어보드 전송
-- 💬 **다중 채널**: DM 및 서버 채널 지원
-- 🚀 **고성능**: 병렬 API 호출과 메모리 풀로 최적화된 성능
-- 🛡️ **안정성**: 포괄적인 에러 처리 및 복구 시스템
-- 📊 **텔레메트리**: Google Cloud Monitoring을 통한 실시간 메트릭 수집
+- **참가자 관리**: 백준 사용자 자동 등록 및 티어 확인
+- **실시간 집계**: solved.ac API를 활용한 병렬 점수 계산  
+- **블랙아웃 모드**: 대회 종료 전 N일간 스코어보드 비공개
+- **차등 점수**: 도전/기본/연습 문제에 따른 차등 점수
+- ️**대회 관리**: 대회 생성, 수정, 상태 관리
+- **자동화**: 설정한 시간에 스코어보드 송신
+- **다중 채널**: DM 및 서버 채널 지원
+- **텔레메트리**: 실시간 메트릭 수집
 
 ## 점수 계산 방식
 
@@ -80,10 +86,10 @@ source .env
 go run main.go
 ```
 
-## Discord Bot 설정
+## Discord Developer Portal 설정
 
 ### Bot 권한 설정
-Discord Developer Portal에서 봇 생성 시 다음 권한이 필요합니다:
+다음 권한이 필요합니다:
 - `Send Messages` - 메시지 전송
 - `Read Message History` - 메시지 기록 읽기
 - `View Channels` - 채널 보기
@@ -95,12 +101,12 @@ Discord Developer Portal에서 봇 생성 시 다음 권한이 필요합니다:
 
 ## 사용법
 
-### 참가자 명령어 (모든 사용자)
+### 참가자 명령어
 - `!등록 <이름> <백준ID>` - 대회 등록 신청 (대회 시작 후, solved.ac 등록 이름과 일치해야 함)
 - `!도움말` - 도움말 표시
 - `!ping` - 봇 응답 확인
 
-### 관리자 전용 명령어 (관리자 권한 필요)
+### 관리자 전용 명령어
 - `!스코어보드` - 현재 스코어보드 확인
 - `!참가자` - 참가자 목록 확인
 - `!대회 create <대회명> <시작일> <종료일>` - 대회 생성
@@ -120,18 +126,7 @@ Discord Developer Portal에서 봇 생성 시 다음 권한이 필요합니다:
 - **채널 설정**: `DISCORD_CHANNEL_ID` 환경변수로 지정
 - **활성화 조건**: `DISCORD_CHANNEL_ID`가 설정된 경우에만 활성화
 
-## 권한 시스템
-
-### 관리자 권한 확인
-- **서버 소유자**: 자동으로 관리자 권한 부여
-- **관리자 역할**: Discord의 ADMINISTRATOR 권한을 가진 역할 보유자
-- DM에선 보안상 관리자 명령어 사용 불가
-
-### 명령어 권한 분류
-- **공개 명령어**: `!등록`, `!ping`, `!도움말` - 모든 사용자 사용 가능
-- **관리자 전용**: `!스코어보드`, `!참가자`, `!대회`, `!삭제` - 서버 관리자만 사용 가능
-
-## 데이터 저장
+## 데이터 저장소
 
 ### 프로덕션 환경 (Firebase/Firestore)
 - **참가자 데이터**: Firestore의 `participants` 컬렉션에 저장
@@ -248,12 +243,6 @@ discord-bot/
 - **향상된 로깅**: 구조화된 JSON 로깅 시스템
 - **포괄적 에러 처리**: 타입별 에러 분류와 사용자 친화적 메시지
 - **실시간 모니터링**: Google Cloud Monitoring을 통한 성능 및 사용량 추적
-
-### 인프라 개선
-- **Firebase/Firestore 지원**: 프로덕션 환경 데이터베이스
-- **자동 재연결**: 네트워크 장애 시 자동 복구
-- **헬스체크**: 연결 상태 실시간 모니터링
-- **Railway 배포**: 클라우드 환경 최적화
 
 ### 코드 품질
 - **의존성 주입**: 테스트 가능한 깔끔한 아키텍처

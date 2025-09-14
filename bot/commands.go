@@ -48,7 +48,7 @@ func (ch *CommandHandler) shouldIgnoreMessage(s *discordgo.Session, m *discordgo
 
 	// DM 디버깅 로그
 	if m.GuildID == "" {
-		utils.Debug("DM 수신: %s from %s", m.Content, m.Author.Username)
+		utils.Debug("DM received from %s", m.Author.Username)
 	}
 
 	return false
@@ -429,7 +429,6 @@ func (ch *CommandHandler) handleRemoveParticipant(s *discordgo.Session, m *disco
 
 // isAdmin 사용자가 서버 관리자 권한을 가지고 있는지 확인합니다
 func (ch *CommandHandler) isAdmin(s *discordgo.Session, m *discordgo.MessageCreate) bool {
-	utils.Info("Checking admin permissions for user %s (ID: %s)", m.Author.Username, m.Author.ID)
 
 	// DM에서는 관리자 권한 없음
 	if m.GuildID == "" {
@@ -443,8 +442,6 @@ func (ch *CommandHandler) isAdmin(s *discordgo.Session, m *discordgo.MessageCrea
 		utils.Warn("Cannot get guild information: %v", err)
 		return false
 	}
-
-	utils.Info("Guild found: %s (ID: %s), Owner: %s", guild.Name, guild.ID, guild.OwnerID)
 
 	// 서버 소유자인지 확인
 	if m.Author.ID == guild.OwnerID {
