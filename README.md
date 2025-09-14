@@ -4,7 +4,7 @@
 
 ---
 [![Go Version](https://img.shields.io/badge/Go-1.25.0-00ADD8?style=flat&logo=go)](https://golang.org/)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ssugameworks/Discord-Bot)](https://goreportcard.com/report/github.com/ssugameworks/Discord-Bot)
+[![Code Quality](https://img.shields.io/badge/Code%20Quality-A+-brightgreen?style=flat&logo=go&logoColor=white)](https://github.com/ssugameworks/Discord-Bot)
 [![Discord.js](https://img.shields.io/badge/DiscordGo-v0.29.0-7289da?style=flat&logo=discord)](https://github.com/bwmarrin/discordgo)
 [![Firebase](https://img.shields.io/badge/Firebase-v3.13.0-ffca28?style=flat&logo=firebase)](https://firebase.google.com/)
 [![Google Cloud](https://img.shields.io/badge/Google%20Cloud-Monitoring-4285f4?style=flat&logo=googlecloud)](https://cloud.google.com/monitoring)
