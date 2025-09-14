@@ -114,3 +114,17 @@ const (
 	EnvDebugMode    = "DEBUG_MODE"
 	EnvJSONLogging  = "JSON_LOGGING"
 )
+
+// 텔레메트리 관련 상수
+const (
+	TelemetryNamespace         = "discord-bot"
+	TelemetryJobName          = "competition-bot"
+	TelemetryTaskID           = "main"
+	TelemetryCredentialsFile  = "discord-bot-gcloud-credentials.json"
+	TelemetryFilePermissions  = 0600
+)
+
+// 시스템 컴포넌트 이름
+const (
+	SystemComponentName = "discord-bot"
+)

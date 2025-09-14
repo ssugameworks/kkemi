@@ -50,7 +50,7 @@ func NewLogger() *Logger {
 		level:     level,
 		logger:    logger,
 		useJSON:   useJSON,
-		component: "discord-bot",
+		component: constants.SystemComponentName,
 	}
 }
 
