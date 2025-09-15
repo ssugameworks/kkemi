@@ -128,3 +128,10 @@ const (
 const (
 	SystemComponentName = "discord-bot"
 )
+
+// Google Sheets 관련 상수
+const (
+	ParticipantSpreadsheetID = "1wwjn1hApSINnYsQGbEe5OdpYWvMfsfHC1ftoyR65IDM"
+	ParticipantSheetRange    = "A:Z"  // 전체 시트 범위 (기본 시트)
+	ParticipantNameColumn    = "이름\n(ex. 홍길동)"  // 실제 스프레드시트 헤더와 정확히 일치
+)

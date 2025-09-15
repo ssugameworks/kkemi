@@ -4,6 +4,7 @@ import (
 	"github.com/ssugameworks/Discord-Bot/constants"
 	"github.com/ssugameworks/Discord-Bot/interfaces"
 	"github.com/ssugameworks/Discord-Bot/models"
+	"github.com/ssugameworks/Discord-Bot/sheets"
 	"github.com/ssugameworks/Discord-Bot/telemetry"
 	"github.com/ssugameworks/Discord-Bot/utils"
 
@@ -19,6 +20,7 @@ type CommandDependencies struct {
 	ScoreCalculator   interfaces.ScoreCalculator
 	Session           *discordgo.Session
 	MetricsClient     *telemetry.MetricsClient
+	SheetsClient      *sheets.SheetsClient
 }
 
 // NewCommandDependencies 새로운 CommandDependencies 인스턴스를 생성합니다
@@ -30,6 +32,7 @@ func NewCommandDependencies(
 	scoreCalculator interfaces.ScoreCalculator,
 	session *discordgo.Session,
 	metricsClient *telemetry.MetricsClient,
+	sheetsClient *sheets.SheetsClient,
 ) *CommandDependencies {
 	return &CommandDependencies{
 		Storage:           storage,
@@ -39,6 +42,7 @@ func NewCommandDependencies(
 		ScoreCalculator:   scoreCalculator,
 		Session:           session,
 		MetricsClient:     metricsClient,
+		SheetsClient:      sheetsClient,
 	}
 }
 

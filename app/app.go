@@ -10,6 +10,7 @@ import (
 	"github.com/ssugameworks/Discord-Bot/models"
 	"github.com/ssugameworks/Discord-Bot/scheduler"
 	"github.com/ssugameworks/Discord-Bot/scoring"
+	"github.com/ssugameworks/Discord-Bot/sheets"
 	"github.com/ssugameworks/Discord-Bot/storage"
 	"github.com/ssugameworks/Discord-Bot/telemetry"
 	"github.com/ssugameworks/Discord-Bot/utils"
@@ -32,6 +33,7 @@ type Application struct {
 	scoreboardManager *bot.ScoreboardManager
 	scheduler         *scheduler.Scheduler
 	metricsClient     *telemetry.MetricsClient
+	sheetsClient      *sheets.SheetsClient
 }
 
 func New() (*Application, error) {
@@ -50,6 +52,7 @@ func New() (*Application, error) {
 	}
 
 	app.initializeTelemetry()
+	app.initializeSheetsClient()
 	app.setupHandlers()
 	app.initializeScheduler()
 
@@ -113,6 +116,16 @@ func (app *Application) initializeTelemetry() {
 	}
 }
 
+func (app *Application) initializeSheetsClient() {
+	sheetsClient, err := sheets.NewSheetsClient()
+	if err != nil {
+		utils.Warn("Failed to initialize Google Sheets client: %v", err)
+		app.sheetsClient = nil
+	} else {
+		app.sheetsClient = sheetsClient
+	}
+}
+
 func (app *Application) setupHandlers() {
 	// 글로벌 TierManager 한 번만 생성
 	app.tierManager = models.GetTierManager()
@@ -120,7 +133,7 @@ func (app *Application) setupHandlers() {
 	// 의존성 주입을 통한 컴포넌트 생성
 	calculator := scoring.NewScoreCalculator(app.apiClient, app.tierManager)
 	app.scoreboardManager = bot.NewScoreboardManager(app.storage, calculator, app.apiClient, app.tierManager)
-	deps := bot.NewCommandDependencies(app.storage, app.apiClient, app.scoreboardManager, app.tierManager, calculator, app.session, app.metricsClient)
+	deps := bot.NewCommandDependencies(app.storage, app.apiClient, app.scoreboardManager, app.tierManager, calculator, app.session, app.metricsClient, app.sheetsClient)
 	app.commandHandler = bot.NewCommandHandler(deps)
 
 	app.session.AddHandler(app.commandHandler.HandleMessage)

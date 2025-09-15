@@ -220,6 +220,27 @@ func (ch *CommandHandler) validateSolvedACUser(name, baekjoonID string, errorHan
 		return nil, false
 	}
 
+	// 스프레드시트에서 이름 검증
+	if ch.deps.SheetsClient != nil {
+		isInList, err := ch.deps.SheetsClient.IsNameInParticipantList(name)
+		if err != nil {
+			utils.Warn("Failed to check participant list: %v", err)
+			errorHandlers.System().HandleSystemError("SHEETS_CHECK_FAILED",
+				"Failed to verify participant eligibility",
+				"참가자 명단 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", err)
+			return nil, false
+		}
+		if !isInList {
+			errorHandlers.Validation().HandleInvalidParams("NAME_NOT_IN_LIST",
+				"Name not found in participant list",
+				fmt.Sprintf("'%s'님은 참가자 명단에 등록되지 않았습니다. 참가자 명단을 확인한 후 정확한 이름으로 다시 등록해주세요.", name))
+			return nil, false
+		}
+		utils.Info("Name '%s' verified in participant list", name)
+	} else {
+		utils.Warn("SheetsClient not available, skipping participant list verification")
+	}
+
 	return info, true
 }
 
