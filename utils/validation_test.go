@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/ssugameworks/Discord-Bot/constants"
+	"os"
 	"testing"
 	"time"
 )
@@ -215,5 +216,74 @@ func TestTimeZoneConsistency(t *testing.T) {
 
 	if parsed.Location().String() != now.Location().String() {
 		t.Errorf("Timezone mismatch! Parsed date and current time should be in same timezone")
+	}
+}
+
+func TestIsNameInBackupList(t *testing.T) {
+	// 테스트용 환경변수 설정
+	originalEnv := os.Getenv(constants.EnvBackupParticipantList)
+	defer func() {
+		if originalEnv != "" {
+			os.Setenv(constants.EnvBackupParticipantList, originalEnv)
+		} else {
+			os.Unsetenv(constants.EnvBackupParticipantList)
+		}
+	}()
+
+	// 테스트 케이스 1: 환경변수가 설정된 경우
+	os.Setenv(constants.EnvBackupParticipantList, "공서연, 이정안, 김철수")
+	
+	tests := []struct {
+		input    string
+		expected bool
+		desc     string
+	}{
+		{"공서연", true, "백업 명단에 있는 이름"},
+		{"이정안", true, "백업 명단에 있는 다른 이름"},
+		{"김철수", true, "백업 명단에 있는 세 번째 이름"},
+		{"공 서 연", true, "공백이 있는 이름 (정규화 후 일치)"},
+		{"UNKNOWN", false, "백업 명단에 없는 이름"},
+		{"", false, "빈 문자열"},
+		{" 공서연 ", true, "앞뒤 공백이 있는 이름"},
+	}
+
+	for _, test := range tests {
+		result := IsNameInBackupList(test.input)
+		if result != test.expected {
+			t.Errorf("IsNameInBackupList(%q) = %v, expected %v (%s)", test.input, result, test.expected, test.desc)
+		}
+	}
+	
+	// 테스트 케이스 2: 환경변수가 없는 경우
+	os.Unsetenv(constants.EnvBackupParticipantList)
+	
+	result := IsNameInBackupList("공서연")
+	if result != false {
+		t.Errorf("IsNameInBackupList with no env var should return false, got %v", result)
+	}
+	
+	// 백업 명단 내용 확인
+	t.Logf("Backup participant list from env: %v", getBackupParticipantList())
+}
+
+func TestNormalizeNameForComparison(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+		desc     string
+	}{
+		{"홍길동", "홍길동", "일반적인 한국 이름"},
+		{" 홍길동 ", "홍길동", "앞뒤 공백 제거"},
+		{"홍 길 동", "홍길동", "중간 공백 제거"},
+		{"John Doe", "johndoe", "영어 이름 소문자 변환 및 공백 제거"},
+		{"  JANE  SMITH  ", "janesmith", "복합 공백 및 대소문자 처리"},
+		{"", "", "빈 문자열"},
+	}
+
+	for _, test := range tests {
+		result := normalizeNameForComparison(test.input)
+		if result != test.expected {
+			t.Errorf("normalizeNameForComparison(%q) = %q, expected %q (%s)", test.input, result, test.expected, test.desc)
+		}
 	}
 }

@@ -231,14 +231,28 @@ func (ch *CommandHandler) validateSolvedACUser(name, baekjoonID string, errorHan
 			return nil, false
 		}
 		if !isInList {
+			// 스프레드시트에 없으면 백업 명단에서 확인
+			if utils.IsNameInBackupList(name) {
+				utils.Info("Name '%s' found in backup participant list", name)
+			} else {
+				errorHandlers.Validation().HandleInvalidParams("NAME_NOT_IN_LIST",
+					"Name not found in participant list",
+					fmt.Sprintf(constants.ErrorNameNotInList, name))
+				return nil, false
+			}
+		}
+		utils.Info("Name '%s' verified in participant list", name)
+	} else {
+		// SheetsClient가 없으면 백업 명단에서만 확인
+		utils.Warn("SheetsClient not available, using backup participant list")
+		if utils.IsNameInBackupList(name) {
+			utils.Info("Name '%s' found in backup participant list", name)
+		} else {
 			errorHandlers.Validation().HandleInvalidParams("NAME_NOT_IN_LIST",
 				"Name not found in participant list",
 				fmt.Sprintf(constants.ErrorNameNotInList, name))
 			return nil, false
 		}
-		utils.Info("Name '%s' verified in participant list", name)
-	} else {
-		utils.Warn("SheetsClient not available, skipping participant list verification")
 	}
 
 	return info, true

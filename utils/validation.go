@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/ssugameworks/Discord-Bot/constants"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -276,4 +277,51 @@ func SanitizeString(s string) string {
 	}
 
 	return strings.TrimSpace(cleaned.String())
+}
+
+// IsNameInBackupList 백업 참가자 명단에서 이름을 확인합니다
+func IsNameInBackupList(name string) bool {
+	backupList := getBackupParticipantList()
+	if len(backupList) == 0 {
+		return false
+	}
+	
+	normalizedName := normalizeNameForComparison(name)
+	
+	for _, participant := range backupList {
+		normalizedParticipant := normalizeNameForComparison(participant)
+		if normalizedName == normalizedParticipant {
+			return true
+		}
+	}
+	return false
+}
+
+// getBackupParticipantList 환경변수에서 백업 참가자 명단을 가져옵니다
+func getBackupParticipantList() []string {
+	envValue := os.Getenv(constants.EnvBackupParticipantList)
+	if envValue == "" {
+		return []string{}
+	}
+	
+	// 쉼표로 구분된 문자열을 배열로 변환
+	participants := strings.Split(envValue, ",")
+	
+	// 각 이름의 앞뒤 공백 제거
+	for i, participant := range participants {
+		participants[i] = strings.TrimSpace(participant)
+	}
+	
+	return participants
+}
+
+// normalizeNameForComparison 이름 비교를 위한 정규화 (공백 제거, 소문자 변환)
+func normalizeNameForComparison(name string) string {
+	// 앞뒤 공백 제거
+	normalized := strings.TrimSpace(name)
+	// 중간 공백 제거
+	normalized = strings.ReplaceAll(normalized, " ", "")
+	// 소문자로 변환 (영어가 포함된 경우)
+	normalized = strings.ToLower(normalized)
+	return normalized
 }
