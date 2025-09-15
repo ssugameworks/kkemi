@@ -117,11 +117,11 @@ const (
 
 // 텔레메트리 관련 상수
 const (
-	TelemetryNamespace         = "discord-bot"
-	TelemetryJobName          = "competition-bot"
-	TelemetryTaskID           = "main"
-	TelemetryCredentialsFile  = "discord-bot-gcloud-credentials.json"
-	TelemetryFilePermissions  = 0600
+	TelemetryNamespace       = "discord-bot"
+	TelemetryJobName         = "competition-bot"
+	TelemetryTaskID          = "main"
+	TelemetryCredentialsFile = "discord-bot-gcloud-credentials.json"
+	TelemetryFilePermissions = 0600
 )
 
 // 시스템 컴포넌트 이름
@@ -132,14 +132,13 @@ const (
 // Google Sheets 관련 상수
 const (
 	ParticipantSpreadsheetID = "1wwjn1hApSINnYsQGbEe5OdpYWvMfsfHC1ftoyR65IDM"
-	ParticipantSheetRange    = "A:Z"  // 전체 시트 범위 (기본 시트)
-	ParticipantNameColumn    = "이름\n(ex. 홍길동)"  // 실제 스프레드시트 헤더와 정확히 일치
+	ParticipantSheetRange    = "A:Z"           // 전체 시트 범위 (기본 시트)
+	ParticipantNameColumn    = "이름\n(ex. 홍길동)" // 실제 스프레드시트 헤더와 정확히 일치
 )
 
 // 에러 메시지 상수
 const (
 	// 참가자 명단 검증 관련 에러 메시지
-	ErrorSheetsCheckFailed    = "참가자 명단 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
-	ErrorNameNotInList        = "'%s'님은 참가자 명단에 등록되지 않았습니다. 참가자 명단을 확인한 후 정확한 이름으로 다시 등록해주세요."
-	ErrorSheetsClientNotAvailable = "참가자 명단 검증 서비스를 사용할 수 없습니다."
+	ErrorSheetsCheckFailed = "게임웍스 부원 목록을 불러올 수 없습니다. 잠시 후 다시 시도해주세요."
+	ErrorNameNotInList     = "'%s'님은 게임웍스 부원이 아닙니다. 만약 부원인 경우에도 이 메시지가 계속 뜬다면 운영진에게 문의해주세요."
 )
