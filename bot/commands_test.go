@@ -46,7 +46,6 @@ func (m *MockSolvedACClient) GetUserOrganizations(ctx context.Context, handle st
 	return m.organizations, nil
 }
 
-
 func TestNewCommandHandler(t *testing.T) {
 	deps := &CommandDependencies{
 		APIClient: &MockSolvedACClient{},
