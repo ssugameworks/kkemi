@@ -1,9 +1,8 @@
 #-------------------------------------------------------------------------------#
-#        Discover additional configuration options in our documentation         #
-#               https://www.jetbrains.com/help/qodana/github.html               #
+#                         Go Code Quality Analysis                               #
 #-------------------------------------------------------------------------------#
 
-name: Qodana
+name: Code Quality
 on:
   workflow_dispatch:
   pull_request:
@@ -12,28 +11,37 @@ on:
       - main
 
 jobs:
-  qodana:
+  code-quality:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      checks: write
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - name: 'Qodana Scan'
-        uses: JetBrains/qodana-action@v2025.2
-        env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          # In pr-mode: 'true' Qodana checks only changed files
-          pr-mode: false
-          use-caches: true
-          post-pr-comment: true
-          use-annotations: true
-          # Upload Qodana results (SARIF, other artifacts, logs) as an artifact to the job
-          upload-result: false
-          # quick-fixes available in Ultimate and Ultimate Plus plans
-          push-fixes: 'none'
+          go-version: '1.21'
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run gofmt
+        run: |
+          if [ "$(gofmt -l . | wc -l)" -gt 0 ]; then
+            echo "Code is not formatted. Please run gofmt."
+            gofmt -l .
+            exit 1
+          fi
+
+      - name: Run go build
+        run: go build ./...
+
+      - name: Run go mod tidy check
+        run: |
+          go mod tidy
+          if [ ! -z "$(git status --porcelain go.mod go.sum)" ]; then
+            echo "go.mod or go.sum needs to be updated. Please run 'go mod tidy'."
+            git status --porcelain go.mod go.sum
+            exit 1
+          fi
