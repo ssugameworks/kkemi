@@ -1,12 +1,15 @@
 package utils
 
 import (
-	"github.com/ssugameworks/Discord-Bot/constants"
 	"fmt"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
 )
 
 // IsValidUsername 문자열 유효성 검사
@@ -285,9 +288,9 @@ func IsNameInBackupList(name string) bool {
 	if len(backupList) == 0 {
 		return false
 	}
-	
+
 	normalizedName := normalizeNameForComparison(name)
-	
+
 	for _, participant := range backupList {
 		normalizedParticipant := normalizeNameForComparison(participant)
 		if normalizedName == normalizedParticipant {
@@ -303,15 +306,15 @@ func getBackupParticipantList() []string {
 	if envValue == "" {
 		return []string{}
 	}
-	
+
 	// 쉼표로 구분된 문자열을 배열로 변환
 	participants := strings.Split(envValue, ",")
-	
+
 	// 각 이름의 앞뒤 공백 제거
 	for i, participant := range participants {
 		participants[i] = strings.TrimSpace(participant)
 	}
-	
+
 	return participants
 }
 
@@ -324,4 +327,118 @@ func normalizeNameForComparison(name string) string {
 	// 소문자로 변환 (영어가 포함된 경우)
 	normalized = strings.ToLower(normalized)
 	return normalized
+}
+
+// IsValidURL URL 형식 검증
+func IsValidURL(urlStr string) bool {
+	if urlStr == "" {
+		return false
+	}
+
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return false
+	}
+
+	return u.Scheme != "" && u.Host != ""
+}
+
+// ContainsSQLInjection SQL 인젝션 패턴 검출
+func ContainsSQLInjection(input string) bool {
+	if input == "" {
+		return false
+	}
+
+	// 대소문자 구분 없이 검사
+	lower := strings.ToLower(input)
+
+	// 위험한 SQL 키워드들
+	sqlKeywords := []string{
+		"select", "insert", "update", "delete", "drop", "create", "alter",
+		"union", "script", "exec", "execute", "sp_", "xp_", "--", "/*", "*/",
+		"'", "\"", ";", "@@", "char(", "nchar(", "varchar(", "nvarchar(",
+		"waitfor", "delay", "shutdown", "sysobjects", "syscolumns",
+	}
+
+	for _, keyword := range sqlKeywords {
+		if strings.Contains(lower, keyword) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// ContainsXSS XSS 패턴 검출
+func ContainsXSS(input string) bool {
+	if input == "" {
+		return false
+	}
+
+	lower := strings.ToLower(input)
+
+	// 위험한 HTML/JavaScript 패턴들
+	xssPatterns := []string{
+		"<script", "</script>", "javascript:", "onload=", "onerror=",
+		"onclick=", "onmouseover=", "onfocus=", "onblur=", "onchange=",
+		"onsubmit=", "onreset=", "onselect=", "onkeydown=", "onkeyup=",
+		"<iframe", "<embed", "<object", "<applet", "<meta", "data:",
+		"vbscript:", "expression(", "eval(", "alert(", "confirm(",
+		"prompt(", "document.", "window.", "location.", "cookie",
+	}
+
+	for _, pattern := range xssPatterns {
+		if strings.Contains(lower, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IsSafeUserInput 사용자 입력의 전반적인 안전성 검사
+func IsSafeUserInput(input string) bool {
+	if input == "" {
+		return true
+	}
+
+	// 길이 제한
+	if len(input) > constants.MaxUserInputLength {
+		return false
+	}
+
+	// 제어 문자 검사 (개행, 탭 제외)
+	for _, r := range input {
+		if unicode.IsControl(r) && r != '\n' && r != '\t' && r != '\r' {
+			return false
+		}
+	}
+
+	// SQL 인젝션 검사
+	if ContainsSQLInjection(input) {
+		return false
+	}
+
+	// XSS 검사
+	if ContainsXSS(input) {
+		return false
+	}
+
+	return true
+}
+
+// ValidateEmail 이메일 형식 검증
+func ValidateEmail(email string) bool {
+	if email == "" {
+		return false
+	}
+
+	// 길이 제한
+	if len(email) > 254 {
+		return false
+	}
+
+	// 기본적인 이메일 정규식
+	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	return emailRegex.MatchString(email)
 }

@@ -6,6 +6,9 @@ const (
 	MaxUsernameDisplayWidth = 40 // 사용자명 최대 표시 너비
 	MaxCharacterRepeats     = 5  // 허용되는 최대 문자 반복 횟수
 
+	// 입력 길이 제한
+	MaxUserInputLength = 10000 // 일반 사용자 입력 최대 길이
+
 	// 시간대 관련
 	KSTOffsetSeconds = 9 * 60 * 60 // 한국 표준시(KST) UTC 오프셋 (초)
 
@@ -40,8 +43,4 @@ var SecurityMaliciousPatterns = []string{
 }
 
 // 예약어 목록 - Baekjoon ID 검증용
-var ReservedBaekjoonIDs = []string{
-	"admin", "administrator", "root", "system", "null", "undefined",
-	"test", "demo", "sample", "guest", "anonymous", "user",
-	"baekjoon", "boj", "solved", "acmicpc",
-}
+var ReservedBaekjoonIDs = []string{}
