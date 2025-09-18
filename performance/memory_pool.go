@@ -11,14 +11,14 @@ import (
 
 var (
 	// 풀 사용 통계
-	poolStatsSliceGets    int64
-	poolStatsSlicePuts    int64
-	poolStatsChanGets     int64
-	poolStatsChanPuts     int64
-	poolStatsSemGets      int64
-	poolStatsSemPuts      int64
-	poolStatsBuilderGets  int64
-	poolStatsBuilderPuts  int64
+	poolStatsSliceGets   int64
+	poolStatsSlicePuts   int64
+	poolStatsChanGets    int64
+	poolStatsChanPuts    int64
+	poolStatsSemGets     int64
+	poolStatsSemPuts     int64
+	poolStatsBuilderGets int64
+	poolStatsBuilderPuts int64
 
 	// ScoreDataSlicePool 점수 데이터 슬라이스 풀
 	ScoreDataSlicePool = sync.Pool{

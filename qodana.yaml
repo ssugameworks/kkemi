@@ -38,4 +38,4 @@ profile:
 #    total: 50
 
 #Specify Qodana linter for analysis (Applied in CI/CD pipeline)
-linter: jetbrains/qodana-go:2025.2
+linter: jetbrains/qodana-go:2025.2-community
