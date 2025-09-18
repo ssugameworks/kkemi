@@ -2,11 +2,12 @@ package api
 
 import (
 	"context"
+	"fmt"
+	"sync/atomic"
+
 	"github.com/ssugameworks/Discord-Bot/cache"
 	"github.com/ssugameworks/Discord-Bot/constants"
 	"github.com/ssugameworks/Discord-Bot/utils"
-	"fmt"
-	"sync/atomic"
 )
 
 // CachedSolvedACClient 캐시 기능을 포함한 SolvedAC API 클라이언트입니다
@@ -58,7 +59,7 @@ func (c *CachedSolvedACClient) Close() {
 }
 
 // GetUserInfo 캐시를 통해 사용자 정보를 조회합니다
-func (c *CachedSolvedACClient) GetUserInfo(handle string) (*UserInfo, error) {
+func (c *CachedSolvedACClient) GetUserInfo(ctx context.Context, handle string) (*UserInfo, error) {
 	atomic.AddInt64(&c.totalCalls, 1)
 
 	// 캐시에서 먼저 조회
@@ -72,7 +73,7 @@ func (c *CachedSolvedACClient) GetUserInfo(handle string) (*UserInfo, error) {
 	atomic.AddInt64(&c.cacheMisses, 1)
 	utils.Debug("Cache miss for user info: %s, calling API", handle)
 
-	userInfo, err := c.client.GetUserInfo(handle)
+	userInfo, err := c.client.GetUserInfo(ctx, handle)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +85,7 @@ func (c *CachedSolvedACClient) GetUserInfo(handle string) (*UserInfo, error) {
 }
 
 // GetUserTop100 캐시를 통해 사용자 TOP 100을 조회합니다
-func (c *CachedSolvedACClient) GetUserTop100(handle string) (*Top100Response, error) {
+func (c *CachedSolvedACClient) GetUserTop100(ctx context.Context, handle string) (*Top100Response, error) {
 	atomic.AddInt64(&c.totalCalls, 1)
 
 	// 캐시에서 먼저 조회
@@ -98,7 +99,7 @@ func (c *CachedSolvedACClient) GetUserTop100(handle string) (*Top100Response, er
 	atomic.AddInt64(&c.cacheMisses, 1)
 	utils.Debug("Cache miss for user top100: %s, calling API", handle)
 
-	top100, err := c.client.GetUserTop100(handle)
+	top100, err := c.client.GetUserTop100(ctx, handle)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +111,7 @@ func (c *CachedSolvedACClient) GetUserTop100(handle string) (*Top100Response, er
 }
 
 // GetUserAdditionalInfo 캐시를 통해 사용자 추가 정보를 조회합니다
-func (c *CachedSolvedACClient) GetUserAdditionalInfo(handle string) (*UserAdditionalInfo, error) {
+func (c *CachedSolvedACClient) GetUserAdditionalInfo(ctx context.Context, handle string) (*UserAdditionalInfo, error) {
 	atomic.AddInt64(&c.totalCalls, 1)
 
 	// 캐시에서 먼저 조회
@@ -124,7 +125,7 @@ func (c *CachedSolvedACClient) GetUserAdditionalInfo(handle string) (*UserAdditi
 	atomic.AddInt64(&c.cacheMisses, 1)
 	utils.Debug("Cache miss for user additional info: %s, calling API", handle)
 
-	additionalInfo, err := c.client.GetUserAdditionalInfo(handle)
+	additionalInfo, err := c.client.GetUserAdditionalInfo(ctx, handle)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +137,7 @@ func (c *CachedSolvedACClient) GetUserAdditionalInfo(handle string) (*UserAdditi
 }
 
 // GetUserOrganizations 지정된 사용자의 소속 조직 목록을 가져옵니다 (캐시 포함)
-func (c *CachedSolvedACClient) GetUserOrganizations(handle string) ([]Organization, error) {
+func (c *CachedSolvedACClient) GetUserOrganizations(ctx context.Context, handle string) ([]Organization, error) {
 	atomic.AddInt64(&c.totalCalls, 1)
 
 	// 캐시에서 먼저 조회
@@ -150,7 +151,7 @@ func (c *CachedSolvedACClient) GetUserOrganizations(handle string) ([]Organizati
 	atomic.AddInt64(&c.cacheMisses, 1)
 	utils.Debug("Cache miss for user organizations: %s, calling API", handle)
 
-	organizations, err := c.client.GetUserOrganizations(handle)
+	organizations, err := c.client.GetUserOrganizations(ctx, handle)
 	if err != nil {
 		return nil, err
 	}
@@ -224,10 +225,11 @@ func (c *CachedSolvedACClient) WarmupCache(handles []string) error {
 
 		// 백그라운드에서 데이터 로드
 		go func(h string) {
-			if _, err := c.GetUserInfo(h); err != nil {
+			ctx := context.Background()
+			if _, err := c.GetUserInfo(ctx, h); err != nil {
 				utils.Warn("Cache warmup failed for user info %s: %v", h, err)
 			}
-			if _, err := c.GetUserTop100(h); err != nil {
+			if _, err := c.GetUserTop100(ctx, h); err != nil {
 				utils.Warn("Cache warmup failed for top100 %s: %v", h, err)
 			}
 		}(handle)

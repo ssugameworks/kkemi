@@ -2,15 +2,16 @@ package storage
 
 import (
 	"context"
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/interfaces"
-	"github.com/ssugameworks/Discord-Bot/models"
-	"github.com/ssugameworks/Discord-Bot/utils"
 	"fmt"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/interfaces"
+	"github.com/ssugameworks/Discord-Bot/models"
+	"github.com/ssugameworks/Discord-Bot/utils"
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
@@ -320,7 +321,8 @@ func (s *FirebaseStorage) IsBlackoutPeriod() bool {
 }
 
 func (s *FirebaseStorage) fetchStartingProblems(baekjoonID string) ([]int, int) {
-	top100, err := s.apiClient.GetUserTop100(baekjoonID)
+	ctx := context.Background()
+	top100, err := s.apiClient.GetUserTop100(ctx, baekjoonID)
 	if err != nil {
 		utils.Warn("Failed to load starting problems for participant %s: %v", baekjoonID, err)
 		return []int{}, 0
@@ -331,7 +333,7 @@ func (s *FirebaseStorage) fetchStartingProblems(baekjoonID string) ([]int, int) 
 	for _, problem := range top100.Items {
 		startProblemIDs = append(startProblemIDs, problem.ProblemID)
 	}
-	
+
 	startProblemCount := len(startProblemIDs)
 	utils.Info("Loaded %d starting problems for participant %s", startProblemCount, baekjoonID)
 	return startProblemIDs, startProblemCount

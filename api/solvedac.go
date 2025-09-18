@@ -1,13 +1,15 @@
 package api
 
 import (
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/utils"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/utils"
 )
 
 // SolvedACClient solved.ac API와 통신하는 클라이언트입니다
@@ -81,17 +83,17 @@ func NewSolvedACClient() *SolvedACClient {
 }
 
 // GetUserInfo 지정된 핸들의 사용자 정보를 가져옵니다
-func (c *SolvedACClient) GetUserInfo(handle string) (*UserInfo, error) {
+func (c *SolvedACClient) GetUserInfo(ctx context.Context, handle string) (*UserInfo, error) {
 	if !utils.IsValidBaekjoonID(handle) {
 		return nil, fmt.Errorf("잘못된 핸들 형식: %s", handle)
 	}
 
 	url := fmt.Sprintf("%s/user/show?handle=%s", c.baseURL, handle)
-	return c.getUserInfoWithRetry(url, handle)
+	return c.getUserInfoWithRetry(ctx, url, handle)
 }
 
 // doRequest 공통 HTTP 요청 및 재시도 로직
-func (c *SolvedACClient) doRequest(url, requestType, handle string) ([]byte, error) {
+func (c *SolvedACClient) doRequest(ctx context.Context, url, requestType, handle string) ([]byte, error) {
 	var lastErr error
 
 	for attempt := 0; attempt < constants.MaxRetries; attempt++ {
@@ -102,7 +104,13 @@ func (c *SolvedACClient) doRequest(url, requestType, handle string) ([]byte, err
 
 		utils.Debug("Fetching %s from: %s", requestType, url)
 
-		resp, err := c.client.Get(url)
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			lastErr = fmt.Errorf("요청 생성 실패: %w", err)
+			continue
+		}
+
+		resp, err := c.client.Do(req)
 		if err != nil {
 			lastErr = fmt.Errorf("%s 조회 실패: %w", requestType, err)
 			utils.Warn("Attempt %d failed for %s %s: %v", attempt+1, requestType, handle, err)
@@ -141,8 +149,8 @@ func (c *SolvedACClient) doRequest(url, requestType, handle string) ([]byte, err
 }
 
 // 재시도 로직을 포함한 사용자 정보 조회
-func (c *SolvedACClient) getUserInfoWithRetry(url, handle string) (*UserInfo, error) {
-	body, err := c.doRequest(url, "user info", handle)
+func (c *SolvedACClient) getUserInfoWithRetry(ctx context.Context, url, handle string) (*UserInfo, error) {
+	body, err := c.doRequest(ctx, url, "user info", handle)
 	if err != nil {
 		return nil, err
 	}
@@ -159,18 +167,18 @@ func (c *SolvedACClient) getUserInfoWithRetry(url, handle string) (*UserInfo, er
 }
 
 // GetUserTop100 지정된 사용자의 TOP 100 문제를 가져옵니다
-func (c *SolvedACClient) GetUserTop100(handle string) (*Top100Response, error) {
+func (c *SolvedACClient) GetUserTop100(ctx context.Context, handle string) (*Top100Response, error) {
 	if !utils.IsValidBaekjoonID(handle) {
 		return nil, fmt.Errorf("잘못된 핸들 형식: %s", handle)
 	}
 
 	url := fmt.Sprintf("%s/user/top_100?handle=%s", c.baseURL, handle)
-	return c.getUserTop100WithRetry(url, handle)
+	return c.getUserTop100WithRetry(ctx, url, handle)
 }
 
 // 재시도 로직을 포함한 TOP 100 조회
-func (c *SolvedACClient) getUserTop100WithRetry(url, handle string) (*Top100Response, error) {
-	body, err := c.doRequest(url, "top 100", handle)
+func (c *SolvedACClient) getUserTop100WithRetry(ctx context.Context, url, handle string) (*Top100Response, error) {
+	body, err := c.doRequest(ctx, url, "top 100", handle)
 	if err != nil {
 		return nil, err
 	}
@@ -186,18 +194,18 @@ func (c *SolvedACClient) getUserTop100WithRetry(url, handle string) (*Top100Resp
 }
 
 // GetUserAdditionalInfo 지정된 사용자의 추가 정보를 가져옵니다
-func (c *SolvedACClient) GetUserAdditionalInfo(handle string) (*UserAdditionalInfo, error) {
+func (c *SolvedACClient) GetUserAdditionalInfo(ctx context.Context, handle string) (*UserAdditionalInfo, error) {
 	if !utils.IsValidBaekjoonID(handle) {
 		return nil, fmt.Errorf("잘못된 핸들 형식: %s", handle)
 	}
 
 	url := fmt.Sprintf("%s/user/additional_info?handle=%s", c.baseURL, handle)
-	return c.getUserAdditionalInfoWithRetry(url, handle)
+	return c.getUserAdditionalInfoWithRetry(ctx, url, handle)
 }
 
 // 재시도 로직을 포함한 사용자 추가 정보 조회
-func (c *SolvedACClient) getUserAdditionalInfoWithRetry(url, handle string) (*UserAdditionalInfo, error) {
-	body, err := c.doRequest(url, "additional info", handle)
+func (c *SolvedACClient) getUserAdditionalInfoWithRetry(ctx context.Context, url, handle string) (*UserAdditionalInfo, error) {
+	body, err := c.doRequest(ctx, url, "additional info", handle)
 	if err != nil {
 		return nil, err
 	}
@@ -221,18 +229,18 @@ func (c *SolvedACClient) getUserAdditionalInfoWithRetry(url, handle string) (*Us
 }
 
 // GetUserOrganizations 지정된 사용자의 소속 조직 목록을 가져옵니다
-func (c *SolvedACClient) GetUserOrganizations(handle string) ([]Organization, error) {
+func (c *SolvedACClient) GetUserOrganizations(ctx context.Context, handle string) ([]Organization, error) {
 	if !utils.IsValidBaekjoonID(handle) {
 		return nil, fmt.Errorf("잘못된 핸들 형식: %s", handle)
 	}
 
 	url := fmt.Sprintf("%s/user/organizations?handle=%s", c.baseURL, handle)
-	return c.getUserOrganizationsWithRetry(url, handle)
+	return c.getUserOrganizationsWithRetry(ctx, url, handle)
 }
 
 // 재시도 로직을 포함한 사용자 조직 목록 조회
-func (c *SolvedACClient) getUserOrganizationsWithRetry(url, handle string) ([]Organization, error) {
-	body, err := c.doRequest(url, "user organizations", handle)
+func (c *SolvedACClient) getUserOrganizationsWithRetry(ctx context.Context, url, handle string) ([]Organization, error) {
+	body, err := c.doRequest(ctx, url, "user organizations", handle)
 	if err != nil {
 		return nil, err
 	}

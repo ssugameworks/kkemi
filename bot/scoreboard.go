@@ -1,11 +1,7 @@
 package bot
 
 import (
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/interfaces"
-	"github.com/ssugameworks/Discord-Bot/models"
-	"github.com/ssugameworks/Discord-Bot/performance"
-	"github.com/ssugameworks/Discord-Bot/utils"
+	"context"
 	"fmt"
 	"math"
 	"sort"
@@ -13,6 +9,12 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/interfaces"
+	"github.com/ssugameworks/Discord-Bot/models"
+	"github.com/ssugameworks/Discord-Bot/performance"
+	"github.com/ssugameworks/Discord-Bot/utils"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -155,12 +157,13 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 
 // calculateParticipantScore 개별 참가자의 점수를 계산합니다
 func (sm *ScoreboardManager) calculateParticipantScore(participant models.Participant) (models.ScoreData, error) {
-	userInfo, err := sm.client.GetUserInfo(participant.BaekjoonID)
+	ctx := context.Background()
+	userInfo, err := sm.client.GetUserInfo(ctx, participant.BaekjoonID)
 	if err != nil {
 		return models.ScoreData{}, err
 	}
 
-	top100, err := sm.client.GetUserTop100(participant.BaekjoonID)
+	top100, err := sm.client.GetUserTop100(ctx, participant.BaekjoonID)
 	if err != nil {
 		return models.ScoreData{}, err
 	}

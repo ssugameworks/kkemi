@@ -1,11 +1,13 @@
 package scoring
 
 import (
+	"context"
+	"math"
+
 	"github.com/ssugameworks/Discord-Bot/api"
 	"github.com/ssugameworks/Discord-Bot/constants"
 	"github.com/ssugameworks/Discord-Bot/interfaces"
 	"github.com/ssugameworks/Discord-Bot/models"
-	"math"
 )
 
 type ScoreCalculator struct {
@@ -20,8 +22,8 @@ func NewScoreCalculator(apiClient interfaces.APIClient, tierManager *models.Tier
 	}
 }
 
-func (sc *ScoreCalculator) CalculateScore(handle string, startTier int, startProblemIDs []int) (float64, error) {
-	top100, err := sc.client.GetUserTop100(handle)
+func (sc *ScoreCalculator) CalculateScore(ctx context.Context, handle string, startTier int, startProblemIDs []int) (float64, error) {
+	top100, err := sc.client.GetUserTop100(ctx, handle)
 	if err != nil {
 		return 0, err
 	}

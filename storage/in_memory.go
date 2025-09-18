@@ -1,13 +1,15 @@
 package storage
 
 import (
+	"context"
+	"fmt"
+	"sync"
+	"time"
+
 	"github.com/ssugameworks/Discord-Bot/constants"
 	"github.com/ssugameworks/Discord-Bot/interfaces"
 	"github.com/ssugameworks/Discord-Bot/models"
 	"github.com/ssugameworks/Discord-Bot/utils"
-	"fmt"
-	"sync"
-	"time"
 )
 
 // InMemoryStorage 테스트/개발용 비영구 저장소 구현
@@ -187,7 +189,8 @@ func (s *InMemoryStorage) SaveParticipants() error { return nil }
 func (s *InMemoryStorage) fetchStartingProblems(baekjoonID string) ([]int, int) {
 	ids := []int{}
 	count := 0
-	top100, err := s.apiClient.GetUserTop100(baekjoonID)
+	ctx := context.Background()
+	top100, err := s.apiClient.GetUserTop100(ctx, baekjoonID)
 	if err == nil {
 		for _, item := range top100.Items {
 			ids = append(ids, item.ProblemID)

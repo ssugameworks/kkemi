@@ -1,13 +1,15 @@
 package bot
 
 import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
 	"github.com/ssugameworks/Discord-Bot/api"
 	"github.com/ssugameworks/Discord-Bot/constants"
 	"github.com/ssugameworks/Discord-Bot/errors"
 	"github.com/ssugameworks/Discord-Bot/utils"
-	"fmt"
-	"strings"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -193,14 +195,15 @@ func (ch *CommandHandler) validateCompetitionStatus(errorHandlers *utils.ErrorHa
 // validateSolvedACUser solved.ac 사용자 정보를 조회하고 이름을 검증합니다
 func (ch *CommandHandler) validateSolvedACUser(name, baekjoonID string, errorHandlers *utils.ErrorHandlerFactory) (userInfo interface{}, ok bool) {
 	// solved.ac 사용자 정보 조회
-	info, err := ch.deps.APIClient.GetUserInfo(baekjoonID)
+	ctx := context.Background()
+	info, err := ch.deps.APIClient.GetUserInfo(ctx, baekjoonID)
 	if err != nil {
 		errorHandlers.API().HandleBaekjoonUserNotFound(baekjoonID, err)
 		return nil, false
 	}
 
 	// solved.ac 추가 정보 조회 (본명 확인용)
-	additionalInfo, err := ch.deps.APIClient.GetUserAdditionalInfo(baekjoonID)
+	additionalInfo, err := ch.deps.APIClient.GetUserAdditionalInfo(ctx, baekjoonID)
 	if err != nil {
 		errorHandlers.API().HandleBaekjoonUserNotFound(baekjoonID, err)
 		return nil, false
@@ -282,7 +285,8 @@ func (ch *CommandHandler) extractSolvedACName(additionalInfo interface{}, errorH
 // validateUniversityAffiliation 사용자의 학교 소속을 검증합니다
 func (ch *CommandHandler) validateUniversityAffiliation(baekjoonID string, errorHandlers *utils.ErrorHandlerFactory) (organizationID int, ok bool) {
 	// solved.ac에서 사용자의 조직 정보 조회
-	organizations, err := ch.deps.APIClient.GetUserOrganizations(baekjoonID)
+	ctx := context.Background()
+	organizations, err := ch.deps.APIClient.GetUserOrganizations(ctx, baekjoonID)
 	if err != nil {
 		errorHandlers.API().HandleBaekjoonUserNotFound(baekjoonID, err)
 		return 0, false
