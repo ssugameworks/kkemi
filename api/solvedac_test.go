@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -59,7 +60,8 @@ func TestSolvedACClient_GetUserInfo_Success(t *testing.T) {
 		baseURL: server.URL,
 	}
 
-	userInfo, err := client.GetUserInfo("testuser")
+	ctx := context.Background()
+	userInfo, err := client.GetUserInfo(ctx, "testuser")
 
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
@@ -95,7 +97,8 @@ func TestSolvedACClient_GetUserInfo_NotFound(t *testing.T) {
 		baseURL: server.URL,
 	}
 
-	userInfo, err := client.GetUserInfo("nonexistent")
+	ctx := context.Background()
+	userInfo, err := client.GetUserInfo(ctx, "nonexistent")
 
 	if err == nil {
 		t.Error("Expected error for non-existent user")
@@ -142,7 +145,8 @@ func TestSolvedACClient_GetUserTop100_Success(t *testing.T) {
 		baseURL: server.URL,
 	}
 
-	top100, err := client.GetUserTop100("testuser")
+	ctx := context.Background()
+	top100, err := client.GetUserTop100(ctx, "testuser")
 
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
@@ -181,7 +185,8 @@ func TestSolvedACClient_GetUserAdditionalInfo_Success(t *testing.T) {
 		baseURL: server.URL,
 	}
 
-	additionalInfo, err := client.GetUserAdditionalInfo("testuser")
+	ctx := context.Background()
+	additionalInfo, err := client.GetUserAdditionalInfo(ctx, "testuser")
 
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
@@ -205,7 +210,8 @@ func TestSolvedACClient_Timeout(t *testing.T) {
 		baseURL: server.URL,
 	}
 
-	_, err := client.GetUserInfo("testuser")
+	ctx := context.Background()
+	_, err := client.GetUserInfo(ctx, "testuser")
 
 	if err == nil {
 		t.Error("Expected timeout error")
@@ -226,7 +232,8 @@ func TestSolvedACClient_InvalidJSON(t *testing.T) {
 		baseURL: server.URL,
 	}
 
-	_, err := client.GetUserInfo("testuser")
+	ctx := context.Background()
+	_, err := client.GetUserInfo(ctx, "testuser")
 
 	if err == nil {
 		t.Error("Expected JSON parsing error")

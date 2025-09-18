@@ -1,6 +1,7 @@
 package scoring
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -14,19 +15,19 @@ type mockAPIClient struct {
 	err      error
 }
 
-func (m *mockAPIClient) GetUserInfo(handle string) (*api.UserInfo, error) {
+func (m *mockAPIClient) GetUserInfo(ctx context.Context, handle string) (*api.UserInfo, error) {
 	return m.userInfo, m.err
 }
 
-func (m *mockAPIClient) GetUserTop100(handle string) (*api.Top100Response, error) {
+func (m *mockAPIClient) GetUserTop100(ctx context.Context, handle string) (*api.Top100Response, error) {
 	return m.top100, m.err
 }
 
-func (m *mockAPIClient) GetUserAdditionalInfo(handle string) (*api.UserAdditionalInfo, error) {
+func (m *mockAPIClient) GetUserAdditionalInfo(ctx context.Context, handle string) (*api.UserAdditionalInfo, error) {
 	return nil, nil
 }
 
-func (m *mockAPIClient) GetUserOrganizations(handle string) ([]api.Organization, error) {
+func (m *mockAPIClient) GetUserOrganizations(ctx context.Context, handle string) ([]api.Organization, error) {
 	return []api.Organization{}, nil
 }
 
@@ -52,7 +53,7 @@ func TestScoreCalculator_CalculateScore(t *testing.T) {
 		startTier := 11 // Gold V (프로 리그)
 		startProblemIDs := []int{}
 
-		score, err := calculator.CalculateScore("testuser", startTier, startProblemIDs)
+		score, err := calculator.CalculateScore(context.Background(), "testuser", startTier, startProblemIDs)
 		if err != nil {
 			t.Errorf("Expected no error, got: %v", err)
 		}
@@ -71,7 +72,7 @@ func TestScoreCalculator_CalculateScore(t *testing.T) {
 		startTier := 11             // Gold V (프로 리그)
 		startProblemIDs := []int{1} // Exclude problem 1 (Gold V)
 
-		score, err := calculator.CalculateScore("testuser", startTier, startProblemIDs)
+		score, err := calculator.CalculateScore(context.Background(), "testuser", startTier, startProblemIDs)
 		if err != nil {
 			t.Errorf("Expected no error, got: %v", err)
 		}
@@ -91,7 +92,7 @@ func TestScoreCalculator_CalculateScore(t *testing.T) {
 		}
 		calculator := NewScoreCalculator(mockClient, tierManager)
 
-		_, err := calculator.CalculateScore("testuser", 11, []int{})
+		_, err := calculator.CalculateScore(context.Background(), "testuser", 11, []int{})
 		if err == nil {
 			t.Error("Expected error but got nil")
 		}
@@ -198,7 +199,7 @@ func TestScoreCalculator_Integration(t *testing.T) {
 		startTier := 11                      // Gold V (프로 리그)
 		startProblemIDs := []int{1000, 1001} // Already solved Silver III and Gold V
 
-		score, err := calculator.CalculateScore("testuser", startTier, startProblemIDs)
+		score, err := calculator.CalculateScore(context.Background(), "testuser", startTier, startProblemIDs)
 		if err != nil {
 			t.Errorf("Expected no error, got: %v", err)
 		}
@@ -218,7 +219,7 @@ func TestScoreCalculator_Integration(t *testing.T) {
 		startTier := 16 // Platinum V (맥스 리그)
 		startProblemIDs := []int{}
 
-		score, err := calculator.CalculateScore("testuser", startTier, startProblemIDs)
+		score, err := calculator.CalculateScore(context.Background(), "testuser", startTier, startProblemIDs)
 		if err != nil {
 			t.Errorf("Expected no error, got: %v", err)
 		}

@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"context"
 	"fmt"
 	"github.com/ssugameworks/Discord-Bot/api"
 	"github.com/ssugameworks/Discord-Bot/constants"
@@ -17,33 +18,34 @@ type MockSolvedACClient struct {
 	shouldError    bool
 }
 
-func (m *MockSolvedACClient) GetUserInfo(handle string) (*api.UserInfo, error) {
+func (m *MockSolvedACClient) GetUserInfo(ctx context.Context, handle string) (*api.UserInfo, error) {
 	if m.shouldError {
 		return nil, fmt.Errorf("사용자를 찾을 수 없습니다: %s", handle)
 	}
 	return m.userInfo, nil
 }
 
-func (m *MockSolvedACClient) GetUserAdditionalInfo(handle string) (*api.UserAdditionalInfo, error) {
+func (m *MockSolvedACClient) GetUserAdditionalInfo(ctx context.Context, handle string) (*api.UserAdditionalInfo, error) {
 	if m.shouldError {
 		return nil, fmt.Errorf("사용자를 찾을 수 없습니다: %s", handle)
 	}
 	return m.additionalInfo, nil
 }
 
-func (m *MockSolvedACClient) GetUserOrganizations(handle string) ([]api.Organization, error) {
+func (m *MockSolvedACClient) GetUserTop100(ctx context.Context, handle string) (*api.Top100Response, error) {
+	if m.shouldError {
+		return nil, fmt.Errorf("사용자를 찾을 수 없습니다: %s", handle)
+	}
+	return &api.Top100Response{Count: 0, Items: []api.ProblemInfo{}}, nil
+}
+
+func (m *MockSolvedACClient) GetUserOrganizations(ctx context.Context, handle string) ([]api.Organization, error) {
 	if m.shouldError {
 		return nil, fmt.Errorf("사용자를 찾을 수 없습니다: %s", handle)
 	}
 	return m.organizations, nil
 }
 
-func (m *MockSolvedACClient) GetUserTop100(handle string) (*api.Top100Response, error) {
-	if m.shouldError {
-		return nil, fmt.Errorf("사용자를 찾을 수 없습니다: %s", handle)
-	}
-	return &api.Top100Response{}, nil
-}
 
 func TestNewCommandHandler(t *testing.T) {
 	deps := &CommandDependencies{
