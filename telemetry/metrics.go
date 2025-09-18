@@ -2,12 +2,14 @@ package telemetry
 
 import (
 	"context"
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/utils"
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/utils"
 
 	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"google.golang.org/genproto/googleapis/api/metric"
@@ -205,6 +207,70 @@ func (m *MetricsClient) SendPerformanceMetric(operation string, duration time.Du
 
 	utils.Debug("Performance metric sent: %s (duration: %v, success: %t)", operation, duration, success)
 
+}
+
+// SendMemoryMetrics 메모리 사용량 메트릭을 전송합니다
+func (m *MetricsClient) SendMemoryMetrics() {
+	if !m.enabled {
+		return
+	}
+
+	var memStats runtime.MemStats
+	runtime.GC() // 정확한 메모리 측정을 위해 GC 실행
+	runtime.ReadMemStats(&memStats)
+
+	ctx := context.Background()
+	now := &timestamppb.Timestamp{
+		Seconds: time.Now().Unix(),
+	}
+
+	// 할당된 힙 메모리
+	if err := m.sendCustomMetric(ctx, "discord_bot/memory/heap_alloc", float64(memStats.HeapAlloc), now); err != nil {
+		utils.Warn("Failed to send heap alloc metric: %v", err)
+	}
+
+	// 총 할당된 메모리
+	if err := m.sendCustomMetric(ctx, "discord_bot/memory/total_alloc", float64(memStats.TotalAlloc), now); err != nil {
+		utils.Warn("Failed to send total alloc metric: %v", err)
+	}
+
+	// 시스템 메모리
+	if err := m.sendCustomMetric(ctx, "discord_bot/memory/sys", float64(memStats.Sys), now); err != nil {
+		utils.Warn("Failed to send sys memory metric: %v", err)
+	}
+
+	// 고루틴 수
+	if err := m.sendCustomMetric(ctx, "discord_bot/runtime/goroutines", float64(runtime.NumGoroutine()), now); err != nil {
+		utils.Warn("Failed to send goroutines metric: %v", err)
+	}
+
+	// GC 실행 횟수
+	if err := m.sendCustomMetric(ctx, "discord_bot/memory/gc_cycles", float64(memStats.NumGC), now); err != nil {
+		utils.Warn("Failed to send GC cycles metric: %v", err)
+	}
+
+	utils.Debug("Memory metrics sent - HeapAlloc: %d MB, Goroutines: %d", memStats.HeapAlloc/1024/1024, runtime.NumGoroutine())
+}
+
+// SendErrorMetric 에러 발생 메트릭을 전송합니다
+func (m *MetricsClient) SendErrorMetric(errorType, component string) {
+	if !m.enabled {
+		return
+	}
+
+	ctx := context.Background()
+	now := &timestamppb.Timestamp{
+		Seconds: time.Now().Unix(),
+	}
+
+	if err := m.sendLabeledMetric(ctx, "discord_bot/errors/count", 1.0, now, map[string]string{
+		"error_type": errorType,
+		"component":  component,
+	}); err != nil {
+		utils.Warn("Failed to send error metric: %v", err)
+	}
+
+	utils.Debug("Error metric sent: %s in %s", errorType, component)
 }
 
 // sendCustomMetric 단순한 커스텀 메트릭을 전송합니다
