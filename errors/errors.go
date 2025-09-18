@@ -1,9 +1,13 @@
 package errors
 
 import (
-	"github.com/ssugameworks/Discord-Bot/constants"
+	"errors"
 	"fmt"
+	"log"
+	"runtime"
 	"time"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -21,11 +25,13 @@ const (
 
 // AppError 애플리케이션에서 발생하는 구조화된 오류를 표현합니다
 type AppError struct {
-	Type     ErrorType
-	Code     string
-	Message  string
-	UserMsg  string
-	Internal error
+	Type      ErrorType
+	Code      string
+	Message   string
+	UserMsg   string
+	Internal  error
+	Timestamp time.Time
+	Stack     string
 }
 
 func (e *AppError) Error() string {
@@ -33,6 +39,20 @@ func (e *AppError) Error() string {
 		return fmt.Sprintf("[%s] %s: %v", e.Code, e.Message, e.Internal)
 	}
 	return fmt.Sprintf("[%s] %s", e.Code, e.Message)
+}
+
+// Unwrap 내부 에러를 반환합니다 (Go 1.13+ error wrapping 지원)
+func (e *AppError) Unwrap() error {
+	return e.Internal
+}
+
+// Is 에러 타입을 비교합니다
+func (e *AppError) Is(target error) bool {
+	var appErr *AppError
+	if errors.As(target, &appErr) {
+		return e.Code == appErr.Code && e.Type == appErr.Type
+	}
+	return false
 }
 
 // GetUserMessage 사용자에게 표시할 메시지를 반환합니다
@@ -45,55 +65,72 @@ func (e *AppError) GetUserMessage() string {
 
 // 오류 생성 함수들
 
+// getStackTrace 현재 스택 추적을 가져옵니다
+func getStackTrace() string {
+	buf := make([]byte, 1024)
+	runtime.Stack(buf, false)
+	return string(buf)
+}
+
 // NewValidationError 입력값 검증 오류를 생성합니다
 func NewValidationError(code, message, userMsg string) *AppError {
 	return &AppError{
-		Type:    TypeValidation,
-		Code:    code,
-		Message: message,
-		UserMsg: userMsg,
+		Type:      TypeValidation,
+		Code:      code,
+		Message:   message,
+		UserMsg:   userMsg,
+		Timestamp: time.Now(),
+		Stack:     getStackTrace(),
 	}
 }
 
 // NewAPIError 외부 API 연동 오류를 생성합니다
 func NewAPIError(code, message string, err error) *AppError {
 	return &AppError{
-		Type:     TypeAPI,
-		Code:     code,
-		Message:  message,
-		UserMsg:  "외부 서비스 연결에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.",
-		Internal: err,
+		Type:      TypeAPI,
+		Code:      code,
+		Message:   message,
+		UserMsg:   "외부 서비스 연결에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.",
+		Internal:  err,
+		Timestamp: time.Now(),
+		Stack:     getStackTrace(),
 	}
 }
 
 // NewNotFoundError 리소스를 찾을 수 없는 오류를 생성합니다
 func NewNotFoundError(code, message, userMsg string) *AppError {
 	return &AppError{
-		Type:    TypeNotFound,
-		Code:    code,
-		Message: message,
-		UserMsg: userMsg,
+		Type:      TypeNotFound,
+		Code:      code,
+		Message:   message,
+		UserMsg:   userMsg,
+		Timestamp: time.Now(),
+		Stack:     getStackTrace(),
 	}
 }
 
 // NewDuplicateError 중복 리소스 오류를 생성합니다
 func NewDuplicateError(code, message, userMsg string) *AppError {
 	return &AppError{
-		Type:    TypeDuplicate,
-		Code:    code,
-		Message: message,
-		UserMsg: userMsg,
+		Type:      TypeDuplicate,
+		Code:      code,
+		Message:   message,
+		UserMsg:   userMsg,
+		Timestamp: time.Now(),
+		Stack:     getStackTrace(),
 	}
 }
 
 // NewSystemError 시스템 내부 오류를 생성합니다
 func NewSystemError(code, message string, err error) *AppError {
 	return &AppError{
-		Type:     TypeSystem,
-		Code:     code,
-		Message:  message,
-		UserMsg:  "시스템 오류가 발생했습니다. 관리자에게 문의해주세요.",
-		Internal: err,
+		Type:      TypeSystem,
+		Code:      code,
+		Message:   message,
+		UserMsg:   "시스템 오류가 발생했습니다. 관리자에게 문의해주세요.",
+		Internal:  err,
+		Timestamp: time.Now(),
+		Stack:     getStackTrace(),
 	}
 }
 
@@ -104,7 +141,8 @@ func HandleDiscordError(s *discordgo.Session, channelID string, err error) {
 	// 이 함수를 호출하기 전에 상세 오류는 이미 로깅되었다고 가정함.
 	// 이 함수의 주 목적은 사용자에게 피드백을 주는 것.
 	var userMessage string
-	if appErr, ok := err.(*AppError); ok {
+	var appErr *AppError
+	if errors.As(err, &appErr) {
 		userMessage = appErr.GetUserMessage()
 	} else {
 		userMessage = "예상치 못한 오류가 발생했습니다."
@@ -112,8 +150,8 @@ func HandleDiscordError(s *discordgo.Session, channelID string, err error) {
 
 	if discordErr := SendDiscordMessageWithRetry(s, channelID, constants.EmojiError+" "+userMessage); discordErr != nil {
 		// 디스코드 메시지 전송 실패는 콘솔에 기록
-		// utils import 순환 참조 방지를 위해 fmt 사용
-		fmt.Printf("FATAL: Failed to send error message to Discord. ChannelID: %s, OriginalError: %v, DiscordError: %v\n", channelID, err, discordErr)
+		// utils import 순환 참조 방지를 위해 log 사용
+		log.Printf("FATAL: Failed to send error message to Discord. ChannelID: %s, OriginalError: %v, DiscordError: %v\n", channelID, err, discordErr)
 	}
 }
 
