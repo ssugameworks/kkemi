@@ -77,13 +77,15 @@ func isReservedUsername(username string) bool {
 
 // containsMaliciousPattern 악의적인 패턴을 감지합니다
 func containsMaliciousPattern(input string) bool {
-	// SQL Injection 및 악성 패턴 감지 (constants에서 관리)
-	lowerInput := strings.ToLower(input)
-	for _, pattern := range constants.SecurityMaliciousPatterns {
-		if strings.Contains(lowerInput, pattern) {
-			return true
-		}
+	// 디스코드 봇 환경에 특화된 패턴 검사
+	if ContainsDiscordAbuse(input) {
+		return true
 	}
+
+	// 필요시 SQL 인젝션 검사도 추가 가능
+	// if ContainsSQLInjection(input) {
+	//     return true
+	// }
 
 	// 과도한 반복 문자 방지 (DoS 공격 방지)
 	if hasExcessiveRepeats(input, constants.MaxCharacterRepeats) {
@@ -352,15 +354,7 @@ func ContainsSQLInjection(input string) bool {
 	// 대소문자 구분 없이 검사
 	lower := strings.ToLower(input)
 
-	// 위험한 SQL 키워드들
-	sqlKeywords := []string{
-		"select", "insert", "update", "delete", "drop", "create", "alter",
-		"union", "script", "exec", "execute", "sp_", "xp_", "--", "/*", "*/",
-		"'", "\"", ";", "@@", "char(", "nchar(", "varchar(", "nvarchar(",
-		"waitfor", "delay", "shutdown", "sysobjects", "syscolumns",
-	}
-
-	for _, keyword := range sqlKeywords {
+	for _, keyword := range constants.SQLInjectionPatterns {
 		if strings.Contains(lower, keyword) {
 			return true
 		}
@@ -369,25 +363,15 @@ func ContainsSQLInjection(input string) bool {
 	return false
 }
 
-// ContainsXSS XSS 패턴 검출
-func ContainsXSS(input string) bool {
+// ContainsDiscordAbuse 디스코드 봇 환경에 특화된 악용 패턴 검출
+func ContainsDiscordAbuse(input string) bool {
 	if input == "" {
 		return false
 	}
 
 	lower := strings.ToLower(input)
 
-	// 위험한 HTML/JavaScript 패턴들
-	xssPatterns := []string{
-		"<script", "</script>", "javascript:", "onload=", "onerror=",
-		"onclick=", "onmouseover=", "onfocus=", "onblur=", "onchange=",
-		"onsubmit=", "onreset=", "onselect=", "onkeydown=", "onkeyup=",
-		"<iframe", "<embed", "<object", "<applet", "<meta", "data:",
-		"vbscript:", "expression(", "eval(", "alert(", "confirm(",
-		"prompt(", "document.", "window.", "location.", "cookie",
-	}
-
-	for _, pattern := range xssPatterns {
+	for _, pattern := range constants.DiscordAbusePatterns {
 		if strings.Contains(lower, pattern) {
 			return true
 		}
@@ -396,7 +380,7 @@ func ContainsXSS(input string) bool {
 	return false
 }
 
-// IsSafeUserInput 사용자 입력의 전반적인 안전성 검사
+// IsSafeUserInput 사용자 입력의 전반적인 안전성 검사 (디스코드 봇 환경에 특화)
 func IsSafeUserInput(input string) bool {
 	if input == "" {
 		return true
@@ -414,13 +398,22 @@ func IsSafeUserInput(input string) bool {
 		}
 	}
 
-	// SQL 인젝션 검사
-	if ContainsSQLInjection(input) {
+	// 디스코드 악용 패턴 검사 (봇 환경에 실제 필요한 검증)
+	if ContainsDiscordAbuse(input) {
 		return false
 	}
 
-	// XSS 검사
-	if ContainsXSS(input) {
+	return true
+}
+
+// IsSafeDatabaseInput 데이터베이스 입력용 보안 검사 (필요시에만 사용)
+func IsSafeDatabaseInput(input string) bool {
+	if !IsSafeUserInput(input) {
+		return false
+	}
+
+	// SQL 인젝션 검사 (데이터베이스 쿼리시에만 필요)
+	if ContainsSQLInjection(input) {
 		return false
 	}
 

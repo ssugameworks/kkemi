@@ -34,12 +34,20 @@ const (
 	UnicodeFullwidthPrintableEnd   = 0xFF5E // 전각 인쇄 가능 문자 끝
 )
 
-// SQL 인젝션 및 악성 패턴 목록
-var SecurityMaliciousPatterns = []string{
-	"union", "select", "insert", "update", "delete", "drop", "create", "alter",
-	"exec", "execute", "script", "javascript", "vbscript", "onload", "onerror",
-	"<script", "</script>", "eval(", "alert(", "document.cookie",
-	"--", "/*", "*/", ";--", "';", "\";", "')", "\")",
+// SQL 인젝션 패턴 목록
+var SQLInjectionPatterns = []string{
+	"select", "insert", "update", "delete", "drop", "create", "alter",
+	"union", "script", "exec", "execute", "sp_", "xp_", "--", "/*", "*/",
+	"'", "\"", ";", "@@", "char(", "nchar(", "varchar(", "nvarchar(",
+	"waitfor", "delay", "shutdown", "sysobjects", "syscolumns",
+}
+
+// 디스코드 봇 환경에서 문제가 될 수 있는 패턴들
+var DiscordAbusePatterns = []string{
+	"@everyone", "@here", "<@&", // 대량 멘션 방지
+	"http://", "https://", // 외부 링크 (필요에 따라)
+	"discord.gg/", "discord.com/invite/", // 초대 링크
+	"```", "``", // 코드 블록 남용 방지 (선택적)
 }
 
 // 예약어 목록 - Baekjoon ID 검증용
