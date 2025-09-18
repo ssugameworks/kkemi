@@ -1,11 +1,12 @@
 package api
 
 import (
-	"github.com/ssugameworks/Discord-Bot/constants"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
 )
 
 func TestNewSolvedACClient(t *testing.T) {

@@ -1,10 +1,11 @@
 package scoring
 
 import (
-	"github.com/ssugameworks/Discord-Bot/api"
-	"github.com/ssugameworks/Discord-Bot/models"
 	"fmt"
 	"testing"
+
+	"github.com/ssugameworks/Discord-Bot/api"
+	"github.com/ssugameworks/Discord-Bot/models"
 )
 
 type mockAPIClient struct {

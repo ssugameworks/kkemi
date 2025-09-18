@@ -3,9 +3,10 @@ package cache
 import (
 	"container/heap"
 	"context"
-	"github.com/ssugameworks/Discord-Bot/constants"
 	"sync"
 	"time"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
 )
 
 // CacheItem 캐시에 저장되는 개별 아이템을 나타냅니다

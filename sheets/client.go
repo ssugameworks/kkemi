@@ -3,10 +3,11 @@ package sheets
 import (
 	"context"
 	"fmt"
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/utils"
 	"os"
 	"strings"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/utils"
 
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"

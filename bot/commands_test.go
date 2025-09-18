@@ -1,9 +1,9 @@
 package bot
 
 import (
+	"fmt"
 	"github.com/ssugameworks/Discord-Bot/api"
 	"github.com/ssugameworks/Discord-Bot/constants"
-	"fmt"
 	"testing"
 
 	"github.com/bwmarrin/discordgo"

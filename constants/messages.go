@@ -7,7 +7,7 @@ const (
 	MsgRegisterUsage              = "사용법: `!등록 <이름> <백준ID>`"
 	MsgRegisterNotStarted         = "이벤트가 아직 시작되지 않았습니다. 등록은 %s부터 가능합니다."
 	MsgRegisterNoSolvedacName     = "solved.ac에 이름이 등록되지 않았습니다. solved.ac 프로필에서 이름을 등록한 후 다시 시도해주세요."
-	MsgRegisterNameMismatch       = "입력한 이름 '%s'이 solved.ac에 등록된 이름 '%s'와(과) 일치하지 않습니다."
+	MsgRegisterNameMismatch       = "입력한 이름 '%s'이(가) solved.ac에 등록된 이름 '%s'와(과) 일치하지 않습니다."
 	MsgRegisterNotSoongsilStudent = "이 이벤트는 숭실대학교에 재학 중인 게임웍스 부원만 참여할 수 있습니다.\nBOJ에서 숭실대학교 학교 인증을 진행해주세요."
 
 	// 스코어보드 관련

@@ -1,9 +1,10 @@
 package app
 
 import (
-	"github.com/ssugameworks/Discord-Bot/config"
 	"os"
 	"testing"
+
+	"github.com/ssugameworks/Discord-Bot/config"
 )
 
 func TestApplication_New(t *testing.T) {

@@ -1,10 +1,11 @@
 package utils
 
 import (
-	"github.com/ssugameworks/Discord-Bot/constants"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
 )
 
 func TestIsValidUsername(t *testing.T) {
@@ -232,7 +233,7 @@ func TestIsNameInBackupList(t *testing.T) {
 
 	// 테스트 케이스 1: 환경변수가 설정된 경우
 	os.Setenv(constants.EnvBackupParticipantList, "공서연, 이정안, 김철수")
-	
+
 	tests := []struct {
 		input    string
 		expected bool
@@ -253,15 +254,15 @@ func TestIsNameInBackupList(t *testing.T) {
 			t.Errorf("IsNameInBackupList(%q) = %v, expected %v (%s)", test.input, result, test.expected, test.desc)
 		}
 	}
-	
+
 	// 테스트 케이스 2: 환경변수가 없는 경우
 	os.Unsetenv(constants.EnvBackupParticipantList)
-	
+
 	result := IsNameInBackupList("공서연")
 	if result != false {
 		t.Errorf("IsNameInBackupList with no env var should return false, got %v", result)
 	}
-	
+
 	// 백업 명단 내용 확인
 	t.Logf("Backup participant list from env: %v", getBackupParticipantList())
 }

@@ -1,6 +1,11 @@
 package app
 
 import (
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/ssugameworks/Discord-Bot/api"
 	"github.com/ssugameworks/Discord-Bot/bot"
 	"github.com/ssugameworks/Discord-Bot/config"
@@ -14,10 +19,6 @@ import (
 	"github.com/ssugameworks/Discord-Bot/storage"
 	"github.com/ssugameworks/Discord-Bot/telemetry"
 	"github.com/ssugameworks/Discord-Bot/utils"
-	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"cloud.google.com/go/firestore"
 	"github.com/bwmarrin/discordgo"

@@ -1,13 +1,14 @@
 package utils
 
 import (
-	"github.com/ssugameworks/Discord-Bot/constants"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
 )
 
 type LogLevel int

@@ -2,12 +2,14 @@ package health
 
 import (
 	"context"
-	"github.com/ssugameworks/Discord-Bot/constants"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"runtime"
 	"time"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
 
 	"cloud.google.com/go/firestore"
 )
@@ -81,9 +83,9 @@ func StartHealthServer(port string) {
 
 	go func() {
 		// 간단한 로그 출력 (utils import를 피하기 위해 log 패키지 사용)
-		fmt.Printf("Health check server starting on port %s\n", port)
+		log.Printf("Health check server starting on port %s\n", port)
 		if err := http.ListenAndServe(":"+port, nil); err != nil {
-			fmt.Printf("Health server error: %v\n", err)
+			log.Printf("Health server error: %v\n", err)
 		}
 	}()
 }

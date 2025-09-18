@@ -1,10 +1,11 @@
 package config
 
 import (
-	"github.com/ssugameworks/Discord-Bot/constants"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
 )
 
 // Config 애플리케이션의 전체 설정을 관리합니다

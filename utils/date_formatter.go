@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/ssugameworks/Discord-Bot/constants"
 	"time"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
 )
 
 // FormatDate 단일 날짜를 포맷팅합니다
