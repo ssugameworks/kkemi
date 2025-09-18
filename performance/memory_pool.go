@@ -1,13 +1,25 @@
 package performance
 
 import (
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/models"
 	"strings"
 	"sync"
+	"sync/atomic"
+
+	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/models"
 )
 
 var (
+	// 풀 사용 통계
+	poolStatsSliceGets    int64
+	poolStatsSlicePuts    int64
+	poolStatsChanGets     int64
+	poolStatsChanPuts     int64
+	poolStatsSemGets      int64
+	poolStatsSemPuts      int64
+	poolStatsBuilderGets  int64
+	poolStatsBuilderPuts  int64
+
 	// ScoreDataSlicePool 점수 데이터 슬라이스 풀
 	ScoreDataSlicePool = sync.Pool{
 		New: func() interface{} {
@@ -45,6 +57,7 @@ var (
 
 // GetScoreDataSlice 재사용 가능한 점수 데이터 슬라이스를 가져옵니다
 func GetScoreDataSlice() *[]models.ScoreData {
+	atomic.AddInt64(&poolStatsSliceGets, 1)
 	slice := ScoreDataSlicePool.Get().(*[]models.ScoreData)
 	// 슬라이스 초기화 (길이는 0으로, 용량은 유지)
 	*slice = (*slice)[:0]
@@ -55,6 +68,7 @@ func GetScoreDataSlice() *[]models.ScoreData {
 func PutScoreDataSlice(slice *[]models.ScoreData) {
 	// 메모리 누수 방지를 위해 큰 슬라이스는 풀에 반환하지 않음
 	if cap(*slice) <= constants.MaxPoolSliceCapacity {
+		atomic.AddInt64(&poolStatsSlicePuts, 1)
 		ScoreDataSlicePool.Put(slice)
 	}
 }
