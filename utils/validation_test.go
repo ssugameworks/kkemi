@@ -143,8 +143,8 @@ func TestGetDisplayWidth(t *testing.T) {
 func TestParseTimeZoneHandling(t *testing.T) {
 	// 현재 시간 확인
 	now := time.Now()
-	t.Logf("Current time: %s", now.Format("2006-01-02 15:04:05 MST"))
-	t.Logf("Current UTC time: %s", now.UTC().Format("2006-01-02 15:04:05 MST"))
+	t.Logf("Current time: %s", now.Format(constants.DateTimeFormat + " MST"))
+	t.Logf("Current UTC time: %s", now.UTC().Format(constants.DateTimeFormat + " MST"))
 
 	// 오늘 날짜로 파싱 테스트
 	today := now.Format(constants.DateFormat)
@@ -155,14 +155,14 @@ func TestParseTimeZoneHandling(t *testing.T) {
 		t.Fatalf("Failed to parse today's date: %v", err)
 	}
 
-	t.Logf("Parsed date: %s", parsedDate.Format("2006-01-02 15:04:05 MST"))
-	t.Logf("Parsed date UTC: %s", parsedDate.UTC().Format("2006-01-02 15:04:05 MST"))
+	t.Logf("Parsed date: %s", parsedDate.Format(constants.DateTimeFormat + " MST"))
+	t.Logf("Parsed date UTC: %s", parsedDate.UTC().Format(constants.DateTimeFormat + " MST"))
 
 	// 현재 시간이 파싱된 날짜 이후인지 확인
 	isAfterStart := !now.Before(parsedDate)
 	t.Logf("Is now (%s) after or equal to parsed start (%s)? %v",
-		now.Format("2006-01-02 15:04:05 MST"),
-		parsedDate.Format("2006-01-02 15:04:05 MST"),
+		now.Format(constants.DateTimeFormat + " MST"),
+		parsedDate.Format(constants.DateTimeFormat + " MST"),
 		isAfterStart)
 
 	// 비교 결과 확인
@@ -186,8 +186,8 @@ func TestCompetitionDateComparison(t *testing.T) {
 	now := GetCurrentTimeKST()
 
 	t.Logf("Test scenario:")
-	t.Logf("  Competition start: %s", parsedDate.Format("2006-01-02 15:04:05 MST"))
-	t.Logf("  Current time (KST): %s", now.Format("2006-01-02 15:04:05 MST"))
+	t.Logf("  Competition start: %s", parsedDate.Format(constants.DateTimeFormat + " MST"))
+	t.Logf("  Current time (KST): %s", now.Format(constants.DateTimeFormat + " MST"))
 	t.Logf("  now.Before(start): %v", now.Before(parsedDate))
 
 	// 현재가 9월 8일 이후라면 등록 가능해야 함
