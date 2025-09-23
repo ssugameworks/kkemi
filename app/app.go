@@ -164,6 +164,10 @@ func (app *Application) Start() error {
 		utils.Warn("DISCORD_CHANNEL_ID가 설정되지 않았습니다. 스코어보드가 비활성화되었습니다.")
 	}
 
+	// 스프레드시트 업데이트 스케줄러 시작
+	app.scheduler.StartSheetsUpdate()
+	utils.Info("📊 30분마다 스프레드시트가 자동으로 업데이트됩니다.")
+
 	app.printStartupMessage()
 	return nil
 }
