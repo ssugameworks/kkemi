@@ -9,9 +9,9 @@ import (
 	"github.com/ssugameworks/Discord-Bot/constants"
 	"github.com/ssugameworks/Discord-Bot/utils"
 
+	"github.com/ssugameworks/Discord-Bot/models"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
-	"github.com/ssugameworks/Discord-Bot/models"
 )
 
 // SheetsClient Google Sheets API 클라이언트
@@ -244,9 +244,9 @@ func (c *SheetsClient) clearSheet(spreadsheetID string) error {
 // getTierName 티어 번호를 티어 이름으로 변환합니다
 func getTierName(tier int) string {
 	tierNames := map[int]string{
-		0:  "Unrated",
-		1:  "Bronze V", 2: "Bronze IV", 3: "Bronze III", 4: "Bronze II", 5: "Bronze I",
-		6:  "Silver V", 7: "Silver IV", 8: "Silver III", 9: "Silver II", 10: "Silver I",
+		0: "Unrated",
+		1: "Bronze V", 2: "Bronze IV", 3: "Bronze III", 4: "Bronze II", 5: "Bronze I",
+		6: "Silver V", 7: "Silver IV", 8: "Silver III", 9: "Silver II", 10: "Silver I",
 		11: "Gold V", 12: "Gold IV", 13: "Gold III", 14: "Gold II", 15: "Gold I",
 		16: "Platinum V", 17: "Platinum IV", 18: "Platinum III", 19: "Platinum II", 20: "Platinum I",
 		21: "Diamond V", 22: "Diamond IV", 23: "Diamond III", 24: "Diamond II", 25: "Diamond I",
