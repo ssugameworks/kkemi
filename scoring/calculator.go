@@ -76,8 +76,8 @@ func (sc *ScoreCalculator) getUserLeague(startTier int) int {
 	if startTier <= 11 {
 		return constants.LeaguePro
 	}
-	// 맥스: Gold IV ~ (티어 12 이상)
-	return constants.LeagueMax
+	// 마스터: Gold IV ~ (티어 12 이상)
+	return constants.LeagueMaster
 }
 
 // getWeightByLeague 리그별 가중치를 계산합니다
@@ -87,8 +87,8 @@ func (sc *ScoreCalculator) getWeightByLeague(problemLevel, startTier, userLeague
 		return sc.getRookieWeight(problemLevel, startTier)
 	case constants.LeaguePro:
 		return sc.getProWeight(problemLevel, startTier)
-	case constants.LeagueMax:
-		return sc.getMaxWeight(problemLevel, startTier)
+	case constants.LeagueMaster:
+		return sc.getMasterWeight(problemLevel, startTier)
 	default:
 		return 1.0
 	}
@@ -116,14 +116,14 @@ func (sc *ScoreCalculator) getProWeight(problemLevel, startTier int) float64 {
 	}
 }
 
-// getMaxWeight 맥스 리그 가중치를 계산합니다
-func (sc *ScoreCalculator) getMaxWeight(problemLevel, startTier int) float64 {
+// getMasterWeight 마스터 리그 가중치를 계산합니다
+func (sc *ScoreCalculator) getMasterWeight(problemLevel, startTier int) float64 {
 	if problemLevel > startTier {
-		return constants.MaxUpperMultiplier // × 1.0
+		return constants.MasterUpperMultiplier // × 1.0
 	} else if problemLevel == startTier {
-		return constants.MaxBaseMultiplier // × 1.0
+		return constants.MasterBaseMultiplier // × 1.0
 	} else {
-		return constants.MaxLowerMultiplier // × 1.0
+		return constants.MasterLowerMultiplier // × 1.0
 	}
 }
 
@@ -134,8 +134,8 @@ func (sc *ScoreCalculator) GetLeagueName(league int) string {
 		return "루키"
 	case constants.LeaguePro:
 		return "프로"
-	case constants.LeagueMax:
-		return "맥스"
+	case constants.LeagueMaster:
+		return "마스터"
 	default:
 		return "알 수 없음"
 	}

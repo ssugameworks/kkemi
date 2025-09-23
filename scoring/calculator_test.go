@@ -216,7 +216,7 @@ func TestScoreCalculator_Integration(t *testing.T) {
 	})
 
 	t.Run("Platinum starter solving lower tier problems", func(t *testing.T) {
-		startTier := 16 // Platinum V (맥스 리그)
+		startTier := 16 // Platinum V (마스터 리그)
 		startProblemIDs := []int{}
 
 		score, err := calculator.CalculateScore(context.Background(), "testuser", startTier, startProblemIDs)
@@ -224,7 +224,7 @@ func TestScoreCalculator_Integration(t *testing.T) {
 			t.Errorf("Expected no error, got: %v", err)
 		}
 
-		// 맥스 리그는 모든 문제에 동일 가중치 (1.0) 적용
+		// 마스터 리그는 모든 문제에 동일 가중치 (1.0) 적용
 		// Silver III (Level 8): 8 * 1.0 = 8
 		// Gold V (Level 11): 11 * 1.0 = 11
 		// Gold IV (Level 12): 12 * 1.0 = 12

@@ -74,6 +74,21 @@ func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.Messag
 	return sm.formatScoreboard(competition, scores, isAdmin), nil
 }
 
+// CollectScoreData 참가자들의 점수 데이터를 수집하여 반환합니다 (외부 접근용)
+func (sm *ScoreboardManager) CollectScoreData() ([]models.ScoreData, error) {
+	competition := sm.storage.GetCompetition()
+	if competition == nil || !competition.IsActive {
+		return nil, fmt.Errorf("활성화된 대회가 없습니다")
+	}
+
+	participants := sm.storage.GetParticipants()
+	if len(participants) == 0 {
+		return []models.ScoreData{}, nil
+	}
+
+	return sm.collectScoreData(participants)
+}
+
 // checkBlackoutPeriod 블랙아웃 기간인지 확인하고 해당 embed 반환
 func (sm *ScoreboardManager) checkBlackoutPeriod(competition *models.Competition, isAdmin bool) *discordgo.MessageEmbed {
 	if sm.storage.IsBlackoutPeriod() && !isAdmin {
@@ -237,7 +252,7 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 
 	var sb strings.Builder
 
-	leagueOrder := []int{constants.LeagueRookie, constants.LeaguePro, constants.LeagueMax}
+	leagueOrder := []int{constants.LeagueRookie, constants.LeaguePro, constants.LeagueMaster}
 
 	for _, league := range leagueOrder {
 		if len(leagueScores[league]) == 0 {

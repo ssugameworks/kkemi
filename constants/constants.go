@@ -21,7 +21,7 @@ const (
 const (
 	LeagueRookie = 0 // 루키: Unrated ~ Silver V (티어 0-6)
 	LeaguePro    = 1 // 프로: Silver IV ~ Gold V (티어 7-11)
-	LeagueMax    = 2 // 맥스: Gold IV ~ (티어 12 이상)
+	LeagueMaster = 2 // 마스터: Gold IV ~ (티어 12 이상)
 )
 
 // 각 리그별 가중치 (상위/동일/하위 티어)
@@ -36,10 +36,10 @@ const (
 	ProBaseMultiplier  = 1.0 // 동일 티어 문제
 	ProLowerMultiplier = 0.8 // 하위 티어 문제
 
-	// 맥스 리그 가중치
-	MaxUpperMultiplier = 1.0 // 상위 티어 문제
-	MaxBaseMultiplier  = 1.0 // 동일 티어 문제
-	MaxLowerMultiplier = 1.0 // 하위 티어 문제
+	// 마스터 리그 가중치
+	MasterUpperMultiplier = 1.0 // 상위 티어 문제
+	MasterBaseMultiplier  = 1.0 // 동일 티어 문제
+	MasterLowerMultiplier = 1.0 // 하위 티어 문제
 )
 
 // 대회 관련 상수
@@ -75,7 +75,6 @@ const (
 // 날짜 형식
 const (
 	DateFormat     = "2006-01-02"
-	TimeFormat     = "15:04:05"
 	DateTimeFormat = "2006-01-02 15:04:05"
 )
 
