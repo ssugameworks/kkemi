@@ -3,9 +3,10 @@ package bot
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/ssugameworks/Discord-Bot/api"
 	"github.com/ssugameworks/Discord-Bot/constants"
-	"testing"
 
 	"github.com/bwmarrin/discordgo"
 )

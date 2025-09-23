@@ -71,7 +71,7 @@ func NewComponentLogger(component string) *Logger {
 
 // getJSONLoggingFromEnv 환경변수에서 JSON 로깅 설정을 가져옵니다
 func getJSONLoggingFromEnv() bool {
-	jsonLogging := strings.ToUpper(os.Getenv("JSON_LOGGING"))
+	jsonLogging := strings.ToUpper(os.Getenv(constants.EnvJSONLogging))
 	return jsonLogging == "TRUE" || jsonLogging == "1" || jsonLogging == "ON"
 }
 
