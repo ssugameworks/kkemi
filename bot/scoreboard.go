@@ -47,8 +47,14 @@ func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.Messag
 		return nil, fmt.Errorf("활성화된 대회가 없습니다")
 	}
 
-	// 블랙아웃 체크
-	if embed := sm.checkBlackoutPeriod(competition, isAdmin); embed != nil {
+	// 마지막날 체크
+	now := utils.GetCurrentTimeKST()
+	isLastDay := now.Year() == competition.EndDate.Year() &&
+		now.Month() == competition.EndDate.Month() &&
+		now.Day() == competition.EndDate.Day()
+
+	// 블랙아웃 체크 (마지막날에는 공개)
+	if embed := sm.checkBlackoutPeriod(competition, isAdmin || isLastDay); embed != nil {
 		return embed, nil
 	}
 
