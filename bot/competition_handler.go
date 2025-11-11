@@ -287,7 +287,7 @@ func (ch *CompetitionHandler) updateCompetitionDate(s *discordgo.Session, m *dis
 	} else {
 		validRange = utils.IsValidDateRange(competition.StartDate, parsedDate)
 	}
-	
+
 	if !validRange {
 		errorHandlers.Validation().HandleInvalidDateRange()
 		return
@@ -299,7 +299,7 @@ func (ch *CompetitionHandler) updateCompetitionDate(s *discordgo.Session, m *dis
 	} else {
 		err = ch.commandHandler.deps.Storage.UpdateCompetitionEndDate(parsedDate)
 	}
-	
+
 	if err != nil {
 		botErr := errors.NewSystemError("COMPETITION_UPDATE_FAILED",
 			fmt.Sprintf("Failed to update competition %s date", fieldName), err)
