@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/ssugameworks/Discord-Bot/constants"
@@ -269,19 +270,15 @@ func groupScoresByLeague(scores []models.ScoreData) map[int][]models.ScoreData {
 	// 각 리그별로 점수 순으로 정렬
 	for league := range leagueScores {
 		scores := leagueScores[league]
-		for i := 0; i < len(scores)-1; i++ {
-			for j := i + 1; j < len(scores); j++ {
-				// 1. RawScore 기준 내림차순
-				if scores[i].RawScore < scores[j].RawScore {
-					scores[i], scores[j] = scores[j], scores[i]
-				} else if scores[i].RawScore == scores[j].RawScore {
-					// 2. 동점일 경우 BaekjoonID 오름차순
-					if scores[i].BaekjoonID > scores[j].BaekjoonID {
-						scores[i], scores[j] = scores[j], scores[i]
-					}
-				}
+		sort.Slice(scores, func(i, j int) bool {
+			// 1. RawScore 기준 내림차순
+			if scores[i].RawScore != scores[j].RawScore {
+				return scores[i].RawScore > scores[j].RawScore
 			}
-		}
+			// 2. 동점일 경우 BaekjoonID 오름차순
+			return scores[i].BaekjoonID < scores[j].BaekjoonID
+		})
+		leagueScores[league] = scores
 	}
 
 	return leagueScores
