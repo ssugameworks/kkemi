@@ -268,6 +268,13 @@ func (app *Application) Stop() error {
 		}
 	}
 
+	// Storage 클라이언트 종료
+	if app.storage != nil {
+		if err := app.storage.Close(); err != nil {
+			utils.Warn("Failed to close storage: %v", err)
+		}
+	}
+
 	if app.session != nil {
 		app.session.Close()
 	}

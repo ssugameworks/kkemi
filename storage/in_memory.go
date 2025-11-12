@@ -185,6 +185,9 @@ func (s *InMemoryStorage) SaveCompetition() error { return nil }
 // SaveParticipants no-op
 func (s *InMemoryStorage) SaveParticipants() error { return nil }
 
+// Close 인메모리 스토리지는 정리할 리소스가 없으므로 no-op입니다.
+func (s *InMemoryStorage) Close() error { return nil }
+
 // 내부 헬퍼: 시작 문제 목록 로딩
 func (s *InMemoryStorage) fetchStartingProblems(baekjoonID string) ([]int, int) {
 	ids := []int{}

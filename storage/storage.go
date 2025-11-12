@@ -348,3 +348,12 @@ func (s *FirebaseStorage) SaveCompetition() error {
 func (s *FirebaseStorage) SaveParticipants() error {
 	return nil
 }
+
+// Close Firestore 클라이언트를 종료하고 리소스를 정리합니다.
+func (s *FirebaseStorage) Close() error {
+	if s.client != nil {
+		utils.Info("Closing Firestore client")
+		return s.client.Close()
+	}
+	return nil
+}

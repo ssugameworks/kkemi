@@ -23,4 +23,7 @@ type StorageRepository interface {
 	UpdateCompetitionName(name string) error
 	UpdateCompetitionStartDate(startDate time.Time) error
 	UpdateCompetitionEndDate(endDate time.Time) error
+
+	// 리소스 정리
+	Close() error
 }
