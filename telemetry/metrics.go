@@ -20,9 +20,10 @@ import (
 
 // MetricsClient Google Cloud Monitoring 클라이언트를 래핑합니다
 type MetricsClient struct {
-	client    *monitoring.MetricClient
-	projectID string
-	enabled   bool
+	client         *monitoring.MetricClient
+	projectID      string
+	enabled        bool
+	credentialFile string // 임시 인증 파일 경로 (정리용)
 }
 
 // NewMetricsClient 새로운 MetricsClient 인스턴스를 생성합니다
@@ -33,7 +34,8 @@ func NewMetricsClient(projectID string) *MetricsClient {
 	}
 
 	// Firebase 인증 정보를 임시 파일로 생성하여 Google Cloud 인증에 사용
-	if err := setupGoogleCloudCredentials(); err != nil {
+	credFile, err := setupGoogleCloudCredentials()
+	if err != nil {
 		utils.Warn("Failed to setup Google Cloud credentials: %v", err)
 		utils.Warn("Telemetry disabled - ensure Firebase credentials are available")
 		return &MetricsClient{enabled: false}
@@ -43,14 +45,19 @@ func NewMetricsClient(projectID string) *MetricsClient {
 	if err != nil {
 		utils.Warn("Failed to create monitoring client: %v", err)
 		utils.Warn("Telemetry disabled")
+		// 인증 파일 정리
+		if credFile != "" {
+			os.Remove(credFile)
+		}
 		return &MetricsClient{enabled: false}
 	}
 
 	utils.Info("Google Cloud Monitoring telemetry enabled for project: %s", projectID)
 	return &MetricsClient{
-		client:    client,
-		projectID: projectID,
-		enabled:   true,
+		client:         client,
+		projectID:      projectID,
+		enabled:        true,
+		credentialFile: credFile,
 	}
 }
 
@@ -321,40 +328,75 @@ func (m *MetricsClient) sendLabeledMetric(ctx context.Context, metricType string
 	return m.client.CreateTimeSeries(ctx, req)
 }
 
-// Close 클라이언트를 정리합니다
+// Close 클라이언트를 정리하고 임시 인증 파일을 삭제합니다
 func (m *MetricsClient) Close() error {
-	if !m.enabled || m.client == nil {
-		return nil
+	var errs []error
+
+	// 클라이언트 종료
+	if m.enabled && m.client != nil {
+		if err := m.client.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("failed to close metrics client: %w", err))
+		}
 	}
-	return m.client.Close()
+
+	// 임시 인증 파일 삭제
+	if m.credentialFile != "" {
+		if err := os.Remove(m.credentialFile); err != nil && !os.IsNotExist(err) {
+			errs = append(errs, fmt.Errorf("failed to remove credentials file: %w", err))
+		} else {
+			utils.Debug("Removed temporary credentials file: %s", m.credentialFile)
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errors during close: %v", errs)
+	}
+	return nil
 }
 
 // setupGoogleCloudCredentials Firebase 인증 정보를 Google Cloud 인증으로 설정합니다
-func setupGoogleCloudCredentials() error {
+// 생성된 임시 파일 경로를 반환하며, 정리가 필요합니다
+func setupGoogleCloudCredentials() (string, error) {
 	// 이미 GOOGLE_APPLICATION_CREDENTIALS가 설정되어 있다면 스킵
 	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") != "" {
-		return nil
+		return "", nil
 	}
 
 	// Firebase 인증 JSON이 있는지 확인
 	firebaseCredentials := os.Getenv("FIREBASE_CREDENTIALS_JSON")
 	if firebaseCredentials == "" {
-		return fmt.Errorf("neither GOOGLE_APPLICATION_CREDENTIALS nor FIREBASE_CREDENTIALS_JSON is set")
+		return "", fmt.Errorf("neither GOOGLE_APPLICATION_CREDENTIALS nor FIREBASE_CREDENTIALS_JSON is set")
 	}
 
-	// 임시 파일 생성
-	tempDir := os.TempDir()
-	credFile := filepath.Join(tempDir, constants.TelemetryCredentialsFile)
+	// 임시 파일 생성 (보안: 랜덤 파일명 사용)
+	credFile, err := os.CreateTemp("", "gcloud-credentials-*.json")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temporary credentials file: %w", err)
+	}
+	credFilePath := credFile.Name()
 
 	// JSON 내용을 임시 파일에 저장
-	err := os.WriteFile(credFile, []byte(firebaseCredentials), constants.TelemetryFilePermissions)
-	if err != nil {
-		return fmt.Errorf("failed to write temporary credentials file: %w", err)
+	if _, err := credFile.Write([]byte(firebaseCredentials)); err != nil {
+		credFile.Close()
+		os.Remove(credFilePath)
+		return "", fmt.Errorf("failed to write temporary credentials file: %w", err)
+	}
+
+	// 파일 권한 설정 (소유자만 읽기/쓰기)
+	if err := credFile.Chmod(constants.TelemetryFilePermissions); err != nil {
+		credFile.Close()
+		os.Remove(credFilePath)
+		return "", fmt.Errorf("failed to set credentials file permissions: %w", err)
+	}
+
+	if err := credFile.Close(); err != nil {
+		os.Remove(credFilePath)
+		return "", fmt.Errorf("failed to close credentials file: %w", err)
 	}
 
 	// 환경변수 설정
-	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", credFile)
+	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", credFilePath)
 
-	utils.Debug("Created temporary Google Cloud credentials file: %s", credFile)
-	return nil
+	utils.Debug("Created temporary Google Cloud credentials file: %s", credFilePath)
+	return credFilePath, nil
 }
