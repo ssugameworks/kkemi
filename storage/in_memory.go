@@ -14,17 +14,19 @@ import (
 
 // InMemoryStorage 테스트/개발용 비영구 저장소 구현
 type InMemoryStorage struct {
-	mu           sync.RWMutex
-	apiClient    interfaces.APIClient
-	competition  *models.Competition
-	participants map[string]models.Participant // key: BaekjoonID
+	mu                sync.RWMutex
+	apiClient         interfaces.APIClient
+	competition       *models.Competition
+	participants      map[string]models.Participant // key: BaekjoonID
+	participantsByName map[string]string             // key: Name, value: BaekjoonID for fast duplicate check
 }
 
 // NewInMemoryStorage 새 인메모리 저장소 생성
 func NewInMemoryStorage(apiClient interfaces.APIClient) *InMemoryStorage {
 	return &InMemoryStorage{
-		apiClient:    apiClient,
-		participants: make(map[string]models.Participant),
+		apiClient:         apiClient,
+		participants:      make(map[string]models.Participant),
+		participantsByName: make(map[string]string),
 	}
 }
 
@@ -45,10 +47,9 @@ func (s *InMemoryStorage) AddParticipant(name, baekjoonID string, startTier, sta
 	if _, exists := s.participants[baekjoonID]; exists {
 		return fmt.Errorf("participant with Baekjoon ID %s already exists", baekjoonID)
 	}
-	for _, p := range s.participants {
-		if p.Name == name {
-			return fmt.Errorf("participant with name %s already exists", name)
-		}
+	// O(1) lookup for name duplicates using index map
+	if _, exists := s.participantsByName[name]; exists {
+		return fmt.Errorf("participant with name %s already exists", name)
 	}
 
 	startProblemIDs, startProblemCount := s.fetchStartingProblems(baekjoonID)
@@ -65,6 +66,7 @@ func (s *InMemoryStorage) AddParticipant(name, baekjoonID string, startTier, sta
 		StartProblemCount: startProblemCount,
 	}
 	s.participants[baekjoonID] = p
+	s.participantsByName[name] = baekjoonID
 	return nil
 }
 
@@ -83,10 +85,12 @@ func (s *InMemoryStorage) GetParticipants() []models.Participant {
 func (s *InMemoryStorage) RemoveParticipant(baekjoonID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, ok := s.participants[baekjoonID]; !ok {
+	p, ok := s.participants[baekjoonID]
+	if !ok {
 		return fmt.Errorf("participant not found: %s", baekjoonID)
 	}
 	delete(s.participants, baekjoonID)
+	delete(s.participantsByName, p.Name)
 	return nil
 }
 
@@ -187,18 +191,19 @@ func (s *InMemoryStorage) SaveParticipants() error { return nil }
 
 // 내부 헬퍼: 시작 문제 목록 로딩
 func (s *InMemoryStorage) fetchStartingProblems(baekjoonID string) ([]int, int) {
-	ids := []int{}
-	count := 0
 	ctx := context.Background()
 	top100, err := s.apiClient.GetUserTop100(ctx, baekjoonID)
-	if err == nil {
-		for _, item := range top100.Items {
-			ids = append(ids, item.ProblemID)
-		}
-		count = len(ids)
-		utils.Info("Loaded %d starting problems for participant %s", count, baekjoonID)
-	} else {
+	if err != nil {
 		utils.Warn("Failed to load starting problems for participant %s: %v", baekjoonID, err)
+		return []int{}, 0
 	}
+
+	// 메모리 할당 최적화: 미리 용량 할당
+	ids := make([]int, 0, len(top100.Items))
+	for _, item := range top100.Items {
+		ids = append(ids, item.ProblemID)
+	}
+	count := len(ids)
+	utils.Info("Loaded %d starting problems for participant %s", count, baekjoonID)
 	return ids, count
 }
