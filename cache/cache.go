@@ -16,8 +16,8 @@ type CacheItem struct {
 }
 
 // IsExpired 캐시 아이템이 만료되었는지 확인합니다
-func (c *CacheItem) IsExpired() bool {
-	return time.Now().After(c.ExpiresAt)
+func (item *CacheItem) IsExpired() bool {
+	return time.Now().After(item.ExpiresAt)
 }
 
 // CacheStats 캐시 통계 정보를 나타냅니다
@@ -39,32 +39,32 @@ type ExpirationEntry struct {
 // ExpirationQueue 만료 시간 기반 우선순위 큐 (최소 힙)
 type ExpirationQueue []*ExpirationEntry
 
-func (pq ExpirationQueue) Len() int { return len(pq) }
+func (priorityQueue ExpirationQueue) Len() int { return len(priorityQueue) }
 
-func (pq ExpirationQueue) Less(i, j int) bool {
-	return pq[i].ExpiresAt.Before(pq[j].ExpiresAt)
+func (priorityQueue ExpirationQueue) Less(i, j int) bool {
+	return priorityQueue[i].ExpiresAt.Before(priorityQueue[j].ExpiresAt)
 }
 
-func (pq ExpirationQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].Index = i
-	pq[j].Index = j
+func (priorityQueue ExpirationQueue) Swap(i, j int) {
+	priorityQueue[i], priorityQueue[j] = priorityQueue[j], priorityQueue[i]
+	priorityQueue[i].Index = i
+	priorityQueue[j].Index = j
 }
 
-func (pq *ExpirationQueue) Push(x interface{}) {
-	n := len(*pq)
+func (priorityQueue *ExpirationQueue) Push(x interface{}) {
+	n := len(*priorityQueue)
 	entry := x.(*ExpirationEntry)
 	entry.Index = n
-	*pq = append(*pq, entry)
+	*priorityQueue = append(*priorityQueue, entry)
 }
 
-func (pq *ExpirationQueue) Pop() interface{} {
-	old := *pq
+func (priorityQueue *ExpirationQueue) Pop() interface{} {
+	old := *priorityQueue
 	n := len(old)
 	entry := old[n-1]
 	old[n-1] = nil
 	entry.Index = -1
-	*pq = old[0 : n-1]
+	*priorityQueue = old[0 : n-1]
 	return entry
 }
 
@@ -95,8 +95,8 @@ type EfficientAPICache struct {
 
 // NewEfficientAPICache 새로운 EfficientAPICache 인스턴스를 생성합니다
 func NewEfficientAPICache() *EfficientAPICache {
-	pq := &ExpirationQueue{}
-	heap.Init(pq)
+	priorityQueue := &ExpirationQueue{}
+	heap.Init(priorityQueue)
 
 	return &EfficientAPICache{
 		userInfoCache:          make(map[string]*CacheItem),
@@ -104,7 +104,7 @@ func NewEfficientAPICache() *EfficientAPICache {
 		userAdditionalCache:    make(map[string]*CacheItem),
 		userOrganizationsCache: make(map[string]*CacheItem),
 
-		expirationQueue: pq,
+		expirationQueue: priorityQueue,
 		keyToEntry:      make(map[string]*ExpirationEntry),
 
 		// 캐시 TTL 설정
@@ -121,9 +121,9 @@ func NewEfficientAPICache() *EfficientAPICache {
 }
 
 // setWithExpiration 공통 저장 로직 (우선순위 큐에도 추가)
-func (c *EfficientAPICache) setWithExpiration(cacheType, key string, data interface{}, ttl time.Duration) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (cache *EfficientAPICache) setWithExpiration(cacheType, key string, data interface{}, ttl time.Duration) {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
 
 	expiresAt := time.Now().Add(ttl)
 	item := &CacheItem{
@@ -132,7 +132,7 @@ func (c *EfficientAPICache) setWithExpiration(cacheType, key string, data interf
 	}
 
 	// 기존 항목이 있다면 우선순위 큐에서 제거
-	if existingEntry, exists := c.keyToEntry[key]; exists {
+	if existingEntry, exists := cache.keyToEntry[key]; exists {
 		// 힙에서 제거하지 않고 무효화 처리 (성능상 이유)
 		existingEntry.ExpiresAt = time.Time{} // 무효화 마크
 	}
@@ -140,13 +140,13 @@ func (c *EfficientAPICache) setWithExpiration(cacheType, key string, data interf
 	// 캐시 맵에 저장
 	switch cacheType {
 	case "userInfo":
-		c.userInfoCache[key] = item
+		cache.userInfoCache[key] = item
 	case "userTop100":
-		c.userTop100Cache[key] = item
+		cache.userTop100Cache[key] = item
 	case "userAdditional":
-		c.userAdditionalCache[key] = item
+		cache.userAdditionalCache[key] = item
 	case "userOrganizations":
-		c.userOrganizationsCache[key] = item
+		cache.userOrganizationsCache[key] = item
 	}
 
 	// 우선순위 큐에 추가
@@ -155,16 +155,16 @@ func (c *EfficientAPICache) setWithExpiration(cacheType, key string, data interf
 		CacheType: cacheType,
 		ExpiresAt: expiresAt,
 	}
-	heap.Push(c.expirationQueue, entry)
-	c.keyToEntry[key] = entry
+	heap.Push(cache.expirationQueue, entry)
+	cache.keyToEntry[key] = entry
 }
 
 // GetUserInfo 캐시에서 사용자 정보를 조회합니다
-func (c *EfficientAPICache) GetUserInfo(handle string) (interface{}, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+func (cache *EfficientAPICache) GetUserInfo(handle string) (interface{}, bool) {
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
 
-	item, exists := c.userInfoCache[handle]
+	item, exists := cache.userInfoCache[handle]
 	if !exists || item.IsExpired() {
 		return nil, false
 	}
@@ -173,16 +173,16 @@ func (c *EfficientAPICache) GetUserInfo(handle string) (interface{}, bool) {
 }
 
 // SetUserInfo 사용자 정보를 캐시에 저장합니다
-func (c *EfficientAPICache) SetUserInfo(handle string, userInfo interface{}) {
-	c.setWithExpiration("userInfo", handle, userInfo, c.userInfoTTL)
+func (cache *EfficientAPICache) SetUserInfo(handle string, userInfo interface{}) {
+	cache.setWithExpiration("userInfo", handle, userInfo, cache.userInfoTTL)
 }
 
 // GetUserTop100 캐시에서 사용자 TOP 100을 조회합니다
-func (c *EfficientAPICache) GetUserTop100(handle string) (interface{}, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+func (cache *EfficientAPICache) GetUserTop100(handle string) (interface{}, bool) {
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
 
-	item, exists := c.userTop100Cache[handle]
+	item, exists := cache.userTop100Cache[handle]
 	if !exists || item.IsExpired() {
 		return nil, false
 	}
@@ -191,16 +191,16 @@ func (c *EfficientAPICache) GetUserTop100(handle string) (interface{}, bool) {
 }
 
 // SetUserTop100 사용자 TOP 100을 캐시에 저장합니다
-func (c *EfficientAPICache) SetUserTop100(handle string, top100 interface{}) {
-	c.setWithExpiration("userTop100", handle, top100, c.userTop100TTL)
+func (cache *EfficientAPICache) SetUserTop100(handle string, top100 interface{}) {
+	cache.setWithExpiration("userTop100", handle, top100, cache.userTop100TTL)
 }
 
 // GetUserAdditionalInfo 캐시에서 사용자 추가 정보를 조회합니다
-func (c *EfficientAPICache) GetUserAdditionalInfo(handle string) (interface{}, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+func (cache *EfficientAPICache) GetUserAdditionalInfo(handle string) (interface{}, bool) {
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
 
-	item, exists := c.userAdditionalCache[handle]
+	item, exists := cache.userAdditionalCache[handle]
 	if !exists || item.IsExpired() {
 		return nil, false
 	}
@@ -209,16 +209,16 @@ func (c *EfficientAPICache) GetUserAdditionalInfo(handle string) (interface{}, b
 }
 
 // SetUserAdditionalInfo 사용자 추가 정보를 캐시에 저장합니다
-func (c *EfficientAPICache) SetUserAdditionalInfo(handle string, additionalInfo interface{}) {
-	c.setWithExpiration("userAdditional", handle, additionalInfo, c.userAdditionalTTL)
+func (cache *EfficientAPICache) SetUserAdditionalInfo(handle string, additionalInfo interface{}) {
+	cache.setWithExpiration("userAdditional", handle, additionalInfo, cache.userAdditionalTTL)
 }
 
 // GetUserOrganizations 캐시에서 사용자 조직 정보를 조회합니다
-func (c *EfficientAPICache) GetUserOrganizations(handle string) (interface{}, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+func (cache *EfficientAPICache) GetUserOrganizations(handle string) (interface{}, bool) {
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
 
-	item, exists := c.userOrganizationsCache[handle]
+	item, exists := cache.userOrganizationsCache[handle]
 	if !exists || item.IsExpired() {
 		return nil, false
 	}
@@ -227,34 +227,34 @@ func (c *EfficientAPICache) GetUserOrganizations(handle string) (interface{}, bo
 }
 
 // SetUserOrganizations 사용자 조직 정보를 캐시에 저장합니다
-func (c *EfficientAPICache) SetUserOrganizations(handle string, organizations interface{}) {
-	c.setWithExpiration("userOrganizations", handle, organizations, c.userOrganizationsTTL)
+func (cache *EfficientAPICache) SetUserOrganizations(handle string, organizations interface{}) {
+	cache.setWithExpiration("userOrganizations", handle, organizations, cache.userOrganizationsTTL)
 }
 
 // ClearExpiredEfficient 우선순위 큐를 사용하여 효율적으로 만료된 항목을 정리합니다
-func (c *EfficientAPICache) ClearExpiredEfficient() int {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (cache *EfficientAPICache) ClearExpiredEfficient() int {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
 
 	now := time.Now()
 	startTime := time.Now()
 	cleaned := 0
 
 	// 시간 제한과 배치 크기 제한으로 정리
-	for cleaned < c.cleanupBatchSize && time.Since(startTime) < c.maxCleanupDuration {
-		if c.expirationQueue.Len() == 0 {
+	for cleaned < cache.cleanupBatchSize && time.Since(startTime) < cache.maxCleanupDuration {
+		if cache.expirationQueue.Len() == 0 {
 			break
 		}
 
 		// 가장 빨리 만료되는 항목 확인
-		entry := (*c.expirationQueue)[0]
+		entry := (*cache.expirationQueue)[0]
 
 		// 무효화된 항목이거나 아직 만료되지 않은 경우
 		if entry.ExpiresAt.IsZero() || now.Before(entry.ExpiresAt) {
 			if entry.ExpiresAt.IsZero() {
 				// 무효화된 항목은 제거
-				heap.Pop(c.expirationQueue)
-				delete(c.keyToEntry, entry.Key)
+				heap.Pop(cache.expirationQueue)
+				delete(cache.keyToEntry, entry.Key)
 				cleaned++
 			} else {
 				// 아직 만료되지 않았으므로 정리 중단
@@ -264,59 +264,59 @@ func (c *EfficientAPICache) ClearExpiredEfficient() int {
 		}
 
 		// 만료된 항목 제거
-		heap.Pop(c.expirationQueue)
-		delete(c.keyToEntry, entry.Key)
+		heap.Pop(cache.expirationQueue)
+		delete(cache.keyToEntry, entry.Key)
 
 		// 해당 캐시 맵에서도 제거
 		switch entry.CacheType {
 		case "userInfo":
-			delete(c.userInfoCache, entry.Key)
+			delete(cache.userInfoCache, entry.Key)
 		case "userTop100":
-			delete(c.userTop100Cache, entry.Key)
+			delete(cache.userTop100Cache, entry.Key)
 		case "userAdditional":
-			delete(c.userAdditionalCache, entry.Key)
+			delete(cache.userAdditionalCache, entry.Key)
 		case "userOrganizations":
-			delete(c.userOrganizationsCache, entry.Key)
+			delete(cache.userOrganizationsCache, entry.Key)
 		}
 
 		cleaned++
 	}
 
-	c.lastCleanup = now
+	cache.lastCleanup = now
 	return cleaned
 }
 
 // GetStats 캐시 통계를 반환합니다
-func (c *EfficientAPICache) GetStats() CacheStats {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+func (cache *EfficientAPICache) GetStats() CacheStats {
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
 
 	return CacheStats{
-		UserInfoCount:          len(c.userInfoCache),
-		UserTop100Count:        len(c.userTop100Cache),
-		UserAdditionalCount:    len(c.userAdditionalCache),
-		UserOrganizationsCount: len(c.userOrganizationsCache),
+		UserInfoCount:          len(cache.userInfoCache),
+		UserTop100Count:        len(cache.userTop100Cache),
+		UserAdditionalCount:    len(cache.userAdditionalCache),
+		UserOrganizationsCount: len(cache.userOrganizationsCache),
 	}
 }
 
 // Clear 모든 캐시를 삭제합니다
-func (c *EfficientAPICache) Clear() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (cache *EfficientAPICache) Clear() {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
 
-	c.userInfoCache = make(map[string]*CacheItem)
-	c.userTop100Cache = make(map[string]*CacheItem)
-	c.userAdditionalCache = make(map[string]*CacheItem)
-	c.userOrganizationsCache = make(map[string]*CacheItem)
+	cache.userInfoCache = make(map[string]*CacheItem)
+	cache.userTop100Cache = make(map[string]*CacheItem)
+	cache.userAdditionalCache = make(map[string]*CacheItem)
+	cache.userOrganizationsCache = make(map[string]*CacheItem)
 
 	// 우선순위 큐와 인덱스도 초기화
-	c.expirationQueue = &ExpirationQueue{}
-	heap.Init(c.expirationQueue)
-	c.keyToEntry = make(map[string]*ExpirationEntry)
+	cache.expirationQueue = &ExpirationQueue{}
+	heap.Init(cache.expirationQueue)
+	cache.keyToEntry = make(map[string]*ExpirationEntry)
 }
 
 // StartEfficientCleanupWorker 효율적인 캐시 정리 워커를 시작합니다
-func (c *EfficientAPICache) StartEfficientCleanupWorker(interval time.Duration) context.CancelFunc {
+func (cache *EfficientAPICache) StartEfficientCleanupWorker(interval time.Duration) context.CancelFunc {
 	ctx, cancel := context.WithCancel(context.Background())
 	ticker := time.NewTicker(interval)
 
@@ -325,7 +325,7 @@ func (c *EfficientAPICache) StartEfficientCleanupWorker(interval time.Duration) 
 		for {
 			select {
 			case <-ticker.C:
-				cleaned := c.ClearExpiredEfficient()
+				cleaned := cache.ClearExpiredEfficient()
 				if cleaned > 0 {
 					// 로깅은 순환 참조 방지를 위해 제거
 					// utils.Debug("Cleaned %d expired cache entries", cleaned)

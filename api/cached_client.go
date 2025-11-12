@@ -51,124 +51,124 @@ func NewCachedSolvedACClient() *CachedSolvedACClient {
 }
 
 // Close는 캐시 정리 워커를 중지시킵니다.
-func (c *CachedSolvedACClient) Close() {
-	if c.cleanupCancel != nil {
-		c.cleanupCancel()
+func (cachedClient *CachedSolvedACClient) Close() {
+	if cachedClient.cleanupCancel != nil {
+		cachedClient.cleanupCancel()
 		utils.Info("Cache cleanup worker stopped.")
 	}
 }
 
 // GetUserInfo 캐시를 통해 사용자 정보를 조회합니다
-func (c *CachedSolvedACClient) GetUserInfo(ctx context.Context, handle string) (*UserInfo, error) {
-	atomic.AddInt64(&c.totalCalls, 1)
+func (cachedClient *CachedSolvedACClient) GetUserInfo(ctx context.Context, handle string) (*UserInfo, error) {
+	atomic.AddInt64(&cachedClient.totalCalls, 1)
 
 	// 캐시에서 먼저 조회
-	if cachedData, found := c.cache.GetUserInfo(handle); found {
-		atomic.AddInt64(&c.cacheHits, 1)
+	if cachedData, found := cachedClient.cache.GetUserInfo(handle); found {
+		atomic.AddInt64(&cachedClient.cacheHits, 1)
 		utils.Debug("Cache hit for user info: %s", handle)
 		return cachedData.(*UserInfo), nil
 	}
 
 	// 캐시 미스 - API 호출
-	atomic.AddInt64(&c.cacheMisses, 1)
+	atomic.AddInt64(&cachedClient.cacheMisses, 1)
 	utils.Debug("Cache miss for user info: %s, calling API", handle)
 
-	userInfo, err := c.client.GetUserInfo(ctx, handle)
+	userInfo, err := cachedClient.client.GetUserInfo(ctx, handle)
 	if err != nil {
 		return nil, err
 	}
 
 	// 성공한 응답을 캐시에 저장
-	c.cache.SetUserInfo(handle, userInfo)
+	cachedClient.cache.SetUserInfo(handle, userInfo)
 
 	return userInfo, nil
 }
 
 // GetUserTop100 캐시를 통해 사용자 TOP 100을 조회합니다
-func (c *CachedSolvedACClient) GetUserTop100(ctx context.Context, handle string) (*Top100Response, error) {
-	atomic.AddInt64(&c.totalCalls, 1)
+func (cachedClient *CachedSolvedACClient) GetUserTop100(ctx context.Context, handle string) (*Top100Response, error) {
+	atomic.AddInt64(&cachedClient.totalCalls, 1)
 
 	// 캐시에서 먼저 조회
-	if cachedData, found := c.cache.GetUserTop100(handle); found {
-		atomic.AddInt64(&c.cacheHits, 1)
+	if cachedData, found := cachedClient.cache.GetUserTop100(handle); found {
+		atomic.AddInt64(&cachedClient.cacheHits, 1)
 		utils.Debug("Cache hit for user top100: %s", handle)
 		return cachedData.(*Top100Response), nil
 	}
 
 	// 캐시 미스 - API 호출
-	atomic.AddInt64(&c.cacheMisses, 1)
+	atomic.AddInt64(&cachedClient.cacheMisses, 1)
 	utils.Debug("Cache miss for user top100: %s, calling API", handle)
 
-	top100, err := c.client.GetUserTop100(ctx, handle)
+	top100, err := cachedClient.client.GetUserTop100(ctx, handle)
 	if err != nil {
 		return nil, err
 	}
 
 	// 성공한 응답을 캐시에 저장
-	c.cache.SetUserTop100(handle, top100)
+	cachedClient.cache.SetUserTop100(handle, top100)
 
 	return top100, nil
 }
 
 // GetUserAdditionalInfo 캐시를 통해 사용자 추가 정보를 조회합니다
-func (c *CachedSolvedACClient) GetUserAdditionalInfo(ctx context.Context, handle string) (*UserAdditionalInfo, error) {
-	atomic.AddInt64(&c.totalCalls, 1)
+func (cachedClient *CachedSolvedACClient) GetUserAdditionalInfo(ctx context.Context, handle string) (*UserAdditionalInfo, error) {
+	atomic.AddInt64(&cachedClient.totalCalls, 1)
 
 	// 캐시에서 먼저 조회
-	if cachedData, found := c.cache.GetUserAdditionalInfo(handle); found {
-		atomic.AddInt64(&c.cacheHits, 1)
+	if cachedData, found := cachedClient.cache.GetUserAdditionalInfo(handle); found {
+		atomic.AddInt64(&cachedClient.cacheHits, 1)
 		utils.Debug("Cache hit for user additional info: %s", handle)
 		return cachedData.(*UserAdditionalInfo), nil
 	}
 
 	// 캐시 미스 - API 호출
-	atomic.AddInt64(&c.cacheMisses, 1)
+	atomic.AddInt64(&cachedClient.cacheMisses, 1)
 	utils.Debug("Cache miss for user additional info: %s, calling API", handle)
 
-	additionalInfo, err := c.client.GetUserAdditionalInfo(ctx, handle)
+	additionalInfo, err := cachedClient.client.GetUserAdditionalInfo(ctx, handle)
 	if err != nil {
 		return nil, err
 	}
 
 	// 성공한 응답을 캐시에 저장
-	c.cache.SetUserAdditionalInfo(handle, additionalInfo)
+	cachedClient.cache.SetUserAdditionalInfo(handle, additionalInfo)
 
 	return additionalInfo, nil
 }
 
 // GetUserOrganizations 지정된 사용자의 소속 조직 목록을 가져옵니다 (캐시 포함)
-func (c *CachedSolvedACClient) GetUserOrganizations(ctx context.Context, handle string) ([]Organization, error) {
-	atomic.AddInt64(&c.totalCalls, 1)
+func (cachedClient *CachedSolvedACClient) GetUserOrganizations(ctx context.Context, handle string) ([]Organization, error) {
+	atomic.AddInt64(&cachedClient.totalCalls, 1)
 
 	// 캐시에서 먼저 조회
-	if cachedData, found := c.cache.GetUserOrganizations(handle); found {
-		atomic.AddInt64(&c.cacheHits, 1)
+	if cachedData, found := cachedClient.cache.GetUserOrganizations(handle); found {
+		atomic.AddInt64(&cachedClient.cacheHits, 1)
 		utils.Debug("Cache hit for user organizations: %s", handle)
 		return cachedData.([]Organization), nil
 	}
 
 	// 캐시 미스 - API 호출
-	atomic.AddInt64(&c.cacheMisses, 1)
+	atomic.AddInt64(&cachedClient.cacheMisses, 1)
 	utils.Debug("Cache miss for user organizations: %s, calling API", handle)
 
-	organizations, err := c.client.GetUserOrganizations(ctx, handle)
+	organizations, err := cachedClient.client.GetUserOrganizations(ctx, handle)
 	if err != nil {
 		return nil, err
 	}
 
 	// 성공한 응답을 캐시에 저장
-	c.cache.SetUserOrganizations(handle, organizations)
+	cachedClient.cache.SetUserOrganizations(handle, organizations)
 
 	return organizations, nil
 }
 
 // GetCacheStats 캐시 통계를 반환합니다
-func (c *CachedSolvedACClient) GetCacheStats() CacheMetrics {
-	cacheStats := c.cache.GetStats()
+func (cachedClient *CachedSolvedACClient) GetCacheStats() CacheMetrics {
+	cacheStats := cachedClient.cache.GetStats()
 
-	totalCalls := atomic.LoadInt64(&c.totalCalls)
-	hits := atomic.LoadInt64(&c.cacheHits)
-	misses := atomic.LoadInt64(&c.cacheMisses)
+	totalCalls := atomic.LoadInt64(&cachedClient.totalCalls)
+	hits := atomic.LoadInt64(&cachedClient.cacheHits)
+	misses := atomic.LoadInt64(&cachedClient.cacheMisses)
 
 	var hitRate float64
 	if totalCalls > 0 {
@@ -198,38 +198,38 @@ type CacheMetrics struct {
 }
 
 // String CacheMetrics의 문자열 표현을 반환합니다
-func (m CacheMetrics) String() string {
+func (metrics CacheMetrics) String() string {
 	return fmt.Sprintf("API Cache Stats: Calls=%d, Hits=%d, Misses=%d, Hit Rate=%.2f%%, Cached Items: UserInfo=%d, Top100=%d, Additional=%d",
-		m.TotalCalls, m.CacheHits, m.CacheMisses, m.HitRate,
-		m.UserInfoCached, m.UserTop100Cached, m.UserAdditionalCached)
+		metrics.TotalCalls, metrics.CacheHits, metrics.CacheMisses, metrics.HitRate,
+		metrics.UserInfoCached, metrics.UserTop100Cached, metrics.UserAdditionalCached)
 }
 
 // ClearCache 모든 캐시를 삭제합니다
-func (c *CachedSolvedACClient) ClearCache() {
-	c.cache.Clear()
-	atomic.StoreInt64(&c.cacheHits, 0)
-	atomic.StoreInt64(&c.cacheMisses, 0)
-	atomic.StoreInt64(&c.totalCalls, 0)
+func (cachedClient *CachedSolvedACClient) ClearCache() {
+	cachedClient.cache.Clear()
+	atomic.StoreInt64(&cachedClient.cacheHits, 0)
+	atomic.StoreInt64(&cachedClient.cacheMisses, 0)
+	atomic.StoreInt64(&cachedClient.totalCalls, 0)
 	utils.Info("API cache cleared")
 }
 
 // WarmupCache 주요 참가자들에 대한 캐시를 미리 로드합니다
-func (c *CachedSolvedACClient) WarmupCache(handles []string) error {
+func (cachedClient *CachedSolvedACClient) WarmupCache(handles []string) error {
 	utils.Info("Starting cache warmup for %d users", len(handles))
 
 	for _, handle := range handles {
 		// 이미 캐시에 있다면 스킵
-		if _, found := c.cache.GetUserInfo(handle); found {
+		if _, found := cachedClient.cache.GetUserInfo(handle); found {
 			continue
 		}
 
 		// 백그라운드에서 데이터 로드
 		go func(h string) {
 			ctx := context.Background()
-			if _, err := c.GetUserInfo(ctx, h); err != nil {
+			if _, err := cachedClient.GetUserInfo(ctx, h); err != nil {
 				utils.Warn("Cache warmup failed for user info %s: %v", h, err)
 			}
-			if _, err := c.GetUserTop100(ctx, h); err != nil {
+			if _, err := cachedClient.GetUserTop100(ctx, h); err != nil {
 				utils.Warn("Cache warmup failed for top100 %s: %v", h, err)
 			}
 		}(handle)
