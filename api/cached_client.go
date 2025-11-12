@@ -50,7 +50,7 @@ func NewCachedSolvedACClient() *CachedSolvedACClient {
 	return client
 }
 
-// Close는 캐시 정리 워커를 중지시킵니다.
+// Close 캐시 정리 워커를 중지시킵니다.
 func (cachedClient *CachedSolvedACClient) Close() {
 	if cachedClient.cleanupCancel != nil {
 		cachedClient.cleanupCancel()

@@ -255,7 +255,7 @@ func (ch *CompetitionHandler) handleUpdateEndDate(s *discordgo.Session, m *disco
 	ch.updateCompetitionDate(s, m, dateStr, competition, false)
 }
 
-// updateCompetitionDate is a helper function that handles both start and end date updates
+// updateCompetitionDate 대회 시작 날짜와 종료 날짜를 업데이트합니다
 func (ch *CompetitionHandler) updateCompetitionDate(s *discordgo.Session, m *discordgo.MessageCreate, dateStr string, competition *models.Competition, isStartDate bool) {
 	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
 

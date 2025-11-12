@@ -43,7 +43,7 @@ type TelemetryConfig struct {
 	ProjectID string
 }
 
-// Load는 환경변수에서 설정을 로드합니다
+// Load 환경변수에서 설정을 로드합니다
 func Load() *Config {
 	return &Config{
 		Discord: DiscordConfig{
