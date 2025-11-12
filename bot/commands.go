@@ -374,7 +374,7 @@ func (handler *CommandHandler) handleScoreboard(session *discordgo.Session, mess
 	errorHandlers := utils.NewErrorHandlerFactory(session, message.ChannelID)
 
 	utils.Info("Scoreboard command received from user: %s (ID: %s)", message.Author.Username, message.Author.ID)
-	utils.Info("Guild ID: %session, Channel ID: %s", message.GuildID, message.ChannelID)
+	utils.Info("Guild ID: %s, Channel ID: %s", message.GuildID, message.ChannelID)
 
 	// 관리자 권한 확인
 	isAdmin := handler.isAdmin(session, message)
