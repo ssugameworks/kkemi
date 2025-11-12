@@ -223,7 +223,19 @@ func (s *FirebaseStorage) RemoveParticipant(baekjoonID string) error {
 		return fmt.Errorf("no active competition")
 	}
 
-	_, err := s.client.Collection("competitions").Doc(competition.ID).Collection("participants").Doc(baekjoonID).Delete(s.ctx)
+	docRef := s.client.Collection("competitions").Doc(competition.ID).Collection("participants").Doc(baekjoonID)
+
+	// 참가자 존재 확인
+	doc, err := docRef.Get(s.ctx)
+	if err != nil {
+		return fmt.Errorf("failed to check participant existence: %w", err)
+	}
+	if !doc.Exists() {
+		return fmt.Errorf("participant not found: %s", baekjoonID)
+	}
+
+	// 참가자 삭제
+	_, err = docRef.Delete(s.ctx)
 	if err != nil {
 		return fmt.Errorf("failed to remove participant from Firestore: %w", err)
 	}
