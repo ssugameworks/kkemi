@@ -261,12 +261,30 @@ func (ch *CommandHandler) validateSolvedACUser(name, baekjoonID string, errorHan
 	return info, true
 }
 
-// extractSolvedACName solved.ac 추가 정보에서 이름을 추출합니다
-func (ch *CommandHandler) extractSolvedACName(additionalInfo interface{}, errorHandlers *utils.ErrorHandlerFactory) string {
-	// Type assertion to get the actual type
+// assertUserAdditionalInfo performs type assertion for UserAdditionalInfo with error handling
+func (ch *CommandHandler) assertUserAdditionalInfo(additionalInfo interface{}, errorHandlers *utils.ErrorHandlerFactory) (*api.UserAdditionalInfo, bool) {
 	info, ok := additionalInfo.(*api.UserAdditionalInfo)
 	if !ok {
 		errorHandlers.System().HandleSystemError("TYPE_ASSERTION_FAILED", "Failed to process user additional info", "내부 처리 오류가 발생했습니다.", nil)
+		return nil, false
+	}
+	return info, true
+}
+
+// assertUserInfo performs type assertion for UserInfo with error handling
+func (ch *CommandHandler) assertUserInfo(userInfo interface{}, errorHandlers *utils.ErrorHandlerFactory) (*api.UserInfo, bool) {
+	info, ok := userInfo.(*api.UserInfo)
+	if !ok {
+		errorHandlers.System().HandleSystemError("TYPE_ASSERTION_FAILED", "Failed to process user info", "내부 처리 오류가 발생했습니다.", nil)
+		return nil, false
+	}
+	return info, true
+}
+
+// extractSolvedACName solved.ac 추가 정보에서 이름을 추출합니다
+func (ch *CommandHandler) extractSolvedACName(additionalInfo interface{}, errorHandlers *utils.ErrorHandlerFactory) string {
+	info, ok := ch.assertUserAdditionalInfo(additionalInfo, errorHandlers)
+	if !ok {
 		return ""
 	}
 
@@ -308,10 +326,8 @@ func (ch *CommandHandler) validateUniversityAffiliation(baekjoonID string, error
 
 // registerParticipant 참가자를 등록합니다
 func (ch *CommandHandler) registerParticipant(name, baekjoonID string, userInfo interface{}, organizationID int, errorHandlers *utils.ErrorHandlerFactory) bool {
-	// Type assertion to get the actual type
-	info, ok := userInfo.(*api.UserInfo)
+	info, ok := ch.assertUserInfo(userInfo, errorHandlers)
 	if !ok {
-		errorHandlers.System().HandleSystemError("TYPE_ASSERTION_FAILED", "Failed to process user info", "내부 처리 오류가 발생했습니다.", nil)
 		return false
 	}
 
@@ -332,8 +348,8 @@ func (ch *CommandHandler) registerParticipant(name, baekjoonID string, userInfo 
 
 // sendRegistrationSuccess 등록 성공 메시지를 전송합니다
 func (ch *CommandHandler) sendRegistrationSuccess(s *discordgo.Session, channelID, name string, userInfo interface{}) {
-	// Type assertion to get the actual type
-	info, ok := userInfo.(*api.UserInfo)
+	errorHandlers := utils.NewErrorHandlerFactory(s, channelID)
+	info, ok := ch.assertUserInfo(userInfo, errorHandlers)
 	if !ok {
 		utils.Error("Failed to send registration success: type assertion failed")
 		return

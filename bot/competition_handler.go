@@ -248,55 +248,67 @@ func (ch *CompetitionHandler) handleUpdateName(s *discordgo.Session, m *discordg
 }
 
 func (ch *CompetitionHandler) handleUpdateStartDate(s *discordgo.Session, m *discordgo.MessageCreate, dateStr string, competition *models.Competition) {
-	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
-
-	startDate, err := utils.ParseDateWithValidation(dateStr, "start")
-	if err != nil {
-		errorHandlers.Validation().HandleInvalidDateFormat("START")
-		return
-	}
-
-	if !utils.IsValidDateRange(startDate, competition.EndDate) {
-		errorHandlers.Validation().HandleInvalidDateRange()
-		return
-	}
-
-	err = ch.commandHandler.deps.Storage.UpdateCompetitionStartDate(startDate)
-	if err != nil {
-		botErr := errors.NewSystemError("COMPETITION_UPDATE_FAILED",
-			"Failed to update competition start date", err)
-		botErr.UserMsg = "시작일 수정에 실패했습니다."
-		errors.HandleDiscordError(s, m.ChannelID, botErr)
-		return
-	}
-
-	message := fmt.Sprintf(constants.MsgCompetitionUpdateSuccess, "시작일")
-	errors.SendDiscordSuccess(s, m.ChannelID, message)
+	ch.updateCompetitionDate(s, m, dateStr, competition, true)
 }
 
 func (ch *CompetitionHandler) handleUpdateEndDate(s *discordgo.Session, m *discordgo.MessageCreate, dateStr string, competition *models.Competition) {
+	ch.updateCompetitionDate(s, m, dateStr, competition, false)
+}
+
+// updateCompetitionDate is a helper function that handles both start and end date updates
+func (ch *CompetitionHandler) updateCompetitionDate(s *discordgo.Session, m *discordgo.MessageCreate, dateStr string, competition *models.Competition, isStartDate bool) {
 	errorHandlers := utils.NewErrorHandlerFactory(s, m.ChannelID)
 
-	endDate, err := utils.ParseDateWithValidation(dateStr, "end")
+	// Determine field name and labels based on whether it's start or end date
+	var fieldName, fieldLabel, formatLabel, errorMsg string
+	if isStartDate {
+		fieldName = "start"
+		fieldLabel = "START"
+		formatLabel = "시작일"
+		errorMsg = "시작일 수정에 실패했습니다."
+	} else {
+		fieldName = "end"
+		fieldLabel = "END"
+		formatLabel = "종료일"
+		errorMsg = "종료일 수정에 실패했습니다."
+	}
+
+	// Parse and validate the date
+	parsedDate, err := utils.ParseDateWithValidation(dateStr, fieldName)
 	if err != nil {
-		errorHandlers.Validation().HandleInvalidDateFormat("END")
+		errorHandlers.Validation().HandleInvalidDateFormat(fieldLabel)
 		return
 	}
 
-	if !utils.IsValidDateRange(competition.StartDate, endDate) {
+	// Validate date range
+	var validRange bool
+	if isStartDate {
+		validRange = utils.IsValidDateRange(parsedDate, competition.EndDate)
+	} else {
+		validRange = utils.IsValidDateRange(competition.StartDate, parsedDate)
+	}
+
+	if !validRange {
 		errorHandlers.Validation().HandleInvalidDateRange()
 		return
 	}
 
-	err = ch.commandHandler.deps.Storage.UpdateCompetitionEndDate(endDate)
+	// Update the date in storage
+	if isStartDate {
+		err = ch.commandHandler.deps.Storage.UpdateCompetitionStartDate(parsedDate)
+	} else {
+		err = ch.commandHandler.deps.Storage.UpdateCompetitionEndDate(parsedDate)
+	}
+
 	if err != nil {
 		botErr := errors.NewSystemError("COMPETITION_UPDATE_FAILED",
-			"Failed to update competition end date", err)
-		botErr.UserMsg = "종료일 수정에 실패했습니다."
+			fmt.Sprintf("Failed to update competition %s date", fieldName), err)
+		botErr.UserMsg = errorMsg
 		errors.HandleDiscordError(s, m.ChannelID, botErr)
 		return
 	}
 
-	message := fmt.Sprintf(constants.MsgCompetitionUpdateSuccess, "종료일")
+	// Send success message
+	message := fmt.Sprintf(constants.MsgCompetitionUpdateSuccess, formatLabel)
 	errors.SendDiscordSuccess(s, m.ChannelID, message)
 }

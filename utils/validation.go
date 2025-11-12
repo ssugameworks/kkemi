@@ -64,11 +64,16 @@ func IsValidUsername(username string) bool {
 	return true
 }
 
+// normalizeString normalizes a string by trimming whitespace and converting to lowercase
+func normalizeString(s string) string {
+	return strings.ToLower(strings.TrimSpace(s))
+}
+
 // isReservedUsername 예약어인지 확인합니다
 func isReservedUsername(username string) bool {
-	lowerUsername := strings.ToLower(strings.TrimSpace(username))
+	normalizedUsername := normalizeString(username)
 	for _, reserved := range constants.ReservedBaekjoonIDs {
-		if lowerUsername == reserved {
+		if normalizedUsername == reserved {
 			return true
 		}
 	}
@@ -164,9 +169,9 @@ func IsValidBaekjoonID(id string) bool {
 	}
 
 	// 예약어 검증 (constants에서 관리)
-	lowerId := strings.ToLower(id)
+	normalizedID := normalizeString(id)
 	for _, word := range constants.ReservedBaekjoonIDs {
-		if lowerId == word {
+		if normalizedID == word {
 			return false
 		}
 	}
@@ -322,12 +327,10 @@ func getBackupParticipantList() []string {
 
 // normalizeNameForComparison 이름 비교를 위한 정규화 (공백 제거, 소문자 변환)
 func normalizeNameForComparison(name string) string {
-	// 앞뒤 공백 제거
-	normalized := strings.TrimSpace(name)
+	// 앞뒤 공백 제거 및 소문자 변환
+	normalized := normalizeString(name)
 	// 중간 공백 제거
 	normalized = strings.ReplaceAll(normalized, " ", "")
-	// 소문자로 변환 (영어가 포함된 경우)
-	normalized = strings.ToLower(normalized)
 	return normalized
 }
 
@@ -345,17 +348,16 @@ func IsValidURL(urlStr string) bool {
 	return u.Scheme != "" && u.Host != ""
 }
 
-// ContainsSQLInjection SQL 인젝션 패턴 검출
-func ContainsSQLInjection(input string) bool {
+// containsPatterns checks if the input contains any of the given patterns (case-insensitive)
+func containsPatterns(input string, patterns []string) bool {
 	if input == "" {
 		return false
 	}
 
-	// 대소문자 구분 없이 검사
-	lower := strings.ToLower(input)
+	normalized := normalizeString(input)
 
-	for _, keyword := range constants.SQLInjectionPatterns {
-		if strings.Contains(lower, keyword) {
+	for _, pattern := range patterns {
+		if strings.Contains(normalized, pattern) {
 			return true
 		}
 	}
@@ -363,21 +365,14 @@ func ContainsSQLInjection(input string) bool {
 	return false
 }
 
+// ContainsSQLInjection SQL 인젝션 패턴 검출
+func ContainsSQLInjection(input string) bool {
+	return containsPatterns(input, constants.SQLInjectionPatterns)
+}
+
 // ContainsDiscordAbuse 디스코드 봇 환경에 특화된 악용 패턴 검출
 func ContainsDiscordAbuse(input string) bool {
-	if input == "" {
-		return false
-	}
-
-	lower := strings.ToLower(input)
-
-	for _, pattern := range constants.DiscordAbusePatterns {
-		if strings.Contains(lower, pattern) {
-			return true
-		}
-	}
-
-	return false
+	return containsPatterns(input, constants.DiscordAbusePatterns)
 }
 
 // IsSafeUserInput 사용자 입력의 전반적인 안전성 검사 (디스코드 봇 환경에 특화)
