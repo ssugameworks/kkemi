@@ -29,22 +29,22 @@
 
 ## 아키텍처 원칙
 
-### 1. **의존성 역전 (Dependency Inversion)**
-- 모든 핵심 컴포넌트는 인터페이스에 의존
-- `interfaces/` 패키지에 계약 정의
-- 구현체 교체 가능 (예: Firestore ↔ InMemory)
+### 1. **의존성 역전**
+- 모든 핵심 컴포넌트는 인터페이스에 의존합니다.
+- `interfaces/` 패키지에 계약이 정의되어 있습니다.
+- 구현체를 교체할 수 있어요. (예: Firestore ↔ InMemory)
 
-### 2. **단일 책임 원칙 (Single Responsibility)**
-- 각 패키지는 명확한 단일 목적
-- 예: `scoring/`은 점수 계산만, `storage/`는 데이터 저장만
+### 2. **단일 책임 원칙**
+- 각 패키지는 명확한 단일 목적으로 설계되었습니다.
+- 예: `scoring/`은 점수 계산만, `storage/`는 데이터 저장만 담당해요.
 
-### 3. **인터페이스 분리 (Interface Segregation)**
-- 작고 집중된 인터페이스
-- 클라이언트는 필요한 메서드만 의존
+### 3. **인터페이스 분리**
+- 인터페이스는 작게, 구체적으로 설계하고자 하였습니다.
+- 클라이언트는 필요한 메서드만 의존합니다.
 
-### 4. **개방-폐쇄 원칙 (Open-Closed)**
+### 4. **개방-폐쇄 원칙**
 - 확장에는 열려있고 수정에는 닫혀있음
-- 새 스토리지 추가 시 기존 코드 변경 불필요
+- 새 스토리지 추가할 경우 기존 코드를 변경할 필요가 없습니다.
 
 ---
 
@@ -75,7 +75,7 @@ graph TD
 
 ### Layer 설명
 
-#### 1. **Presentation Layer** (프레젠테이션 계층)
+#### 1. **Presentation Layer**
 - **역할**: 외부 입력 수신 및 출력 전송
 - **패키지**: `bot/`, `scheduler/`
 - **책임**:
@@ -83,7 +83,7 @@ graph TD
   - 사용자 응답 포맷팅
   - 스케줄링 트리거
 
-#### 2. **Application Layer** (애플리케이션 계층)
+#### 2. **Application Layer**
 - **역할**: 비즈니스 흐름 조율
 - **패키지**: `bot/command_handlers.go`, `bot/competition_handler.go`
 - **책임**:
@@ -91,7 +91,7 @@ graph TD
   - 트랜잭션 조율
   - 권한 검증
 
-#### 3. **Domain Layer** (도메인 계층)
+#### 3. **Domain Layer**
 - **역할**: 핵심 비즈니스 로직
 - **패키지**: `models/`, `scoring/`, `interfaces/`
 - **책임**:
@@ -99,7 +99,7 @@ graph TD
   - 비즈니스 규칙 적용
   - 도메인 모델 정의
 
-#### 4. **Infrastructure Layer** (인프라 계층)
+#### 4. **Infrastructure Layer**
 - **역할**: 외부 시스템 연동
 - **패키지**: `api/`, `storage/`, `cache/`, `telemetry/`
 - **책임**:
@@ -331,7 +331,7 @@ flowchart TD
     G -->|성공| H{대학 소속 확인}
     G -->|실패| Z
 
-    H -->|숭실대| I[Firestore에 저장]
+    H -->|숭실대학교| I[Firestore에 저장]
     H -->|다른 학교| Z
 
     I --> J{저장 성공}
@@ -971,5 +971,5 @@ metricsClient.SendPerformanceMetric("scoreboard_generation", duration)
 ---
 
 **문서 버전**: 1.0
-**최종 업데이트**: 2025-01-12
-**작성자**: Claude Code
+**최종 업데이트**: 2025-11-12
+**작성자**: AndyH0ng
