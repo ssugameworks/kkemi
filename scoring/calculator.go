@@ -22,16 +22,16 @@ func NewScoreCalculator(apiClient interfaces.APIClient, tierManager *models.Tier
 	}
 }
 
-func (sc *ScoreCalculator) CalculateScore(ctx context.Context, handle string, startTier int, startProblemIDs []int) (float64, error) {
-	top100, err := sc.client.GetUserTop100(ctx, handle)
+func (calculator *ScoreCalculator) CalculateScore(ctx context.Context, handle string, startTier int, startProblemIDs []int) (float64, error) {
+	top100, err := calculator.client.GetUserTop100(ctx, handle)
 	if err != nil {
 		return 0, err
 	}
 
-	return sc.CalculateScoreWithTop100(top100, startTier, startProblemIDs), nil
+	return calculator.CalculateScoreWithTop100(top100, startTier, startProblemIDs), nil
 }
 
-func (sc *ScoreCalculator) CalculateScoreWithTop100(top100 *api.Top100Response, startTier int, startProblemIDs []int) float64 {
+func (calculator *ScoreCalculator) CalculateScoreWithTop100(top100 *api.Top100Response, startTier int, startProblemIDs []int) float64 {
 	// 시작 시점 문제 ID들을 맵으로 변환
 	startProblemsMap := make(map[int]bool)
 	for _, id := range startProblemIDs {
@@ -39,7 +39,7 @@ func (sc *ScoreCalculator) CalculateScoreWithTop100(top100 *api.Top100Response, 
 	}
 
 	// 참가자의 리그 결정 (등록 시점 티어 기준)
-	userLeague := sc.getUserLeague(startTier)
+	userLeague := calculator.getUserLeague(startTier)
 
 	totalScore := 0.0
 
@@ -57,7 +57,7 @@ func (sc *ScoreCalculator) CalculateScoreWithTop100(top100 *api.Top100Response, 
 		}
 
 		// 새로운 가중치 계산 (리그별 + 문제 난이도 vs 시작 티어)
-		weight := sc.getWeightByLeague(problemLevel, startTier, userLeague)
+		weight := calculator.getWeightByLeague(problemLevel, startTier, userLeague)
 		score := difficultyValue * weight
 		totalScore += score
 	}
@@ -67,7 +67,7 @@ func (sc *ScoreCalculator) CalculateScoreWithTop100(top100 *api.Top100Response, 
 }
 
 // getUserLeague 사용자의 등록 시점 티어를 기준으로 리그를 결정합니다
-func (sc *ScoreCalculator) getUserLeague(startTier int) int {
+func (calculator *ScoreCalculator) getUserLeague(startTier int) int {
 	// 루키: Unrated ~ Silver V (티어 0-6)
 	if startTier <= 6 {
 		return constants.LeagueRookie
@@ -81,21 +81,21 @@ func (sc *ScoreCalculator) getUserLeague(startTier int) int {
 }
 
 // getWeightByLeague 리그별 가중치를 계산합니다
-func (sc *ScoreCalculator) getWeightByLeague(problemLevel, startTier, userLeague int) float64 {
+func (calculator *ScoreCalculator) getWeightByLeague(problemLevel, startTier, userLeague int) float64 {
 	switch userLeague {
 	case constants.LeagueRookie:
-		return sc.getRookieWeight(problemLevel, startTier)
+		return calculator.getRookieWeight(problemLevel, startTier)
 	case constants.LeaguePro:
-		return sc.getProWeight(problemLevel, startTier)
+		return calculator.getProWeight(problemLevel, startTier)
 	case constants.LeagueMaster:
-		return sc.getMasterWeight(problemLevel, startTier)
+		return calculator.getMasterWeight(problemLevel, startTier)
 	default:
 		return 1.0
 	}
 }
 
 // getRookieWeight 루키 리그 가중치를 계산합니다
-func (sc *ScoreCalculator) getRookieWeight(problemLevel, startTier int) float64 {
+func (calculator *ScoreCalculator) getRookieWeight(problemLevel, startTier int) float64 {
 	if problemLevel > startTier {
 		return constants.RookieUpperMultiplier // × 1.4
 	} else if problemLevel == startTier {
@@ -106,7 +106,7 @@ func (sc *ScoreCalculator) getRookieWeight(problemLevel, startTier int) float64 
 }
 
 // getProWeight 프로 리그 가중치를 계산합니다
-func (sc *ScoreCalculator) getProWeight(problemLevel, startTier int) float64 {
+func (calculator *ScoreCalculator) getProWeight(problemLevel, startTier int) float64 {
 	if problemLevel > startTier {
 		return constants.ProUpperMultiplier // × 1.2
 	} else if problemLevel == startTier {
@@ -117,7 +117,7 @@ func (sc *ScoreCalculator) getProWeight(problemLevel, startTier int) float64 {
 }
 
 // getMasterWeight 마스터 리그 가중치를 계산합니다
-func (sc *ScoreCalculator) getMasterWeight(problemLevel, startTier int) float64 {
+func (calculator *ScoreCalculator) getMasterWeight(problemLevel, startTier int) float64 {
 	if problemLevel > startTier {
 		return constants.MasterUpperMultiplier // × 1.0
 	} else if problemLevel == startTier {
@@ -128,7 +128,7 @@ func (sc *ScoreCalculator) getMasterWeight(problemLevel, startTier int) float64 
 }
 
 // GetLeagueName 리그 번호를 리그 이름으로 변환합니다
-func (sc *ScoreCalculator) GetLeagueName(league int) string {
+func (calculator *ScoreCalculator) GetLeagueName(league int) string {
 	switch league {
 	case constants.LeagueRookie:
 		return "루키"
@@ -142,6 +142,6 @@ func (sc *ScoreCalculator) GetLeagueName(league int) string {
 }
 
 // GetUserLeague 외부에서 사용할 수 있도록 노출합니다
-func (sc *ScoreCalculator) GetUserLeague(startTier int) int {
-	return sc.getUserLeague(startTier)
+func (calculator *ScoreCalculator) GetUserLeague(startTier int) int {
+	return calculator.getUserLeague(startTier)
 }
