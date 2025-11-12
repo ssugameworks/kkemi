@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/Discord-Bot/models"
 	"github.com/ssugameworks/Discord-Bot/utils"
 
-	"github.com/ssugameworks/Discord-Bot/models"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 )
@@ -46,7 +46,7 @@ func NewSheetsClient() (*SheetsClient, error) {
 func (c *SheetsClient) IsNameInParticipantList(name string) (bool, error) {
 	// 스프레드시트 데이터 읽기
 	resp, err := c.service.Spreadsheets.Values.Get(
-		constants.ParticipantSpreadsheetID,
+		constants.GetParticipantSpreadsheetID(),
 		constants.ParticipantSheetRange,
 	).Do()
 	if err != nil {

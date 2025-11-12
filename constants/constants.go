@@ -1,6 +1,9 @@
 package constants
 
-import "time"
+import (
+	"os"
+	"time"
+)
 
 // API 관련 상수
 const (
@@ -130,10 +133,29 @@ const (
 
 // Google Sheets 관련 상수
 const (
-	ParticipantSpreadsheetID = "1wwjn1hApSINnYsQGbEe5OdpYWvMfsfHC1ftoyR65IDM"
-	ParticipantSheetRange    = "A:Z"           // 전체 시트 범위 (기본 시트)
-	ParticipantNameColumn    = "이름\n(ex. 홍길동)" // 실제 스프레드시트 헤더와 정확히 일치
+	ParticipantSheetRange = "A:Z"           // 전체 시트 범위 (기본 시트)
+	ParticipantNameColumn = "이름\n(ex. 홍길동)" // 실제 스프레드시트 헤더와 정확히 일치
 )
+
+// GetParticipantSpreadsheetID 참가자 명단 스프레드시트 ID를 환경변수에서 가져옵니다
+func GetParticipantSpreadsheetID() string {
+	id := os.Getenv("PARTICIPANT_SPREADSHEET_ID")
+	if id == "" {
+		// 기본값 (하위 호환성을 위해 유지)
+		return "1wwjn1hApSINnYsQGbEe5OdpYWvMfsfHC1ftoyR65IDM"
+	}
+	return id
+}
+
+// GetScoreboardSpreadsheetID 스코어보드 스프레드시트 ID를 환경변수에서 가져옵니다
+func GetScoreboardSpreadsheetID() string {
+	id := os.Getenv("SCOREBOARD_SPREADSHEET_ID")
+	if id == "" {
+		// 기본값 (하위 호환성을 위해 유지)
+		return "18w6gg5clIR5bUfOrObFUJQ8AMJquGUw6iBbPfVFZytE"
+	}
+	return id
+}
 
 // 환경 변수 키 (백업 명단용)
 const (

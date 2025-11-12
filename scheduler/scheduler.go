@@ -200,7 +200,7 @@ func (s *Scheduler) updateSheetsScoreboard() {
 	}
 
 	// 스프레드시트 업데이트
-	err = s.sheetsClient.UpdateScoreboardSheet("18w6gg5clIR5bUfOrObFUJQ8AMJquGUw6iBbPfVFZytE", scores)
+	err = s.sheetsClient.UpdateScoreboardSheet(constants.GetScoreboardSpreadsheetID(), scores)
 	if err != nil {
 		utils.Error("Failed to update sheets: %v", err)
 		return
