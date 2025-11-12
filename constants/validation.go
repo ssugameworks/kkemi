@@ -12,9 +12,6 @@ const (
 	// 시간대 관련
 	KSTOffsetSeconds = 9 * 60 * 60 // 한국 표준시(KST) UTC 오프셋 (초)
 
-	// HTTP 관련
-	HTTPServerErrorThreshold = 500 // 서버 오류 임계값 (5xx)
-
 	// 제어 문자 관련
 	ControlCharTab = 9  // 탭 문자
 	ControlCharLF  = 10 // 줄 바꿈

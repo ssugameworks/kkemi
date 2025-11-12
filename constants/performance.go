@@ -15,7 +15,6 @@ const (
 	ConcurrencyDecreaseThreshold   = 1 * time.Second        // 즉시 감소 임계값
 	ConcurrencyAdjustmentCooldown  = 5 * time.Second        // 조정 간 쿨다운 시간
 	MaxSuccessiveIncreases         = 3                      // 최대 연속 증가 횟수
-	P95PercentileRatio             = 0.8                    // 95 퍼센타일 근사 비율 (8/10)
 
 	// 메모리 풀 관련
 	MaxPoolSliceCapacity   = 200  // 풀에 반환할 최대 슬라이스 용량
