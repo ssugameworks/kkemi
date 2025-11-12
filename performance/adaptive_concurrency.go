@@ -63,6 +63,7 @@ func (manager *AdaptiveConcurrencyManager) RecordResponseTime(responseTime time.
 }
 
 // adjustConcurrency 응답 시간 통계를 기반으로 동시성을 조정합니다
+// 주의: 이 메서드는 Lock()이 걸린 상태에서만 호출되어야 합니다
 func (manager *AdaptiveConcurrencyManager) adjustConcurrency() {
 	avgResponseTime := manager.calculateAverageResponseTime()
 	p95ResponseTime := manager.calculateP95ResponseTime()
@@ -95,6 +96,7 @@ func (manager *AdaptiveConcurrencyManager) adjustConcurrency() {
 }
 
 // calculateAverageResponseTime 평균 응답 시간을 계산합니다
+// 주의: 이 메서드는 RLock() 또는 Lock()이 걸린 상태에서만 호출되어야 합니다
 func (manager *AdaptiveConcurrencyManager) calculateAverageResponseTime() time.Duration {
 	if len(manager.responseTimeWindow) == 0 {
 		return 0
@@ -108,6 +110,7 @@ func (manager *AdaptiveConcurrencyManager) calculateAverageResponseTime() time.D
 }
 
 // calculateP95ResponseTime 95 퍼센타일 응답 시간을 계산합니다
+// 주의: 이 메서드는 RLock() 또는 Lock()이 걸린 상태에서만 호출되어야 합니다
 func (manager *AdaptiveConcurrencyManager) calculateP95ResponseTime() time.Duration {
 	if len(manager.responseTimeWindow) == 0 {
 		return 0
