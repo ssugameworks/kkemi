@@ -39,85 +39,85 @@ func NewAdaptiveConcurrencyManager() *AdaptiveConcurrencyManager {
 }
 
 // GetCurrentLimit 현재 동시성 제한을 반환합니다
-func (acm *AdaptiveConcurrencyManager) GetCurrentLimit() int {
-	acm.mutex.RLock()
-	defer acm.mutex.RUnlock()
-	return acm.currentLimit
+func (manager *AdaptiveConcurrencyManager) GetCurrentLimit() int {
+	manager.mutex.RLock()
+	defer manager.mutex.RUnlock()
+	return manager.currentLimit
 }
 
 // RecordResponseTime API 응답 시간을 기록하고 필요시 동시성을 조정합니다
-func (acm *AdaptiveConcurrencyManager) RecordResponseTime(responseTime time.Duration) {
-	acm.mutex.Lock()
-	defer acm.mutex.Unlock()
+func (manager *AdaptiveConcurrencyManager) RecordResponseTime(responseTime time.Duration) {
+	manager.mutex.Lock()
+	defer manager.mutex.Unlock()
 
 	// 응답 시간 윈도우에 추가
-	acm.responseTimeWindow = append(acm.responseTimeWindow, responseTime)
-	if len(acm.responseTimeWindow) > acm.windowSize {
-		acm.responseTimeWindow = acm.responseTimeWindow[1:]
+	manager.responseTimeWindow = append(manager.responseTimeWindow, responseTime)
+	if len(manager.responseTimeWindow) > manager.windowSize {
+		manager.responseTimeWindow = manager.responseTimeWindow[1:]
 	}
 
 	// 충분한 데이터가 있고 쿨다운이 지났으면 조정 시도
-	if len(acm.responseTimeWindow) >= constants.MinResponseTimeWindowSize && time.Since(acm.lastAdjustment) > acm.adjustmentCooldown {
-		acm.adjustConcurrency()
+	if len(manager.responseTimeWindow) >= constants.MinResponseTimeWindowSize && time.Since(manager.lastAdjustment) > manager.adjustmentCooldown {
+		manager.adjustConcurrency()
 	}
 }
 
 // adjustConcurrency 응답 시간 통계를 기반으로 동시성을 조정합니다
-func (acm *AdaptiveConcurrencyManager) adjustConcurrency() {
-	avgResponseTime := acm.calculateAverageResponseTime()
-	p95ResponseTime := acm.calculateP95ResponseTime()
+func (manager *AdaptiveConcurrencyManager) adjustConcurrency() {
+	avgResponseTime := manager.calculateAverageResponseTime()
+	p95ResponseTime := manager.calculateP95ResponseTime()
 
-	oldLimit := acm.currentLimit
+	oldLimit := manager.currentLimit
 
 	// 응답 시간이 너무 느리면 동시성 감소
-	if p95ResponseTime > acm.decreaseThreshold || avgResponseTime > acm.adjustmentThreshold {
-		if acm.currentLimit > acm.minLimit {
-			acm.currentLimit = max(acm.minLimit, acm.currentLimit-1)
-			acm.successiveDecreases++
-			acm.successiveIncreases = 0
+	if p95ResponseTime > manager.decreaseThreshold || avgResponseTime > manager.adjustmentThreshold {
+		if manager.currentLimit > manager.minLimit {
+			manager.currentLimit = max(manager.minLimit, manager.currentLimit-1)
+			manager.successiveDecreases++
+			manager.successiveIncreases = 0
 		}
-	} else if avgResponseTime < acm.adjustmentThreshold/2 {
+	} else if avgResponseTime < manager.adjustmentThreshold/2 {
 		// 응답 시간이 충분히 빠르고 연속으로 성능이 좋으면 동시성 증가
-		if acm.currentLimit < acm.maxLimit && acm.successiveDecreases == 0 {
+		if manager.currentLimit < manager.maxLimit && manager.successiveDecreases == 0 {
 			// 보수적으로 증가 (연속 증가 횟수에 따라 제한)
-			if acm.successiveIncreases < constants.MaxSuccessiveIncreases {
-				acm.currentLimit = min(acm.maxLimit, acm.currentLimit+1)
-				acm.successiveIncreases++
+			if manager.successiveIncreases < constants.MaxSuccessiveIncreases {
+				manager.currentLimit = min(manager.maxLimit, manager.currentLimit+1)
+				manager.successiveIncreases++
 			}
 		}
-		acm.successiveDecreases = 0
+		manager.successiveDecreases = 0
 	}
 
-	if oldLimit != acm.currentLimit {
-		acm.lastAdjustment = time.Now()
+	if oldLimit != manager.currentLimit {
+		manager.lastAdjustment = time.Now()
 		// 로깅은 utils 패키지 순환 참조 방지를 위해 제거
 	}
 }
 
 // calculateAverageResponseTime 평균 응답 시간을 계산합니다
-func (acm *AdaptiveConcurrencyManager) calculateAverageResponseTime() time.Duration {
-	if len(acm.responseTimeWindow) == 0 {
+func (manager *AdaptiveConcurrencyManager) calculateAverageResponseTime() time.Duration {
+	if len(manager.responseTimeWindow) == 0 {
 		return 0
 	}
 
 	var total time.Duration
-	for _, rt := range acm.responseTimeWindow {
-		total += rt
+	for _, responseTime := range manager.responseTimeWindow {
+		total += responseTime
 	}
-	return total / time.Duration(len(acm.responseTimeWindow))
+	return total / time.Duration(len(manager.responseTimeWindow))
 }
 
 // calculateP95ResponseTime 95 퍼센타일 응답 시간을 계산합니다
-func (acm *AdaptiveConcurrencyManager) calculateP95ResponseTime() time.Duration {
-	if len(acm.responseTimeWindow) == 0 {
+func (manager *AdaptiveConcurrencyManager) calculateP95ResponseTime() time.Duration {
+	if len(manager.responseTimeWindow) == 0 {
 		return 0
 	}
 
 	// 간단한 95 퍼센타일 계산 (정렬 없이)
 	var maxTime time.Duration
-	for _, rt := range acm.responseTimeWindow {
-		if rt > maxTime {
-			maxTime = rt
+	for _, responseTime := range manager.responseTimeWindow {
+		if responseTime > maxTime {
+			maxTime = responseTime
 		}
 	}
 
@@ -128,20 +128,20 @@ func (acm *AdaptiveConcurrencyManager) calculateP95ResponseTime() time.Duration 
 }
 
 // GetStats 현재 통계를 반환합니다
-func (acm *AdaptiveConcurrencyManager) GetStats() ConcurrencyStats {
-	acm.mutex.RLock()
-	defer acm.mutex.RUnlock()
+func (manager *AdaptiveConcurrencyManager) GetStats() ConcurrencyStats {
+	manager.mutex.RLock()
+	defer manager.mutex.RUnlock()
 
 	return ConcurrencyStats{
-		CurrentLimit:    acm.currentLimit,
-		MinLimit:        acm.minLimit,
-		MaxLimit:        acm.maxLimit,
-		AverageResponse: acm.calculateAverageResponseTime(),
-		P95Response:     acm.calculateP95ResponseTime(),
-		WindowSize:      len(acm.responseTimeWindow),
-		LastAdjustment:  acm.lastAdjustment,
-		SuccessiveInc:   acm.successiveIncreases,
-		SuccessiveDec:   acm.successiveDecreases,
+		CurrentLimit:    manager.currentLimit,
+		MinLimit:        manager.minLimit,
+		MaxLimit:        manager.maxLimit,
+		AverageResponse: manager.calculateAverageResponseTime(),
+		P95Response:     manager.calculateP95ResponseTime(),
+		WindowSize:      len(manager.responseTimeWindow),
+		LastAdjustment:  manager.lastAdjustment,
+		SuccessiveInc:   manager.successiveIncreases,
+		SuccessiveDec:   manager.successiveDecreases,
 	}
 }
 

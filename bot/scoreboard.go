@@ -37,12 +37,12 @@ func NewScoreboardManager(storage interfaces.StorageRepository, calculator inter
 	}
 }
 
-func (sm *ScoreboardManager) GetStorage() interfaces.StorageRepository {
-	return sm.storage
+func (manager *ScoreboardManager) GetStorage() interfaces.StorageRepository {
+	return manager.storage
 }
 
-func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.MessageEmbed, error) {
-	competition := sm.storage.GetCompetition()
+func (manager *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.MessageEmbed, error) {
+	competition := manager.storage.GetCompetition()
 	if competition == nil || !competition.IsActive {
 		return nil, fmt.Errorf("활성화된 대회가 없습니다")
 	}
@@ -54,67 +54,67 @@ func (sm *ScoreboardManager) GenerateScoreboard(isAdmin bool) (*discordgo.Messag
 		now.Day() == competition.EndDate.Day()
 
 	// 블랙아웃 체크 (마지막날에는 공개)
-	if embed := sm.checkBlackoutPeriod(competition, isAdmin || isLastDay); embed != nil {
+	if embed := manager.checkBlackoutPeriod(competition, isAdmin || isLastDay); embed != nil {
 		return embed, nil
 	}
 
 	// 참가자 체크
-	participants := sm.storage.GetParticipants()
-	if embed := sm.checkEmptyParticipants(competition, participants); embed != nil {
+	participants := manager.storage.GetParticipants()
+	if embed := manager.checkEmptyParticipants(competition, participants); embed != nil {
 		return embed, nil
 	}
 
 	// 점수 데이터 수집
-	scores, err := sm.collectScoreData(participants)
+	scores, err := manager.collectScoreData(participants)
 	if err != nil {
 		return nil, err
 	}
 
 	// 포맷팅
-	return sm.formatScoreboard(competition, scores, isAdmin), nil
+	return manager.formatScoreboard(competition, scores, isAdmin), nil
 }
 
 // CollectScoreData 참가자들의 점수 데이터를 수집하여 반환합니다 (외부 접근용)
-func (sm *ScoreboardManager) CollectScoreData() ([]models.ScoreData, error) {
-	competition := sm.storage.GetCompetition()
+func (manager *ScoreboardManager) CollectScoreData() ([]models.ScoreData, error) {
+	competition := manager.storage.GetCompetition()
 	if competition == nil || !competition.IsActive {
 		return nil, fmt.Errorf("활성화된 대회가 없습니다")
 	}
 
-	participants := sm.storage.GetParticipants()
+	participants := manager.storage.GetParticipants()
 	if len(participants) == 0 {
 		return []models.ScoreData{}, nil
 	}
 
-	return sm.collectScoreData(participants)
+	return manager.collectScoreData(participants)
 }
 
 // checkBlackoutPeriod 블랙아웃 기간인지 확인하고 해당 embed 반환
-func (sm *ScoreboardManager) checkBlackoutPeriod(competition *models.Competition, isAdmin bool) *discordgo.MessageEmbed {
-	if sm.storage.IsBlackoutPeriod() && !isAdmin {
+func (manager *ScoreboardManager) checkBlackoutPeriod(competition *models.Competition, isAdmin bool) *discordgo.MessageEmbed {
+	if manager.storage.IsBlackoutPeriod() && !isAdmin {
 		return &discordgo.MessageEmbed{
 			Title:       constants.MsgScoreboardBlackout,
 			Description: constants.MsgScoreboardBlackoutDesc,
-			Color:       sm.tierManager.GetTierColor(0), // Unranked color
+			Color:       manager.tierManager.GetTierColor(0), // Unranked color
 		}
 	}
 	return nil
 }
 
 // checkEmptyParticipants 참가자가 없는지 확인하고 해당 embed 반환
-func (sm *ScoreboardManager) checkEmptyParticipants(competition *models.Competition, participants []models.Participant) *discordgo.MessageEmbed {
+func (manager *ScoreboardManager) checkEmptyParticipants(competition *models.Competition, participants []models.Participant) *discordgo.MessageEmbed {
 	if len(participants) == 0 {
 		return &discordgo.MessageEmbed{
 			Title:       fmt.Sprintf(constants.MsgScoreboardTitle, competition.Name),
 			Description: constants.MsgScoreboardNoParticipants,
-			Color:       sm.tierManager.GetTierColor(0), // Unranked color
+			Color:       manager.tierManager.GetTierColor(0), // Unranked color
 		}
 	}
 	return nil
 }
 
 // collectScoreData 참가자들의 점수 데이터를 병렬로 수집합니다
-func (sm *ScoreboardManager) collectScoreData(participants []models.Participant) ([]models.ScoreData, error) {
+func (manager *ScoreboardManager) collectScoreData(participants []models.Participant) ([]models.ScoreData, error) {
 	if len(participants) == 0 {
 		return []models.ScoreData{}, nil
 	}
@@ -127,7 +127,7 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 	scoreChan := performance.GetScoreDataChannel(len(participants))
 	defer performance.PutScoreDataChannel(scoreChan)
 
-	semaphore := performance.GetSemaphoreChannel(sm.concurrencyManager.GetCurrentLimit())
+	semaphore := performance.GetSemaphoreChannel(manager.concurrencyManager.GetCurrentLimit())
 	defer performance.PutSemaphoreChannel(semaphore)
 
 	var wg sync.WaitGroup
@@ -142,11 +142,11 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 			defer func() { <-semaphore }()
 
 			startTime := time.Now()
-			scoreData, err := sm.calculateParticipantScore(p)
+			scoreData, err := manager.calculateParticipantScore(p)
 			responseTime := time.Since(startTime)
 
 			// 응답 시간을 적응형 동시성 관리자에 기록
-			sm.concurrencyManager.RecordResponseTime(responseTime)
+			manager.concurrencyManager.RecordResponseTime(responseTime)
 
 			if err != nil {
 				utils.Warn("Failed to calculate score for participant %s: %v", p.Name, err)
@@ -177,19 +177,19 @@ func (sm *ScoreboardManager) collectScoreData(participants []models.Participant)
 }
 
 // calculateParticipantScore 개별 참가자의 점수를 계산합니다
-func (sm *ScoreboardManager) calculateParticipantScore(participant models.Participant) (models.ScoreData, error) {
+func (manager *ScoreboardManager) calculateParticipantScore(participant models.Participant) (models.ScoreData, error) {
 	ctx := context.Background()
-	userInfo, err := sm.client.GetUserInfo(ctx, participant.BaekjoonID)
+	userInfo, err := manager.client.GetUserInfo(ctx, participant.BaekjoonID)
 	if err != nil {
 		return models.ScoreData{}, err
 	}
 
-	top100, err := sm.client.GetUserTop100(ctx, participant.BaekjoonID)
+	top100, err := manager.client.GetUserTop100(ctx, participant.BaekjoonID)
 	if err != nil {
 		return models.ScoreData{}, err
 	}
 
-	rawScore := sm.calculator.CalculateScoreWithTop100(top100, participant.StartTier, participant.StartProblemIDs)
+	rawScore := manager.calculator.CalculateScoreWithTop100(top100, participant.StartTier, participant.StartProblemIDs)
 	roundedScore := math.Round(rawScore)
 
 	newProblemCount := top100.Count - participant.StartProblemCount
@@ -203,7 +203,7 @@ func (sm *ScoreboardManager) calculateParticipantScore(participant models.Partic
 		BaekjoonID:    participant.BaekjoonID,
 		Score:         roundedScore,
 		RawScore:      rawScore,
-		League:        sm.calculator.GetUserLeague(participant.StartTier),
+		League:        manager.calculator.GetUserLeague(participant.StartTier),
 		CurrentTier:   userInfo.Tier,
 		CurrentRating: userInfo.Rating,
 		ProblemCount:  newProblemCount,
@@ -211,7 +211,7 @@ func (sm *ScoreboardManager) calculateParticipantScore(participant models.Partic
 }
 
 // groupScoresByLeague 참가자들을 리그별로 분류하고 점수 순으로 정렬합니다
-func (sm *ScoreboardManager) groupScoresByLeague(scores []models.ScoreData) map[int][]models.ScoreData {
+func (manager *ScoreboardManager) groupScoresByLeague(scores []models.ScoreData) map[int][]models.ScoreData {
 	leagueScores := make(map[int][]models.ScoreData)
 
 	for _, score := range scores {
@@ -234,7 +234,7 @@ func (sm *ScoreboardManager) groupScoresByLeague(scores []models.ScoreData) map[
 }
 
 // formatScoreboard 점수 데이터를 포맷팅하여 Discord 임베드 메시지로 반환합니다
-func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, scores []models.ScoreData, isAdmin bool) *discordgo.MessageEmbed {
+func (manager *ScoreboardManager) formatScoreboard(competition *models.Competition, scores []models.ScoreData, isAdmin bool) *discordgo.MessageEmbed {
 	embed := &discordgo.MessageEmbed{
 		Title: fmt.Sprintf(constants.MsgScoreboardTitle, competition.Name),
 		Description: fmt.Sprintf("%s ~ %s",
@@ -248,9 +248,9 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 		return embed
 	}
 
-	leagueScores := sm.groupScoresByLeague(scores)
+	leagueScores := manager.groupScoresByLeague(scores)
 
-	var sb strings.Builder
+	var builder strings.Builder
 
 	leagueOrder := []int{constants.LeagueRookie, constants.LeaguePro, constants.LeagueMaster}
 
@@ -259,14 +259,14 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 			continue
 		}
 
-		leagueName := sm.calculator.GetLeagueName(league)
-		sb.WriteString(fmt.Sprintf("\n**🏆 %s 리그**\n", leagueName))
-		sb.WriteString("```\n")
-		sb.WriteString(fmt.Sprintf("%-*s %-*s %*s\n",
+		leagueName := manager.calculator.GetLeagueName(league)
+		builder.WriteString(fmt.Sprintf("\n**🏆 %s 리그**\n", leagueName))
+		builder.WriteString("```\n")
+		builder.WriteString(fmt.Sprintf("%-*s %-*s %*s\n",
 			constants.ScoreboardRankWidth, "순위",
 			constants.ScoreboardNameWidth, "아이디",
 			constants.ScoreboardScoreWidth, "점수"))
-		sb.WriteString(constants.ScoreboardSeparator + "\n")
+		builder.WriteString(constants.ScoreboardSeparator + "\n")
 
 		var lastRawScore float64 = -1.0
 		var rank int
@@ -274,16 +274,16 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 			if score.RawScore != lastRawScore {
 				rank = i + 1
 			}
-			sb.WriteString(fmt.Sprintf("%-*d  %-*s %*.0f\n",
+			builder.WriteString(fmt.Sprintf("%-*d  %-*s %*.0f\n",
 				constants.ScoreboardRankWidth, rank,
 				constants.ScoreboardNameWidth, utils.TruncateString(score.BaekjoonID, constants.ScoreboardNameWidth),
 				constants.ScoreboardScoreWidth, score.Score))
 			lastRawScore = score.RawScore
 		}
-		sb.WriteString("```\n")
+		builder.WriteString("```\n")
 	}
 
-	embed.Description += sb.String()
+	embed.Description += builder.String()
 
 	now := utils.GetCurrentTimeKST()
 	if now.Before(competition.BlackoutStartDate) {
@@ -297,8 +297,8 @@ func (sm *ScoreboardManager) formatScoreboard(competition *models.Competition, s
 }
 
 // SendDailyScoreboard 매일 스코어보드를 지정된 채널에 전송합니다
-func (sm *ScoreboardManager) SendDailyScoreboard(session *discordgo.Session, channelID string) error {
-	embed, err := sm.GenerateScoreboard(false) // 자동 스코어보드는 관리자 권한 없음
+func (manager *ScoreboardManager) SendDailyScoreboard(session *discordgo.Session, channelID string) error {
+	embed, err := manager.GenerateScoreboard(false) // 자동 스코어보드는 관리자 권한 없음
 	if err != nil {
 		return err
 	}
