@@ -13,6 +13,11 @@ const (
 	RetryDelay            = 1 * time.Second
 	APIRetryMultiplier    = 2
 	MaxConcurrentRequests = 5
+
+	// HTTP 상태 코드
+	HTTPStatusNotFound           = 404
+	HTTPStatusTooManyRequests    = 429
+	HTTPServerErrorThreshold     = 500 // 500 이상은 서버 에러로 재시도
 )
 
 // 조직 ID 관련 상수

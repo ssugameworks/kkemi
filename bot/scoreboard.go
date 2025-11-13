@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -250,7 +249,12 @@ func (manager *ScoreboardManager) formatScoreboard(competition *models.Competiti
 
 	leagueScores := manager.groupScoresByLeague(scores)
 
-	var builder strings.Builder
+	// 메모리 풀에서 재사용 가능한 문자열 빌더 가져오기
+	builder := performance.GetStringBuilder()
+	defer performance.PutStringBuilder(builder)
+
+	// 초기 용량 힌트 제공 (각 참가자당 대략 50바이트 예상)
+	builder.Grow(len(scores) * 50)
 
 	leagueOrder := []int{constants.LeagueRookie, constants.LeaguePro, constants.LeagueMaster}
 

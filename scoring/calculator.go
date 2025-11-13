@@ -32,8 +32,8 @@ func (calculator *ScoreCalculator) CalculateScore(ctx context.Context, handle st
 }
 
 func (calculator *ScoreCalculator) CalculateScoreWithTop100(top100 *api.Top100Response, startTier int, startProblemIDs []int) float64 {
-	// 시작 시점 문제 ID들을 맵으로 변환
-	startProblemsMap := make(map[int]bool)
+	// 시작 시점 문제 ID들을 맵으로 변환 (용량 미리 할당)
+	startProblemsMap := make(map[int]bool, len(startProblemIDs))
 	for _, id := range startProblemIDs {
 		startProblemsMap[id] = true
 	}

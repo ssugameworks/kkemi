@@ -118,7 +118,7 @@ func (client *SolvedACClient) doRequest(ctx context.Context, url, requestType, h
 		}
 		defer resp.Body.Close()
 
-		if resp.StatusCode == http.StatusTooManyRequests {
+		if resp.StatusCode == constants.HTTPStatusTooManyRequests {
 			lastErr = fmt.Errorf("요청 한도 초과")
 			utils.Warn("Rate limited for %s %s, attempt %d", requestType, handle, attempt+1)
 			time.Sleep(constants.RetryDelay * constants.APIRetryMultiplier)
