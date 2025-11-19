@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/kkemi/constants"
 )
 
 func TestIsValidUsername(t *testing.T) {

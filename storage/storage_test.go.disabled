@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"discord-bot/api"
-	"discord-bot/models"
+	"kkemi/api"
+	"kkemi/models"
 	"fmt"
 	"os"
 	"testing"

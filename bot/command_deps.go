@@ -1,12 +1,12 @@
 package bot
 
 import (
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/interfaces"
-	"github.com/ssugameworks/Discord-Bot/models"
-	"github.com/ssugameworks/Discord-Bot/sheets"
-	"github.com/ssugameworks/Discord-Bot/telemetry"
-	"github.com/ssugameworks/Discord-Bot/utils"
+	"github.com/ssugameworks/kkemi/constants"
+	"github.com/ssugameworks/kkemi/interfaces"
+	"github.com/ssugameworks/kkemi/models"
+	"github.com/ssugameworks/kkemi/sheets"
+	"github.com/ssugameworks/kkemi/telemetry"
+	"github.com/ssugameworks/kkemi/utils"
 
 	"github.com/bwmarrin/discordgo"
 )

@@ -119,16 +119,16 @@ const (
 
 // 텔레메트리 관련 상수
 const (
-	TelemetryNamespace       = "discord-bot"
+	TelemetryNamespace       = "kkemi"
 	TelemetryJobName         = "competition-bot"
 	TelemetryTaskID          = "main"
-	TelemetryCredentialsFile = "discord-bot-gcloud-credentials.json"
+	TelemetryCredentialsFile = "kkemi-gcloud-credentials.json"
 	TelemetryFilePermissions = 0600
 )
 
 // 시스템 컴포넌트 이름
 const (
-	SystemComponentName = "discord-bot"
+	SystemComponentName = "kkemi"
 )
 
 // Google Sheets 관련 상수

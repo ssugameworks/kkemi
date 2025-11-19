@@ -10,11 +10,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/interfaces"
-	"github.com/ssugameworks/Discord-Bot/models"
-	"github.com/ssugameworks/Discord-Bot/performance"
-	"github.com/ssugameworks/Discord-Bot/utils"
+	"github.com/ssugameworks/kkemi/constants"
+	"github.com/ssugameworks/kkemi/interfaces"
+	"github.com/ssugameworks/kkemi/models"
+	"github.com/ssugameworks/kkemi/performance"
+	"github.com/ssugameworks/kkemi/utils"
 
 	"github.com/bwmarrin/discordgo"
 )

@@ -3,7 +3,7 @@ package utils
 import (
 	"time"
 
-	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/kkemi/constants"
 )
 
 // FormatDate 단일 날짜를 포맷팅합니다

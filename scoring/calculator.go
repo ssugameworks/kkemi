@@ -4,10 +4,10 @@ import (
 	"context"
 	"math"
 
-	"github.com/ssugameworks/Discord-Bot/api"
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/interfaces"
-	"github.com/ssugameworks/Discord-Bot/models"
+	"github.com/ssugameworks/kkemi/api"
+	"github.com/ssugameworks/kkemi/constants"
+	"github.com/ssugameworks/kkemi/interfaces"
+	"github.com/ssugameworks/kkemi/models"
 )
 
 type ScoreCalculator struct {

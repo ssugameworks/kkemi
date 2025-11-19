@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/kkemi/constants"
 	"os"
 	"testing"
 )

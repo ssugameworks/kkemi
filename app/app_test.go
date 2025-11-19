@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ssugameworks/Discord-Bot/config"
+	"github.com/ssugameworks/kkemi/config"
 )
 
 func TestApplication_New(t *testing.T) {

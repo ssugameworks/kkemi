@@ -5,8 +5,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/models"
+	"github.com/ssugameworks/kkemi/constants"
+	"github.com/ssugameworks/kkemi/models"
 )
 
 var (

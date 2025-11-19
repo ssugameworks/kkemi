@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/ssugameworks/Discord-Bot/cache"
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/utils"
+	"github.com/ssugameworks/kkemi/cache"
+	"github.com/ssugameworks/kkemi/constants"
+	"github.com/ssugameworks/kkemi/utils"
 )
 
 // CachedSolvedACClient 캐시 기능을 포함한 SolvedAC API 클라이언트입니다

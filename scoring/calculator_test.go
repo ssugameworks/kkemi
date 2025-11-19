@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ssugameworks/Discord-Bot/api"
-	"github.com/ssugameworks/Discord-Bot/models"
+	"github.com/ssugameworks/kkemi/api"
+	"github.com/ssugameworks/kkemi/models"
 )
 
 type mockAPIClient struct {

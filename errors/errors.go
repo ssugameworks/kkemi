@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/kkemi/constants"
 
 	"github.com/bwmarrin/discordgo"
 )

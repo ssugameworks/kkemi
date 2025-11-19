@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/kkemi/constants"
 )
 
 // AdaptiveConcurrencyManager 시스템 부하와 API 응답 시간에 따라 동시성을 동적으로 조정합니다

@@ -4,11 +4,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ssugameworks/Discord-Bot/bot"
-	"github.com/ssugameworks/Discord-Bot/config"
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/sheets"
-	"github.com/ssugameworks/Discord-Bot/utils"
+	"github.com/ssugameworks/kkemi/bot"
+	"github.com/ssugameworks/kkemi/config"
+	"github.com/ssugameworks/kkemi/constants"
+	"github.com/ssugameworks/kkemi/sheets"
+	"github.com/ssugameworks/kkemi/utils"
 
 	"github.com/bwmarrin/discordgo"
 )

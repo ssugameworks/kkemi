@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 
-	"github.com/ssugameworks/Discord-Bot/api"
+	"github.com/ssugameworks/kkemi/api"
 )
 
 // APIClient 외부 API와의 통신을 위한 인터페이스입니다

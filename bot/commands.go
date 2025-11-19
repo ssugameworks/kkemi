@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ssugameworks/Discord-Bot/api"
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/errors"
-	"github.com/ssugameworks/Discord-Bot/utils"
+	"github.com/ssugameworks/kkemi/api"
+	"github.com/ssugameworks/kkemi/constants"
+	"github.com/ssugameworks/kkemi/errors"
+	"github.com/ssugameworks/kkemi/utils"
 
 	"github.com/bwmarrin/discordgo"
 )

@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/models"
-	"github.com/ssugameworks/Discord-Bot/utils"
+	"github.com/ssugameworks/kkemi/constants"
+	"github.com/ssugameworks/kkemi/models"
+	"github.com/ssugameworks/kkemi/utils"
 
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"

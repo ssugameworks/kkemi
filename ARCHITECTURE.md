@@ -952,7 +952,7 @@ metricsClient.SendPerformanceMetric("scoreboard_generation", duration)
 ## 참고 자료
 
 ### 코드 베이스
-- [GitHub Repository](https://github.com/ssugameworks/Discord-Bot)
+- [GitHub Repository](https://github.com/ssugameworks/kkemi)
 - [README.md](./README.md)
 
 ### 외부 문서

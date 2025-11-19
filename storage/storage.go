@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/interfaces"
-	"github.com/ssugameworks/Discord-Bot/models"
-	"github.com/ssugameworks/Discord-Bot/utils"
+	"github.com/ssugameworks/kkemi/constants"
+	"github.com/ssugameworks/kkemi/interfaces"
+	"github.com/ssugameworks/kkemi/models"
+	"github.com/ssugameworks/kkemi/utils"
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"

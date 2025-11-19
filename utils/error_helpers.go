@@ -3,8 +3,8 @@ package utils
 import (
 	"fmt"
 
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/errors"
+	"github.com/ssugameworks/kkemi/constants"
+	"github.com/ssugameworks/kkemi/errors"
 
 	"github.com/bwmarrin/discordgo"
 )

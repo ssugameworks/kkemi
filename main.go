@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/ssugameworks/Discord-Bot/app"
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/health"
+	"github.com/ssugameworks/kkemi/app"
+	"github.com/ssugameworks/kkemi/constants"
+	"github.com/ssugameworks/kkemi/health"
 	"log"
 	"os"
 )

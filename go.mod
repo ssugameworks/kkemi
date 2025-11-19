@@ -1,4 +1,4 @@
-module github.com/ssugameworks/Discord-Bot
+module github.com/ssugameworks/kkemi
 
 go 1.25.0
 

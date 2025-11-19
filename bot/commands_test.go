@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ssugameworks/Discord-Bot/api"
-	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/kkemi/api"
+	"github.com/ssugameworks/kkemi/constants"
 
 	"github.com/bwmarrin/discordgo"
 )

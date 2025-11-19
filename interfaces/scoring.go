@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 
-	"github.com/ssugameworks/Discord-Bot/api"
+	"github.com/ssugameworks/kkemi/api"
 )
 
 // ScoreCalculator 점수 계산을 위한 인터페이스입니다

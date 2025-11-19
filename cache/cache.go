@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/kkemi/constants"
 )
 
 // CacheItem 캐시에 저장되는 개별 아이템을 나타냅니다

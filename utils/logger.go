@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/kkemi/constants"
 )
 
 type LogLevel int

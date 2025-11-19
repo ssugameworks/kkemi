@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/utils"
+	"github.com/ssugameworks/kkemi/constants"
+	"github.com/ssugameworks/kkemi/utils"
 
 	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"google.golang.org/genproto/googleapis/api/metric"

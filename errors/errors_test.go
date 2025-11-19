@@ -2,7 +2,7 @@ package errors
 
 import (
 	"fmt"
-	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/kkemi/constants"
 	"testing"
 )
 

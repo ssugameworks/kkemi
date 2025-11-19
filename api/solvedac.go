@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ssugameworks/Discord-Bot/constants"
-	"github.com/ssugameworks/Discord-Bot/utils"
+	"github.com/ssugameworks/kkemi/constants"
+	"github.com/ssugameworks/kkemi/utils"
 )
 
 // SolvedACClient solved.ac API와 통신하는 클라이언트입니다

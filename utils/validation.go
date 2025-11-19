@@ -9,7 +9,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/ssugameworks/Discord-Bot/constants"
+	"github.com/ssugameworks/kkemi/constants"
 )
 
 // IsValidUsername 문자열 유효성 검사
