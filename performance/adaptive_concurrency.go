@@ -1,6 +1,7 @@
 package performance
 
 import (
+	"sort"
 	"sync"
 	"time"
 
@@ -116,18 +117,32 @@ func (manager *AdaptiveConcurrencyManager) calculateP95ResponseTime() time.Durat
 		return 0
 	}
 
-	// 간단한 95 퍼센타일 계산 (정렬 없이)
-	var maxTime time.Duration
-	for _, responseTime := range manager.responseTimeWindow {
-		if responseTime > maxTime {
-			maxTime = responseTime
+	// 윈도우 크기가 작으면 최대값을 반환 (정확한 퍼센타일 계산이 어려움)
+	if len(manager.responseTimeWindow) < 10 {
+		var maxTime time.Duration
+		for _, responseTime := range manager.responseTimeWindow {
+			if responseTime > maxTime {
+				maxTime = responseTime
+			}
 		}
+		return maxTime
 	}
 
-	// 상위 5%에 해당하는 시간들의 최솟값을 근사치로 사용
-	cutoff := time.Duration(float64(maxTime) * constants.P95PercentileRatio) // 대략적인 95 퍼센타일
+	// 정확한 95 퍼센타일 계산을 위해 정렬된 복사본 생성
+	// 메모리 할당을 최소화하기 위해 슬라이스 재사용
+	sortedTimes := make([]time.Duration, len(manager.responseTimeWindow))
+	copy(sortedTimes, manager.responseTimeWindow)
+	sort.Slice(sortedTimes, func(i, j int) bool {
+		return sortedTimes[i] < sortedTimes[j]
+	})
 
-	return cutoff
+	// 95 퍼센타일 인덱스 계산
+	index := int(float64(len(sortedTimes)) * 0.95)
+	if index >= len(sortedTimes) {
+		index = len(sortedTimes) - 1
+	}
+
+	return sortedTimes[index]
 }
 
 // GetStats 현재 통계를 반환합니다
