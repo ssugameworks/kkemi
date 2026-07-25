@@ -1,5 +1,9 @@
 # 🐜 깨미 (Kkemi)
 
+<p align="center">
+  <img src="images/kkemi.png" alt="kkemi" width="160" />
+</p>
+
 **Figma의 컨벤션 확인을 자동화합니다.**
 
 Product Team이 만든 Figma 린터입니다. Figma 파일의 네이밍 규칙과 명도 대비를 [KRDS](https://www.krds.go.kr) 기준에 맞춰 자동으로 점검하고, 코딩 에이전트 안에서 바로 리포트를 받아볼 수 있습니다.
