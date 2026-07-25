@@ -6,7 +6,7 @@
 
 **Figma의 컨벤션 확인을 자동화합니다.**
 
-Product Team이 만든 Figma 린터입니다. Figma 파일의 네이밍 규칙과 명도 대비를 [KRDS](https://www.krds.go.kr) 기준에 맞춰 자동으로 점검하고, 코딩 에이전트 안에서 바로 리포트를 받아볼 수 있습니다.
+Product Team이 만든 Figma 린터입니다. Figma 파일의 네이밍 규칙과 명도 대비를 [KRDS](https://www.krds.go.kr) 기준에 맞춰 자동으로 점검하고 코딩 에이전트 안에서 바로 리포트를 받아볼 수 있습니다.
 
 [![python](https://img.shields.io/badge/python-3.x-blue)](scripts/kkemi_check.py)
 [![license](https://img.shields.io/badge/license-Internal-lightgrey)](#)
@@ -14,7 +14,7 @@ Product Team이 만든 Figma 린터입니다. Figma 파일의 네이밍 규칙�
 
 ---
 
-디자인 리뷰에서 네이밍 컨벤션과 명도 대비를 사람이 눈으로 확인하는 건 느리고, 리뷰어마다 판정이 달라집니다.  
+디자인 리뷰에서 네이밍 컨벤션과 명도 대비를 사람이 눈으로 확인하는 건 느린 데다 리뷰어마다 판정이 갈립니다.  
 깨미는 이 중 **결정론적으로 판정 가능한 항목만** 정규식과 WCAG 공식으로 정확히 계산하고, 코드 구현 단계에서만 확인 가능한 항목(키보드 탐색, 포커스 트랩 등)은 검증했다고 우기지 않고 검사 범위에서 아예 제외합니다.
 
 - ✅ 애매하게 "괜찮아 보이는데요"가 아니라 표와 수치로 답합니다.
@@ -72,8 +72,8 @@ python3 scripts/kkemi_check.py --selftest
 ```
 Figma 파일
    │
-   ├─ get_metadata          → 노드 트리(XML)         → scripts/parse_metadata.py       → nodes.json
-   ├─ get_variable_defs     → 로컬 변수/스타일 토큰   →                                 → variables.json
+   ├─ get_metadata          → 노드 트리(XML) → scripts/parse_metadata.py → nodes.json
+   ├─ get_variable_defs     → 로컬 변수/스타일 토큰 → variables.json
    └─ get_design_context    → 생성된 React/Tailwind → scripts/parse_design_context.py → contrast_pairs.json
               │
               ↓
@@ -123,7 +123,7 @@ Figma 파일
 
 ## 호환 에이전트
 
-`AGENTS.md`는 특정 클라이언트에 종속되지 않도록 작성되어 있어, Figma MCP를 지원하는 어떤 코딩 에이전트에서도 동일하게 동작합니다.
+`AGENTS.md`는 특정 클라이언트에 종속되지 않도록 작성되어 있어 Figma MCP를 지원하는 어떤 코딩 에이전트에서도 동일하게 동작합니다.
 
 - Claude Code
 - Codex CLI
@@ -138,4 +138,4 @@ Figma 파일
 
 - **판정 가능한 것만 판정한다.** 정규식·WCAG 공식으로 계산되지 않는 항목은 "검사했다"고 말하지 않는다.
 - **단일 소스 유지.** 규칙과 로직은 `references/`, `scripts/`에만 있고 에이전트별 설정 파일은 이를 가리키기만 한다.
-- **애매하면 건너뛴다.** 전경/배경 페어를 확신 있게 특정할 수 없으면 억지로 계산하지 않고 수동 확인 항목으로 넘긴다.
+- **애매하면 건너뛴다.** 전경/배경 쌍을 확신 있게 특정할 수 없으면 억지로 계산하지 않고 수동 확인 항목으로 넘긴다.

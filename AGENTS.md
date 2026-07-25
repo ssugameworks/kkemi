@@ -2,7 +2,7 @@
 
 이 저장소는 게임웍스 Product Team이 Figma 디자인 파일이 KRDS(대한민국 정부 디자인시스템, https://www.krds.go.kr) 규칙을 지키는지 점검하기 위한 린터 "깨미"의 규칙 스냅샷과 검사 스크립트를 담고 있다.
 
-이 문서는 Claude Code, Codex CLI, Cursor, Windsurf 등 **어떤 코딩 에이전트에서 작업하든 동일하게 적용되는 지침**이다. 에이전트별 전용 기능(예: Claude Code의 Skill 자동 트리거)은 각 도구의 설정 파일(예: `.claude/skills/kkemi/SKILL.md`)에 별도로 있으며, 그 파일들도 결국 이 문서와 `kkemi/` 폴더를 가리킨다. **규칙과 검사 로직의 단일 소스는 `kkemi/` 폴더이며, 다른 곳에 복제하지 않는다.**
+이 문서는 Claude Code, Codex CLI, Cursor, Windsurf 등 **어떤 코딩 에이전트에서 작업하든 동일하게 적용되는 지침**이다. 에이전트별 전용 기능(예: Claude Code의 Skill 자동 트리거)은 각 도구의 설정 파일(예: `.claude/skills/kkemi/SKILL.md`)에 별도로 있으며 그 파일들도 결국 이 문서와 `kkemi/` 폴더를 가리킨다. **규칙과 검사 로직의 단일 소스는 `kkemi/` 폴더이며 다른 곳에 복제하지 않는다.**
 
 ## 전제 조건: Figma MCP 연결
 
@@ -32,7 +32,7 @@
 ```bash
 python3 scripts/parse_metadata.py --input <get_metadata 응답 또는 저장된 tool-result 파일 경로> --output <임시경로>/nodes.json
 ```
-`--selftest`로 Figma 데이터 없이 파싱 로직 자체를 검증할 수 있다. 이 스크립트가 다루지 못하는 새로운 태그를 만나면 스크립트에 매핑을 추가하고, 매번 즉석 파이썬으로 재구현하지 않는다(단일 소스 유지).
+`--selftest`로 Figma 데이터 없이 파싱 로직 자체를 검증할 수 있다. 이 스크립트가 다루지 못하는 새로운 태그를 만나면 스크립트에 매핑을 추가하고 매번 즉석 파이썬으로 재구현하지 않는다(단일 소스 유지).
 
 ### 2. 변수/토큰 조회
 `get_variable_defs(fileKey, nodeId)` 호출 → `{변수명: 값}` 형태로 `variables.json`에 저장한다. 색상 값은 hex 문자열, 간격/크기 값은 숫자로 저장한다.
@@ -46,7 +46,7 @@ python3 scripts/parse_design_context.py \
   --output <임시경로>/contrast_pairs.json
 ```
 - `--nodes`에 1단계에서 만든 `nodes.json`을 넘기면 TEXT 타입 노드는 `kind: "text"`(기준 4.5:1), VECTOR/BOOLEAN_OPERATION/LINE 타입은 `kind: "nontext"`(기준 3:1)로 자동 분류된다. `get_metadata`가 컴포넌트 인스턴스 내부를 펼치지 않아 `nodes.json`에 없는 id는, 자기 자신에게 텍스트 색상이 있으면 `kind: "text"`로 추정하는 폴백이 적용된다.
-- 반투명 배경(`rgba(...)`, 여러 겹 오버레이)은 스크립트가 알파 합성까지 자동으로 계산해 최종 hex를 뽑아준다. 진짜 그라디언트(구간마다 색이 다른 경우)나 이미지 배경처럼 하나의 색으로 환원할 수 없는 경우에만 페어 생성을 건너뛰고 `unresolved` 목록에 사유(예: "그라디언트 배경(~#0c0c0d ~ #223063)")를 붙여 반환한다. **이 판단은 스크립트가 하는 것이고, 에이전트가 즉석 코드로 배경색을 손수 계산하거나 반대로 애매한 경우를 억지로 확정 짓지 않는다.**
+- 반투명 배경(`rgba(...)`, 여러 겹 오버레이)은 스크립트가 알파 합성까지 자동으로 계산해 최종 hex를 뽑아준다. 진짜 그라디언트(구간마다 색이 다른 경우)나 이미지 배경처럼 하나의 색으로 환원할 수 없는 경우에만 페어 생성을 건너뛰고 `unresolved` 목록에 사유(예: "그라디언트 배경(~#0c0c0d ~ #223063)")를 붙여 반환한다. **이 판단은 스크립트가 하고 에이전트가 즉석 코드로 배경색을 손수 계산하거나 반대로 애매한 경우를 억지로 확정 짓지 않는다.**
 - `--selftest`로 Figma 데이터 없이 파싱/합성 로직 자체를 검증할 수 있다.
 - 실행 후 표준출력에 찍히는 `unresolved` 상세 목록(`label`, `reason`)을 그대로 리포트 3번 섹션 하단 "계산 불가" 표에 옮겨 적는다 — 사유를 새로 지어내지 않는다 (5단계 참고).
 - 그래도 눈으로 확인하고 싶으면 `get_screenshot`을 추가로 써도 된다.
@@ -69,7 +69,7 @@ wrote <N> <항목> to <경로>
 { <개수 위주의 짧은 breakdown JSON> }
 [해당 시] 상세 목록(예: unresolved detail)
 ```
-전체 결과 JSON을 다시 표준출력에 통째로 덤프하지 않는다 — `--output` 파일에서 필요한 항목만 읽는다. 리포트를 쓸 때는 이 표준출력 요약으로 몇 건인지 먼저 확인하고, 표 작성에 필요한 상세 데이터는 `--output` 파일(`nodes.json`/`contrast_pairs.json`/`kkemi_result.json`)에서 가져온다.
+전체 결과 JSON을 다시 표준출력에 통째로 덤프하지 않는다 — `--output` 파일에서 필요한 항목만 읽는다. 리포트를 쓸 때는 이 표준출력 요약으로 몇 건인지 먼저 확인하고 표 작성에 필요한 상세 데이터는 `--output` 파일(`nodes.json`/`contrast_pairs.json`/`kkemi_result.json`)에서 가져온다.
 
 ### 5. 리포트 작성
 스크립트 출력을 아래 형식의 마크다운으로 정리해 채팅 답변으로 제공한다 (별도 요청이 없는 한 파일로 저장하지 않음):
@@ -106,4 +106,4 @@ wrote <N> <항목> to <경로>
 - `references/accessibility-rules.md` — 접근성 규칙 스냅샷, 자동검증 항목과 수동확인 항목 구분
 - `scripts/kkemi_check.py` — 실제 검사 로직 (Python 3, 표준 라이브러리만 사용). `--selftest`로 동작 확인 가능
 - `scripts/parse_metadata.py` — `get_metadata` XML 응답을 `nodes.json`으로 변환하는 헬퍼 (Python 3, 표준 라이브러리만 사용). `--selftest`로 동작 확인 가능
-- `scripts/parse_design_context.py` — `get_design_context`가 반환하는 React+Tailwind 코드를 `contrast_pairs.json`으로 변환하는 헬퍼. 반투명 배경(rgba 오버레이) 알파 합성까지 처리하고, 진짜 그라디언트/이미지 배경처럼 환원 불가능한 경우만 사유와 함께 `unresolved`로 분리한다 (Python 3, 표준 라이브러리만 사용). `--selftest`로 동작 확인 가능
+- `scripts/parse_design_context.py` — `get_design_context`가 반환하는 React+Tailwind 코드를 `contrast_pairs.json`으로 변환하는 헬퍼. 반투명 배경(rgba 오버레이) 알파 합성까지 처리하고 진짜 그라디언트/이미지 배경처럼 환원 불가능한 경우만 사유와 함께 `unresolved`로 분리한다 (Python 3, 표준 라이브러리만 사용). `--selftest`로 동작 확인 가능
