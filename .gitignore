@@ -1,0 +1,15 @@
+# IDE
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# kkemi 워크플로우가 생성하는 임시 산출물 (기본 출력 경로가 저장소 루트일 때 대비)
+nodes.json
+variables.json
+contrast_pairs.json
